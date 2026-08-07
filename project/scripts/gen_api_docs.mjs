@@ -58,7 +58,7 @@ function parseIpc(src) {
   const lines = block[1].split('\n')
   let ns = null
   for (const line of lines) {
-    const nsM = line.match(/^  (\w+): \{/)
+    const nsM = line.match(/^ {2}(\w+): \{/)
     if (nsM) {
       ns = { name: nsM[1], doc: '', channels: [] }
       // 命名空间前置注释：回看上方行
@@ -67,12 +67,12 @@ function parseIpc(src) {
       namespaces.push(ns)
       continue
     }
-    if (ns && /^  \},?$/.test(line.trim() === '' ? '' : line)) {
-      if (/^  \}$/.test(line)) ns = null
+    if (ns && /^ {2}\},?$/.test(line.trim() === '' ? '' : line)) {
+      if (/^ {2}\}$/.test(line)) ns = null
       continue
     }
     if (ns) {
-      const chM = line.match(/^    (\w+): '([^']+)'/)
+      const chM = line.match(/^ {4}(\w+): '([^']+)'/)
       if (chM) {
         const idx = lines.indexOf(line)
         ns.channels.push({ key: chM[1], channel: chM[2], doc: lineDoc(lines, idx) })
