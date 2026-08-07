@@ -1,0 +1,51 @@
+name: Release
+
+# 发布流程（F15 打包分发 · M5 接入 electron-builder 产物）
+# 当前骨架：打 v* tag 触发 → CI 验证 → GitHub Release（自动生成 notes）
+# TODO(M5)：接入 electron-builder 三端产物（.exe/.dmg/.AppImage + 便携 zip）上传，
+#          遵循《技术栈.md》M5 章节（Defender 锁 / safeStorage Linux 降级 / electron-updater 源）。
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: project
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.20.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: project/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm build
+      - run: pnpm test
+
+  release:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          draft: true
+          # TODO(M5): files: |
+          #   dist/*.exe
+          #   dist/*.zip
+          #   dist/*.dmg
+          #   dist/*.AppImage
