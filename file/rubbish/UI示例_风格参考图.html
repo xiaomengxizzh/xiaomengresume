@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>xiaomengresume 界面风格参考图 · 左导航大卡片化 + 层叠卡片（按用户 2026-08-06 指令）</title>
+<style>
+  /* 按用户 2026-08-06 指令调整（仅本文件，其他项目文件未改动）：
+     背景浅灰 #ECECEE，左导航作为一张大白卡（描边+投影，贴左、上左下留缝），
+     简历/AI/设置在大卡内垂直居中、项间距放大到 28px；
+     右 5 张小白卡浮于灰背景、与背景区分。
+     此版与参考图「两栏纯白无缝」及正式令牌（§3.15.1 两栏纯白无缝）不一致，
+     仅为该文件独立渲染实验，未回写规范/四色方案。 */
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:#DCDCE0;
+    min-height:100vh;
+    display:flex;align-items:center;justify-content:center;
+    font-family:-apple-system,'PingFang SC','Microsoft YaHei','Noto Sans CJK SC',sans-serif;
+    color:#111;
+    padding:48px 24px;
+  }
+  .window{
+    width:800px;min-height:520px;
+    background:#ECECEE;
+    border-radius:16px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.05);
+    display:flex;gap:16px;padding:16px;position:relative;overflow:hidden;
+  }
+  /* 左导航 = 一张大卡片 */
+  .nav{
+    width:190px;
+    background:#FFFFFF;
+    border:1px solid #E5E5E7;
+    border-radius:16px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.06);
+    padding:22px 16px;
+    display:flex;flex-direction:column;
+  }
+  .brand{font-size:15px;font-weight:700;color:#111;margin-bottom:12px;text-align:center;letter-spacing:-0.01em;}
+  .menu{flex:1;display:flex;flex-direction:column;justify-content:center;gap:28px;}
+  .menu-item{display:flex;align-items:center;justify-content:center;gap:12px;color:#111;font-size:15px;cursor:pointer;font-weight:400;}
+  .menu-item svg{width:16px;height:16px;stroke:#111;stroke-width:1.5;fill:none;flex-shrink:0;}
+  .menu-item.active{font-weight:600;}
+  /* 右内容区（透明，透出灰背景） */
+  .main{flex:1;padding:40px 40px 40px;background:transparent;position:relative;}
+  .close-x{
+    position:absolute;top:28px;right:56px;width:44px;height:44px;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+  }
+  .close-x svg{width:16px;height:16px;stroke:#666;stroke-width:1.5;fill:none;}
+  .close-x:hover svg{stroke:#111;}
+  .cards{display:flex;flex-direction:column;gap:12px;max-width:440px;}
+  .card{
+    display:flex;align-items:center;
+    padding:0 24px;height:56px;
+    border-radius:16px;
+    background:#FFFFFF;
+    border:1px solid #E5E5E7;
+    box-shadow:0 1px 3px rgba(0,0,0,0.06);
+    font-size:15px;color:#111;cursor:pointer;
+  }
+  .card.active{background:#F3F4F6;border-color:transparent;box-shadow:none;font-weight:600;}
+</style>
+</head>
+<body>
+<div class="window">
+  <aside class="nav">
+    <div class="brand">xiaomengresume</div>
+    <nav class="menu">
+      <div class="menu-item active">
+        <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1.5"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/></svg>
+        简历
+      </div>
+      <div class="menu-item">
+        <svg viewBox="0 0 24 24"><path d="M12 2 L14.5 9.5 L22 12 L14.5 14.5 L12 22 L9.5 14.5 L2 12 L9.5 9.5 Z"/></svg>
+        AI
+      </div>
+      <div class="menu-item">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        设置
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="close-x" title="关闭"><svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></div>
+    <div class="cards">
+      <div class="card active">新建空白简历</div>
+      <div class="card">打开或最近</div>
+      <div class="card">导入（PDF / 图片）</div>
+      <div class="card">管理多份简历</div>
+      <div class="card">岗位目录</div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

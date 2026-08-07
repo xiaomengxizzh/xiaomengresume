@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI 示例 · 主题四色方案（v10 · 布局匹配用户参考图 + dark 全部重写 + beige 匹配参考图）</title>
+<style>
+  *{box-sizing:border-box;}
+  body{margin:0;background:#EDEAE4;color:#111;font-family:sans-serif;padding:32px;}
+  h1{font-size:18px;font-weight:600;margin:0 0 4px;}
+  .meta{color:#555;font-size:13px;margin-bottom:8px;line-height:1.7;}
+  .meta b{color:#111;}
+  .box{background:#FDFAF4;padding:18px;margin-bottom:18px;}
+  .box.dark{background:#161618;}
+  svg{width:100%;height:auto;display:block;}
+  .points{background:#FDFAF4;padding:14px 18px;font-size:13px;line-height:1.9;color:#333;}
+  .points b{color:#111;}
+  .points table{border-collapse:collapse;margin:8px 0;font-size:12.5px;width:100%;}
+  .points th,.points td{border:1px solid #ccc;padding:5px 8px;text-align:left;}
+  .points th{background:#F3F4F6;}
+  .sw{display:inline-block;width:14px;height:14px;border:1px solid #999;vertical-align:-2px;margin-right:5px;}
+  .warn{color:#8a5a00;font-size:12px;margin-top:10px;line-height:1.7;}
+</style>
+</head>
+<body>
+<h1>UI 示例 · 主题四色方案（v10 · 布局匹配用户参考图 + dark 全部重写 + beige 匹配参考图）</h1>
+<div class="meta">2026-08-06 <b>v10 定稿</b> · <b>配色设计线框演示唯一载体</b> · 按用户参考图重画布局（<b>2:8 纵向分割</b>、外圆角 24、品牌区 60、菜单 52 高间距 16、卡片 410×68 gap 16 rx 14、X 44×44 热区图标 24、底部留白 80、无滚动条）；<b>dark 全部重写</b>（#1C1C1E/#2C2C2E/#3A3A3C/#E5E5EA，原 #1F1F1F/#262624/#3F3F3C/#D9D9DE）；<b>beige 匹配参考图</b>（#F5F5F5/#FDFAF4/#C0C0C0/#333333，原 #EDE7DC/#F7F2E8/#C9C1AE/#2A2620）；light/green 沿用正式令牌。<br>
+<b>本版色值已同步并入正式令牌表</b>（《技术栈.md》§3.15.1 /《项目功能.md》F18 /《项目实现情况.md》已更新 2026-08-06）。《原型线框图.html》《导航交互原型.html》按配色职责边界未改动。</div>
+
+<!-- ============ light 正式令牌 ============ -->
+<div class="box">
+<svg viewBox="0 0 680 660" role="img">
+  <title>方案1 浅色（正式令牌）：侧栏 #F3F4F6 · 背景 #FDFAF4 · 卡片 #FFF · 选中 #B0B3B8 · 文字 #111111</title>
+  <defs>
+    <style>
+      .lbl{fill:#111111;font:500 14px sans-serif;}
+      .note{fill:#8A8680;font:400 9px sans-serif;}
+      .menu{fill:#111111;font:500 12px sans-serif;}
+      .ic{fill:none;stroke:#111111;stroke-width:1.3;}
+    </style>
+    <filter id="winShadowL" x="-3%" y="-3%" width="106%" height="106%"><feDropShadow dx="0" dy="6" stdDeviation="16" flood-color="#000000" flood-opacity="0.10"/></filter>
+    <filter id="cardShadowL" x="-5%" y="-15%" width="110%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="8" flood-color="#000000" flood-opacity="0.08"/></filter>
+    <clipPath id="clipNavL"><rect x="20" y="48" width="130" height="568"/></clipPath>
+  </defs>
+  <text x="8" y="16" class="lbl" style="font-size:12px;font-weight:600;">方案1 · 浅色（正式令牌）</text>
+  <text x="8" y="30" class="note">侧栏 #F3F4F6 · 背景 #FDFAF4 · 卡片 #FFFFFF · 选中 #B0B3B8 · 主文字 #111111 · X 常态 #B0B3B8 / hover #111111</text>
+  <rect x="20" y="48" width="640" height="568" rx="24" fill="#FDFAF4" filter="url(#winShadowL)"/>
+  <rect x="20" y="48" width="128" height="568" rx="24" fill="#F3F4F6" clip-path="url(#clipNavL)"/>
+  <text x="44" y="96" class="menu" style="font-size:14px;font-weight:600;">xiaomengresume</text>
+  <rect x="44" y="132" width="80" height="52" rx="10" fill="#B0B3B8"/>
+  <rect x="56" y="144" width="10" height="12" class="ic" style="stroke:#111111;"/><line x1="57" y1="148" x2="65" y2="148" stroke="#111111" stroke-width="1"/><line x1="57" y1="152" x2="65" y2="152" stroke="#111111" stroke-width="1"/><line x1="57" y1="156" x2="65" y2="156" stroke="#111111" stroke-width="1"/>
+  <text x="70" y="164" class="menu" style="fill:#111111;">简历</text>
+  <path d="M61 217 l7 7 -7 7 -7 -7 z" class="ic"/>
+  <text x="72" y="229" class="menu">AI</text>
+  <circle cx="61" cy="292" r="6" fill="none" stroke="#111111" stroke-width="1.3"/>
+  <line x1="61" y1="283" x2="61" y2="286" stroke="#111111" stroke-width="1.3"/><line x1="61" y1="298" x2="61" y2="301" stroke="#111111" stroke-width="1.3"/><line x1="52" y1="292" x2="55" y2="292" stroke="#111111" stroke-width="1.3"/><line x1="67" y1="292" x2="70" y2="292" stroke="#111111" stroke-width="1.3"/>
+  <text x="72" y="297" class="menu">设置</text>
+  <rect x="592" y="72" width="44" height="44" fill="none" stroke="#B0B3B8" stroke-width="1" stroke-dasharray="3 3" opacity="0.6"/>
+  <line x1="602" y1="82" x2="626" y2="106" stroke="#B0B3B8" stroke-width="2"/>
+  <line x1="626" y1="82" x2="602" y2="106" stroke="#B0B3B8" stroke-width="2"/>
+  <text x="592" y="134" class="note" style="text-anchor:end;">X 44×44 热区 · 图标 24px · 常态 #B0B3B8 → hover #111111</text>
+  <rect x="199" y="132" width="410" height="68" rx="14" fill="#FFFFFF" filter="url(#cardShadowL)"/>
+  <text x="223" y="174" class="lbl">新建空白简历</text>
+  <rect x="199" y="216" width="410" height="68" rx="14" fill="#FFFFFF" filter="url(#cardShadowL)"/>
+  <text x="223" y="258" class="lbl">打开或最近</text>
+  <rect x="199" y="300" width="410" height="68" rx="14" fill="#FFFFFF" filter="url(#cardShadowL)"/>
+  <text x="223" y="342" class="lbl">导入（PDF / 图片）</text>
+  <rect x="199" y="384" width="410" height="68" rx="14" fill="#FFFFFF" filter="url(#cardShadowL)"/>
+  <text x="223" y="426" class="lbl">管理多份简历</text>
+  <rect x="199" y="468" width="410" height="68" rx="14" fill="#FFFFFF" filter="url(#cardShadowL)"/>
+  <text x="223" y="510" class="lbl">岗位目录</text>
+  <text x="199" y="556" class="note">卡片1 上缘 = 简历选中态上缘（左右拉齐）· 底部留白 80px 固定 · 容器高 568（min-height 560）· 无滚动条</text>
+  <text x="199" y="572" class="note">卡片宽 = 右内容 80%（410/512）· 高 68 · 间距 16 · 圆角 14 · 文字左距 24</text>
+</svg>
+</div>
+
+<!-- ============ dark 全部重写 ============ -->
+<div class="box dark">
+<svg viewBox="0 0 680 660" role="img">
+  <title>方案2 深色（全部重写）：侧栏 #1C1C1E · 背景 #2C2C2E · 卡片 #38383A · 选中 #3A3A3C · 文字 #E5E5EA</title>
+  <defs>
+    <style>
+      .lbl{fill:#E5E5EA;font:500 14px sans-serif;}
+      .note{fill:#A2A2A8;font:400 9px sans-serif;}
+      .menu{fill:#E5E5EA;font:500 12px sans-serif;}
+      .ic{fill:none;stroke:#E5E5EA;stroke-width:1.3;}
+    </style>
+    <filter id="winShadowD" x="-3%" y="-3%" width="106%" height="106%"><feDropShadow dx="0" dy="6" stdDeviation="16" flood-color="#000000" flood-opacity="0.6"/></filter>
+    <filter id="cardShadowD" x="-5%" y="-15%" width="110%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="8" flood-color="#000000" flood-opacity="0.5"/></filter>
+    <clipPath id="clipNavD"><rect x="20" y="48" width="130" height="568"/></clipPath>
+  </defs>
+  <text x="8" y="16" class="lbl" style="font-size:12px;font-weight:600;">方案2 · 深色（全部重写 2026-08-06）</text>
+  <text x="8" y="30" class="note">侧栏 #1C1C1E · 背景 #2C2C2E · 卡片 #38383A · 选中 #3A3A3C · 主文字 #E5E5EA · X 常态 #5A5A5E / hover #E5E5EA</text>
+  <rect x="20" y="48" width="640" height="568" rx="24" fill="#2C2C2E" filter="url(#winShadowD)"/>
+  <rect x="20" y="48" width="128" height="568" rx="24" fill="#1C1C1E" clip-path="url(#clipNavD)"/>
+  <text x="44" y="96" class="menu" style="font-size:14px;font-weight:600;">xiaomengresume</text>
+  <rect x="44" y="132" width="80" height="52" rx="10" fill="#3A3A3C"/>
+  <rect x="56" y="144" width="10" height="12" class="ic" style="stroke:#E5E5EA;"/><line x1="57" y1="148" x2="65" y2="148" stroke="#E5E5EA" stroke-width="1"/><line x1="57" y1="152" x2="65" y2="152" stroke="#E5E5EA" stroke-width="1"/><line x1="57" y1="156" x2="65" y2="156" stroke="#E5E5EA" stroke-width="1"/>
+  <text x="70" y="164" class="menu" style="fill:#E5E5EA;">简历</text>
+  <path d="M61 217 l7 7 -7 7 -7 -7 z" class="ic"/>
+  <text x="72" y="229" class="menu">AI</text>
+  <circle cx="61" cy="292" r="6" fill="none" stroke="#E5E5EA" stroke-width="1.3"/>
+  <line x1="61" y1="283" x2="61" y2="286" stroke="#E5E5EA" stroke-width="1.3"/><line x1="61" y1="298" x2="61" y2="301" stroke="#E5E5EA" stroke-width="1.3"/><line x1="52" y1="292" x2="55" y2="292" stroke="#E5E5EA" stroke-width="1.3"/><line x1="67" y1="292" x2="70" y2="292" stroke="#E5E5EA" stroke-width="1.3"/>
+  <text x="72" y="297" class="menu">设置</text>
+  <rect x="592" y="72" width="44" height="44" fill="none" stroke="#5A5A5E" stroke-width="1" stroke-dasharray="3 3" opacity="0.6"/>
+  <line x1="602" y1="82" x2="626" y2="106" stroke="#5A5A5E" stroke-width="2"/>
+  <line x1="626" y1="82" x2="602" y2="106" stroke="#5A5A5E" stroke-width="2"/>
+  <text x="592" y="134" class="note" style="text-anchor:end;">X 44×44 热区 · 图标 24px · 常态 #5A5A5E → hover #E5E5EA</text>
+  <rect x="199" y="132" width="410" height="68" rx="14" fill="#38383A" filter="url(#cardShadowD)"/>
+  <text x="223" y="174" class="lbl">新建空白简历</text>
+  <rect x="199" y="216" width="410" height="68" rx="14" fill="#38383A" filter="url(#cardShadowD)"/>
+  <text x="223" y="258" class="lbl">打开或最近</text>
+  <rect x="199" y="300" width="410" height="68" rx="14" fill="#38383A" filter="url(#cardShadowD)"/>
+  <text x="223" y="342" class="lbl">导入（PDF / 图片）</text>
+  <rect x="199" y="384" width="410" height="68" rx="14" fill="#38383A" filter="url(#cardShadowD)"/>
+  <text x="223" y="426" class="lbl">管理多份简历</text>
+  <rect x="199" y="468" width="410" height="68" rx="14" fill="#38383A" filter="url(#cardShadowD)"/>
+  <text x="223" y="510" class="lbl">岗位目录</text>
+  <text x="199" y="556" class="note">卡片1 上缘 = 简历选中态上缘（左右拉齐）· 底部留白 80px 固定 · 容器高 568（min-height 560）· 无滚动条</text>
+  <text x="199" y="572" class="note">卡片宽 = 右内容 80%（410/512）· 高 68 · 间距 16 · 圆角 14 · 文字左距 24 · dark 自包含全部令牌防绿字</text>
+</svg>
+</div>
+
+<!-- ============ beige 匹配用户参考图 ============ -->
+<div class="box">
+<svg viewBox="0 0 680 660" role="img">
+  <title>方案3 米色（匹配用户参考图）：侧栏 #F5F5F5 · 背景 #FDFAF4 · 卡片 #FFF · 选中 #C0C0C0 · 文字 #333333</title>
+  <defs>
+    <style>
+      .lbl{fill:#333333;font:500 14px sans-serif;}
+      .note{fill:#8E8680;font:400 9px sans-serif;}
+      .menu{fill:#333333;font:500 12px sans-serif;}
+      .ic{fill:none;stroke:#333333;stroke-width:1.3;}
+    </style>
+    <filter id="winShadowB" x="-3%" y="-3%" width="106%" height="106%"><feDropShadow dx="0" dy="6" stdDeviation="16" flood-color="#000000" flood-opacity="0.08"/></filter>
+    <filter id="cardShadowB" x="-5%" y="-15%" width="110%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="8" flood-color="#000000" flood-opacity="0.06"/></filter>
+    <clipPath id="clipNavB"><rect x="20" y="48" width="130" height="568"/></clipPath>
+  </defs>
+  <text x="8" y="16" class="lbl" style="font-size:12px;font-weight:600;">方案3 · 米色（匹配用户参考图 2026-08-06）</text>
+  <text x="8" y="30" class="note">侧栏 #F5F5F5 · 背景 #FDFAF4 · 卡片 #FFFFFF · 选中 #C0C0C0 · 主文字 #333333 · X 常态 #C0C0C0 / hover #333333</text>
+  <rect x="20" y="48" width="640" height="568" rx="24" fill="#FDFAF4" filter="url(#winShadowB)"/>
+  <rect x="20" y="48" width="128" height="568" rx="24" fill="#F5F5F5" clip-path="url(#clipNavB)"/>
+  <text x="44" y="96" class="menu" style="font-size:14px;font-weight:600;">xiaomengresume</text>
+  <rect x="44" y="132" width="80" height="52" rx="10" fill="#C0C0C0"/>
+  <rect x="56" y="144" width="10" height="12" class="ic" style="stroke:#333333;"/><line x1="57" y1="148" x2="65" y2="148" stroke="#333333" stroke-width="1"/><line x1="57" y1="152" x2="65" y2="152" stroke="#333333" stroke-width="1"/><line x1="57" y1="156" x2="65" y2="156" stroke="#333333" stroke-width="1"/>
+  <text x="70" y="164" class="menu" style="fill:#333333;">简历</text>
+  <path d="M61 217 l7 7 -7 7 -7 -7 z" class="ic"/>
+  <text x="72" y="229" class="menu">AI</text>
+  <circle cx="61" cy="292" r="6" fill="none" stroke="#333333" stroke-width="1.3"/>
+  <line x1="61" y1="283" x2="61" y2="286" stroke="#333333" stroke-width="1.3"/><line x1="61" y1="298" x2="61" y2="301" stroke="#333333" stroke-width="1.3"/><line x1="52" y1="292" x2="55" y2="292" stroke="#333333" stroke-width="1.3"/><line x1="67" y1="292" x2="70" y2="292" stroke="#333333" stroke-width="1.3"/>
+  <text x="72" y="297" class="menu">设置</text>
+  <rect x="592" y="72" width="44" height="44" fill="none" stroke="#C0C0C0" stroke-width="1" stroke-dasharray="3 3" opacity="0.6"/>
+  <line x1="602" y1="82" x2="626" y2="106" stroke="#C0C0C0" stroke-width="2"/>
+  <line x1="626" y1="82" x2="602" y2="106" stroke="#C0C0C0" stroke-width="2"/>
+  <text x="592" y="134" class="note" style="text-anchor:end;">X 44×44 热区 · 图标 24px · 常态 #C0C0C0 → hover #333333</text>
+  <rect x="199" y="132" width="410" height="68" rx="14" fill="#FFFFFF" filter="url(#cardShadowB)"/>
+  <text x="223" y="174" class="lbl">新建空白简历</text>
+  <rect x="199" y="216" width="410" height="68" rx="14" fill="#FFFFFF" filter="url(#cardShadowB)"/>
+  <text x="223" y="258" class="lbl">打开或最近</text>
+  <rect x="199" y="300" width="410" height="68" rx="14" fill="#FFFFFF" filter="url(#cardShadowB)"/>
+  <text x="223" y="342" class="lbl">导入（PDF / 图片）</text>
+  <rect x="199" y="384" width="410" height="68" rx="14" fill="#FFFFFF" filter="url(#cardShadowB)"/>
+  <text x="223" y="426" class="lbl">管理多份简历</text>
+  <rect x="199" y="468" width="410" height="68" rx="14" fill="#FFFFFF" filter="url(#cardShadowB)"/>
+  <text x="223" y="510" class="lbl">岗位目录</text>
+  <text x="199" y="556" class="note">卡片1 上缘 = 简历选中态上缘（左右拉齐）· 底部留白 80px 固定 · 容器高 568（min-height 560）· 无滚动条</text>
+  <text x="199" y="572" class="note">卡片宽 = 右内容 80%（410/512）· 高 68 · 间距 16 · 圆角 14 · 文字左距 24 · beige 匹配参考图：浅灰侧栏 + 暖白底 + 中灰选中 + 深灰字</text>
+</svg>
+</div>
+
+<!-- ============ green 正式令牌 ============ -->
+<div class="box">
+<svg viewBox="0 0 680 660" role="img">
+  <title>方案4 绿色（正式令牌）：侧栏 #E4ECDF · 背景 #F2F6EF · 卡片 #FFF · 选中 #9CAE83 · 文字 #1F2A1B</title>
+  <defs>
+    <style>
+      .lbl{fill:#1F2A1B;font:500 14px sans-serif;}
+      .note{fill:#8AA397;font:400 9px sans-serif;}
+      .menu{fill:#1F2A1B;font:500 12px sans-serif;}
+      .ic{fill:none;stroke:#1F2A1B;stroke-width:1.3;}
+    </style>
+    <filter id="winShadowG" x="-3%" y="-3%" width="106%" height="106%"><feDropShadow dx="0" dy="6" stdDeviation="16" flood-color="#286450" flood-opacity="0.12"/></filter>
+    <filter id="cardShadowG" x="-5%" y="-15%" width="110%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="8" flood-color="#286450" flood-opacity="0.08"/></filter>
+    <clipPath id="clipNavG"><rect x="20" y="48" width="130" height="568"/></clipPath>
+  </defs>
+  <text x="8" y="16" class="lbl" style="font-size:12px;font-weight:600;">方案4 · 绿色（正式令牌）</text>
+  <text x="8" y="30" class="note">侧栏 #E4ECDF · 背景 #F2F6EF · 卡片 #FFFFFF · 选中 #9CAE83 · 主文字 #1F2A1B · X 常态 #9CAE83 / hover #1F2A1B</text>
+  <rect x="20" y="48" width="640" height="568" rx="24" fill="#F2F6EF" filter="url(#winShadowG)"/>
+  <rect x="20" y="48" width="128" height="568" rx="24" fill="#E4ECDF" clip-path="url(#clipNavG)"/>
+  <text x="44" y="96" class="menu" style="font-size:14px;font-weight:600;">xiaomengresume</text>
+  <rect x="44" y="132" width="80" height="52" rx="10" fill="#9CAE83"/>
+  <rect x="56" y="144" width="10" height="12" class="ic" style="stroke:#1F2A1B;"/><line x1="57" y1="148" x2="65" y2="148" stroke="#1F2A1B" stroke-width="1"/><line x1="57" y1="152" x2="65" y2="152" stroke="#1F2A1B" stroke-width="1"/><line x1="57" y1="156" x2="65" y2="156" stroke="#1F2A1B" stroke-width="1"/>
+  <text x="70" y="164" class="menu" style="fill:#1F2A1B;">简历</text>
+  <path d="M61 217 l7 7 -7 7 -7 -7 z" class="ic"/>
+  <text x="72" y="229" class="menu">AI</text>
+  <circle cx="61" cy="292" r="6" fill="none" stroke="#1F2A1B" stroke-width="1.3"/>
+  <line x1="61" y1="283" x2="61" y2="286" stroke="#1F2A1B" stroke-width="1.3"/><line x1="61" y1="298" x2="61" y2="301" stroke="#1F2A1B" stroke-width="1.3"/><line x1="52" y1="292" x2="55" y2="292" stroke="#1F2A1B" stroke-width="1.3"/><line x1="67" y1="292" x2="70" y2="292" stroke="#1F2A1B" stroke-width="1.3"/>
+  <text x="72" y="297" class="menu">设置</text>
+  <rect x="592" y="72" width="44" height="44" fill="none" stroke="#9CAE83" stroke-width="1" stroke-dasharray="3 3" opacity="0.6"/>
+  <line x1="602" y1="82" x2="626" y2="106" stroke="#9CAE83" stroke-width="2"/>
+  <line x1="626" y1="82" x2="602" y2="106" stroke="#9CAE83" stroke-width="2"/>
+  <text x="592" y="134" class="note" style="text-anchor:end;">X 44×44 热区 · 图标 24px · 常态 #9CAE83 → hover #1F2A1B</text>
+  <rect x="199" y="132" width="410" height="68" rx="14" fill="#FFFFFF" filter="url(#cardShadowG)"/>
+  <text x="223" y="174" class="lbl">新建空白简历</text>
+  <rect x="199" y="216" width="410" height="68" rx="14" fill="#FFFFFF" filter="url(#cardShadowG)"/>
+  <text x="223" y="258" class="lbl">打开或最近</text>
+  <rect x="199" y="300" width="410" height="68" rx="14" fill="#FFFFFF" filter="url(#cardShadowG)"/>
+  <text x="223" y="342" class="lbl">导入（PDF / 图片）</text>
+  <rect x="199" y="384" width="410" height="68" rx="14" fill="#FFFFFF" filter="url(#cardShadowG)"/>
+  <text x="223" y="426" class="lbl">管理多份简历</text>
+  <rect x="199" y="468" width="410" height="68" rx="14" fill="#FFFFFF" filter="url(#cardShadowG)"/>
+  <text x="223" y="510" class="lbl">岗位目录</text>
+  <text x="199" y="556" class="note">卡片1 上缘 = 简历选中态上缘（左右拉齐）· 底部留白 80px 固定 · 容器高 568（min-height 560）· 无滚动条</text>
+  <text x="199" y="572" class="note">卡片宽 = 右内容 80%（410/512）· 高 68 · 间距 16 · 圆角 14 · 文字左距 24 · 绿色只体现在表面令牌，--foreground 深绿文字绝不混入 dark</text>
+</svg>
+</div>
+
+<div class="points">
+<b>四套色彩方案配置表（v10 · 2026-08-06 定稿 · 已同步并入正式令牌表 §3.15.1 / F18）：</b>
+<table>
+  <tr><th>UI 结构元素</th><th>方案1 浅色</th><th>方案2 深色（全部重写）</th><th>方案3 米色（匹配参考图）</th><th>方案4 绿色</th></tr>
+  <tr><td>侧栏 --sidebar</td><td><span class="sw" style="background:#F3F4F6;"></span>#F3F4F6</td><td><span class="sw" style="background:#1C1C1E;"></span>#1C1C1E</td><td><span class="sw" style="background:#F5F5F5;"></span>#F5F5F5</td><td><span class="sw" style="background:#E4ECDF;"></span>#E4ECDF</td></tr>
+  <tr><td>内容区 --background</td><td><span class="sw" style="background:#FDFAF4;"></span>#FDFAF4</td><td><span class="sw" style="background:#2C2C2E;"></span>#2C2C2E</td><td><span class="sw" style="background:#FDFAF4;"></span>#FDFAF4</td><td><span class="sw" style="background:#F2F6EF;"></span>#F2F6EF</td></tr>
+  <tr><td>卡片背景</td><td><span class="sw" style="background:#FFFFFF;"></span>#FFFFFF</td><td><span class="sw" style="background:#38383A;"></span>#38383A</td><td><span class="sw" style="background:#FFFFFF;"></span>#FFFFFF</td><td><span class="sw" style="background:#FFFFFF;"></span>#FFFFFF</td></tr>
+  <tr><td>卡片阴影</td><td>rgba(0,0,0,.08)</td><td>rgba(0,0,0,.50)</td><td>rgba(0,0,0,.06)</td><td>rgba(40,100,80,.08)</td></tr>
+  <tr><td>选中底 --selected</td><td><span class="sw" style="background:#B0B3B8;"></span>#B0B3B8</td><td><span class="sw" style="background:#3A3A3C;"></span>#3A3A3C</td><td><span class="sw" style="background:#C0C0C0;"></span>#C0C0C0</td><td><span class="sw" style="background:#9CAE83;"></span>#9CAE83</td></tr>
+  <tr><td>主文字 --foreground</td><td><span class="sw" style="background:#111111;"></span>#111111</td><td><span class="sw" style="background:#E5E5EA;"></span>#E5E5EA</td><td><span class="sw" style="background:#333333;"></span>#333333</td><td><span class="sw" style="background:#1F2A1B;"></span>#1F2A1B</td></tr>
+  <tr><td>描边 --border</td><td>#111111</td><td>#E5E5EA</td><td>#333333</td><td>#1F2A1B</td></tr>
+  <tr><td>关闭(X) 常态色</td><td><span class="sw" style="background:#B0B3B8;"></span>#B0B3B8</td><td><span class="sw" style="background:#5A5A5E;"></span>#5A5A5E</td><td><span class="sw" style="background:#C0C0C0;"></span>#C0C0C0</td><td><span class="sw" style="background:#9CAE83;"></span>#9CAE83</td></tr>
+  <tr><td>关闭(X) 悬浮色</td><td>#111111</td><td>#E5E5EA</td><td>#333333</td><td>#1F2A1B</td></tr>
+</table>
+<b>变更说明（v10 · 2026-08-06）：</b><br>
+① <b>dark 全部重写</b>：原 #1F1F1F/#262624/#3F3F3C/#D9D9DE → 新 #1C1C1E/#2C2C2E/#3A3A3C/#E5E5EA（中性深灰系，更现代）；CloseX dark 由 #D9D9DE 改为 #E5E5EA；卡片背景 #38383A（比内容区 #2C2C2E 略浅形成层级）。<br>
+② <b>beige 匹配用户参考图</b>：原 #EDE7DC/#F7F2E8/#C9C1AE/#2A2620 → 新 #F5F5F5/#FDFAF4/#C0C0C0/#333333（浅灰侧栏 + 暖白底 + 中灰选中 + 深灰字，与参考图一致）。<br>
+③ <b>light/green 沿用正式令牌</b>（未改动）。<br>
+<b>布局结构（沿用 v9 · 8px 栅格 · 匹配用户参考图）：</b><br>
+① <b>2:8 纵向分割</b>（左导航 20% = 128px / 右内容 80% = 512px）；外圆角 <b>24px</b>；内边距统一 <b>24px</b>。<br>
+② 左侧导航栏：品牌区高 <b>60px</b>；菜单项高 <b>52px</b>、垂直间距 <b>16px</b>；选中态铺满圆角背景（rx <b>10px</b>）；选中信号唯一。<br>
+③ 右侧内容区：<b>第一个卡片上边缘与左侧「简历」选中态上边缘严格同一水平线</b>；关闭按钮 44×44 交互热区（图标 24px）；5 个入口卡片宽 410px / 高 68px / 间距 16px / 圆角 14px / 文字左距 24px。<br>
+④ 底部留白固定 <b>80px</b>；容器高 568 ≥ min-height 560；<b>无滚动条</b>（overflow:hidden，卡片固定 5 个）。<br>
+⑤ <b>多主题实施方案（开发建议）</b>：CSS Variables——`:root`（默认浅色）/ `[data-theme="dark"]` / `[data-theme="beige"]` / `[data-theme="green"]` 覆盖对应色值。<br>
+⑥ <b>防绿字护栏（沿用）</b>：每个 <code>[data-theme="x"]</code> 块自包含声明全部 5 令牌，禁把 green 的 --foreground 放 :root 默认；dark 下断言非绿。
+</div>
+
+<div class="warn">⚠ 维护口径（2026-08-06 v10）：① 本文件为<b>配色设计线框演示唯一载体</b>；② <b>v10 色值已同步并入正式令牌表</b>（《技术栈.md》§3.15.1 /《项目功能.md》F18 /《项目实现情况.md》均已更新）；③ 《原型线框图.html》《导航交互原型.html》按配色职责边界<b>未改动</b>（仅作 UI 功能分区结果演示，不承载配色）。</div>
+</body>
+</html>

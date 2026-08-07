@@ -1,0 +1,9 @@
+/deps-cache-reusable.tar.gz
+/project/
+/.workbuddy/
+/.pnpm-store/
+/.pnpm-store-mirror/
+/.tmpnpm/
+__pycache__/
+*.pyc
+*.log

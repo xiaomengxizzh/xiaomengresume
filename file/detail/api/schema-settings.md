@@ -1,0 +1,76 @@
+# schema/settings.ts（Zod 数据模型 · 自动生成）
+
+> 本文件由 `scripts/gen_api_docs.mjs` 自动生成，**禁止手写**。事实源 = `src/shared/schema/settings.ts`。
+
+SettingsSchema —— M0 令牌地基
+仅冻结「字段类型 + 缺省值 + 迁移兼容」，实际 UI / IPC / 主进程接入随里程碑（M1/M3/M5）。
+定案依据：《项目实现情况.md》§2.3 M0 顺手打令牌地基 +《技术栈.md》§3.11/§3.15。
+
+## 导出
+
+### `ProviderSchema`
+
+```ts
+z.object({
+  apiKey: z.string().optional(),
+  modelId: z.string().optional(),
+  enabled: z.boolean().default(false)
+})
+```
+
+### `AiPromptsSchema`
+
+```ts
+z.object({
+  grammar: z.string(),
+  intro: z.string(),
+  polish: z.string(),
+  match: z.string()
+})
+```
+
+### `SettingsSchema`
+
+```ts
+z.object({
+  /** F18 外观主题（默认 light，沿用 3.15.1 线框基线） */
+  appearance: z.enum(APPEARANCE_VALUES).default('light'),
+  /** 主题模式（默认 fixed；仅 dark + system 时跟随系统） */
+  appearanceMode: z.enum(APPEARANCE_MODE_VALUES).default('fixed'),
+  /** F13 语言（T 批 #24：默认 zh-CN，不跟系统解析） */
+  language: z.enum(LANGUAGE_VALUES).default('zh-CN'),
+
+  /** F12 AI 全局参数（S 批 WP-S2） */
+  temperature: z.number().min(0).max(1).default(0.7),
+  maxTokens: z.number().int().min(1).max(32768).default(4096),
+
+  /** F12 AI 服务商（S 批 WP-S2，apiKey 走 safeStorage 不入此表） */
+  providers: z
+    .object({
+      deepseek: ProviderSchema,
+      volcengine: ProviderSchema,
+      openai: ProviderSchema,
+      google: ProviderSchema
+    })
+    .default(() => ({
+      deepseek: { enabled: false },
+      volcengine: { enabled: false },
+      openai: { enabled: false },
+      google: { enabled: false }
+    })),
+
+  /** R 批 aiPrompts（缺省回退内置默认，主进程统一处理） */
+  aiPrompts: AiPromptsSchema.optional(),
+
+  /** F21 简历存储位置（S 批 WP-S3，#18 = 方案 B 主存迁移） */
+  storage: z
+    .object({
+      folderPath: z.string().optional()
+    })
+    .default(() => ({})),
+
+  /** T 批 #23 字体系统（T4） */
+  uiFont: z.string().default('system'),
+  resumeFont: z.string().default('system'),
+```
+
