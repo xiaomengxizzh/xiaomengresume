@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "basics": {
+    "name": "Hannah Song",
+    "englishName": "",
+    "phone": "13800138000",
+    "email": "zhangsan@example.com",
+    "address": "No.1 Zhongguancun Street, Haidian District, Beijing",
+    "location": "Chaoyang District, Beijing",
+    "website": "https://zhangsan.dev",
+    "photo": "",
+    "headline": "Senior Frontend Engineer",
+    "profile": {
+      "type": "doc",
+      "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "8 years of frontend development, focused on architecture design and performance optimization of large-scale web applications." }] }]
+    },
+    "birthDate": "",
+    "employmentStatus": "",
+    "customFields": [],
+    "fieldOrder": [
+      { "key": "name", "visible": true, "order": 0 },
+      { "key": "headline", "visible": true, "order": 1 },
+      { "key": "email", "visible": true, "order": 2 },
+      { "key": "phone", "visible": true, "order": 3 },
+      { "key": "location", "visible": true, "order": 4 }
+    ]
+  },
+  "summary": {
+    "content": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            { "type": "text", "text": "Senior frontend engineer with 8 years of experience building large-scale web applications. Led architecture and performance optimization for core platforms at ByteDance and Tencent." }
+          ]
+        }
+      ]
+    }
+  },
+  "education": [
+    {
+      "id": "11111111-1111-4111-8111-111111111111",
+      "school": "Peking University",
+      "degree": "Bachelor",
+      "major": "Computer Science",
+      "startDate": "2013-09",
+      "endDate": "2017-06",
+      "location": "Beijing",
+      "gpa": "3.8/4.0",
+      "description": {
+        "type": "doc",
+        "content": [
+          { "type": "paragraph", "content": [{ "type": "text", "text": "Core courses: Data Structures, Algorithms, Operating Systems, Computer Networks, Web Development" }] },
+          { "type": "paragraph", "content": [{ "type": "text", "text": "Top 5% of the program; awarded first-class scholarship for three consecutive years" }] }
+        ]
+      },
+      "visible": true
+    }
+  ],
+  "work": [
+    {
+      "id": "22222222-2222-4222-8222-222222222222",
+      "company": "ByteDance",
+      "title": "Senior Frontend Engineer",
+      "location": "Beijing",
+      "startDate": "2021-07",
+      "endDate": "",
+      "current": true,
+      "summary": {
+        "type": "doc",
+        "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Developing and maintaining the TikTok Creator Platform; leading technical design for core features." }] }]
+      },
+      "highlights": [
+        {
+          "type": "doc",
+          "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Cut build time from 8 to 2 minutes through build pipeline optimization" }] }]
+        },
+        {
+          "type": "doc",
+          "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Built a component library that increased code reuse to 70%" }] }]
+        }
+      ],
+      "visible": true
+    }
+  ],
+  "projects": [
+    {
+      "id": "44444444-4444-4444-8444-444444444444",
+      "name": "Creator Analytics Platform",
+      "role": "Frontend Lead",
+      "organization": "ByteDance",
+      "startDate": "2022-06",
+      "endDate": "2023-12",
+      "url": "",
+      "description": {
+        "type": "doc",
+        "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "A React-based data analytics and content management platform serving millions of creators." }] }]
+      },
+      "highlights": [
+        {
+          "type": "doc",
+          "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Used Redux for state management of complex data flows" }] }]
+        }
+      ],
+      "visible": true
+    }
+  ],
+  "skills": [
+    { "id": "66666666-6666-4666-8666-666666666666", "name": "React", "category": "Framework", "level": "精通" },
+    { "id": "77777777-7777-4777-8777-777777777777", "name": "TypeScript", "category": "Language", "level": "精通" },
+    { "id": "88888888-8888-4888-8888-888888888888", "name": "Webpack", "category": "Tooling", "level": "熟练" }
+  ],
+  "certificates": [
+    {
+      "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "name": "AWS Certified Solutions Architect",
+      "issuer": "Amazon Web Services",
+      "date": "2023-05",
+      "url": ""
+    }
+  ],
+  "languages": [
+    { "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", "name": "Chinese", "proficiency": "母语" },
+    { "id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc", "name": "English", "proficiency": "流利" }
+  ],
+  "layout": {
+    "templateId": "modern",
+    "themeColor": "#1F6FEB"
+  },
+  "meta": {
+    "createdAt": "2026-08-07T04:30:00.000Z",
+    "updatedAt": "2026-08-07T04:31:00.000Z"
+  },
+  "boundJobIds": ["dddddddd-dddd-4ddd-8ddd-dddddddddddd"]
+}

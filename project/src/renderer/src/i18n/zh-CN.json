@@ -1,0 +1,230 @@
+{
+  "app": {
+    "name": "xiaomengresume",
+    "tagline": "开源免费 · 隐私优先 · 防盲信 AI 的简历工作台"
+  },
+  "welcome": {
+    "title": "欢迎回来",
+    "subtitle": "您的简历数据仅保存在本机，AI 只做辅助编辑。"
+  },
+  "verify": {
+    "title": "M0 骨架验证",
+    "ping": "IPC 通信测试",
+    "pingOk": "IPC 通信正常（pong 于 {{at}}）",
+    "pdf": "中文 PDF 导出测试",
+    "pdfOk": "PDF 导出成功：{{bytes}} 字节",
+    "ai": "AI 流式链路测试",
+    "aiOk": "AI 流式链路正常：{{text}}",
+    "run": "运行",
+    "status": "状态：{{state}}"
+  },
+  "status": {
+    "idle": "待命",
+    "running": "验证中…",
+    "ok": "通过",
+    "error": "失败"
+  },
+  "editor": {
+    "resumeName": "简历名称",
+    "undo": "撤销",
+    "redo": "重做",
+    "template": {
+      "classic": "经典单栏",
+      "modern": "现代单栏",
+      "compact": "紧凑单栏"
+    },
+    "themeColor": "主题色",
+    "font": {
+      "system": "系统默认",
+      "songti": "宋体（SimSun）",
+      "heiti": "黑体（SimHei）",
+      "yahei": "微软雅黑",
+      "kaiti": "楷体（KaiTi）",
+      "fangsong": "仿宋（FangSong）",
+      "times": "Times New Roman",
+      "arial": "Arial",
+      "georgia": "Georgia"
+    },
+    "aiPolish": "AI 润色",
+    "saveState": {
+      "saving": "保存中…",
+      "saved": "已保存",
+      "idle": "未保存",
+      "errorHint": "保存失败，请检查存储目录是否可写"
+    },
+    "section": {
+      "basics": "基本信息",
+      "summary": "自我评价",
+      "education": "教育经历",
+      "work": "工作经历",
+      "projects": "项目经历",
+      "skills": "专业技能",
+      "certificates": "证书",
+      "languages": "语言"
+    },
+    "field": {
+      "name": "姓名",
+      "englishName": "英文名",
+      "phone": "电话",
+      "email": "邮箱",
+      "address": "地址",
+      "location": "所在地",
+      "website": "网站",
+      "headline": "职位标语",
+      "birthDate": "出生年月",
+      "employmentStatus": "在职状态",
+      "profile": "个人简介",
+      "customFieldLabel": "标签",
+      "customFieldValue": "内容",
+      "content": "自我评价",
+      "school": "学校",
+      "degree": "学位",
+      "major": "专业",
+      "startDate": "开始日期",
+      "endDate": "结束日期",
+      "gpa": "绩点",
+      "description": "描述",
+      "company": "公司",
+      "title": "职位",
+      "current": "至今",
+      "summary": "工作概述",
+      "highlights": "亮点",
+      "addHighlight": "添加亮点",
+      "projectName": "项目名称",
+      "role": "角色",
+      "organization": "所属机构",
+      "url": "链接",
+      "category": "分类",
+      "level": "熟练度",
+      "issuer": "颁发机构",
+      "date": "获得日期",
+      "proficiency": "熟练程度"
+    },
+    "action": {
+      "add": "新增",
+      "duplicate": "复制",
+      "remove": "删除",
+      "show": "显示",
+      "hide": "隐藏",
+      "placeholder": "点击填写…"
+    },
+    "skill": {
+      "了解": "了解",
+      "熟练": "熟练",
+      "精通": "精通"
+    },
+    "lang": {
+      "母语": "母语",
+      "流利": "流利",
+      "熟练": "熟练",
+      "基础": "基础"
+    },
+    "previewHint": "点击预览区可定位到左侧对应栏目",
+    "emptySection": "暂无内容",
+    "recovery": {
+      "confirm": "检测到未保存的编辑（{{id}}…），是否恢复？"
+    },
+    "hint": {
+      "previewClick": "点击预览区可定位到编辑器"
+    },
+    "newResume": "新建",
+    "openSample": "打开示例",
+    "sampleFailed": "打开示例失败",
+    "layoutTitle": "排版",
+    "layoutBaseFont": "字号",
+    "layoutLineHeight": "行高",
+    "layoutPadding": "页面边距",
+    "layoutParagraph": "段落间距",
+    "layoutSection": "区块间距",
+    "layoutReset": "恢复默认",
+    "fontLabel": "字体",
+    "aiAssist": "AI 润色",
+    "templateLabel": "模板"
+  },
+  "themeColor": {
+    "preset": {
+      "slate": "蓝灰",
+      "ink": "墨黑",
+      "blue": "蓝",
+      "teal": "青",
+      "green": "绿",
+      "amber": "琥珀",
+      "red": "红棕",
+      "purple": "紫",
+      "pink": "玫红"
+    },
+    "custom": "自定义"
+  },
+  "nav": {
+    "resume": "简历",
+    "ai": "AI",
+    "settings": "设置",
+    "jobs": "岗位目录",
+    "aiGrammar": "语法纠正",
+    "aiIntro": "自我介绍",
+    "aiPolish": "简历润色",
+    "aiMatch": "匹配打分",
+    "setAppearance": "外观",
+    "setAi": "AI 设置",
+    "setStorage": "存储位置",
+    "placeholder": "规划中",
+    "collapse": "收起导航",
+    "expand": "展开导航"
+  },
+  "navMain": {
+    "resume": "简历",
+    "ai": "AI",
+    "settings": "设置"
+  },
+  "navSub": {
+    "newBlank": "新建空白",
+    "openRecent": "打开或最近",
+    "import": "导入",
+    "manage": "管理多份",
+    "jobs": "岗位目录",
+    "grammar": "语法纠正",
+    "intro": "自我介绍",
+    "polish": "简历润色",
+    "match": "匹配打分",
+    "appearance": "外观",
+    "aiSettings": "AI 设置",
+    "storage": "存储位置"
+  },
+  "homeTitle": {
+    "resumes": "简历",
+    "ai": "AI",
+    "settings": "设置"
+  },
+  "homeCard": {
+    "newBlank": "新建空白",
+    "newBlankDesc": "从空模板创建一份新简历",
+    "openRecent": "打开或最近",
+    "openRecentDesc": "从最近编辑的简历中打开",
+    "import": "导入",
+    "importDesc": "从 PDF / Word / JSON 导入简历",
+    "manage": "管理多份",
+    "manageDesc": "查看、重命名、删除所有简历",
+    "jobs": "岗位目录",
+    "jobsDesc": "管理投递的岗位及其要求"
+  },
+  "homeDesc": {
+    "grammar": "检查文本中的语法错误与拼写问题",
+    "intro": "基于简历全文生成自我介绍草稿",
+    "polish": "按指定分区/字段润色简历内容",
+    "match": "与所选岗位的要求做匹配度打分",
+    "appearance": "主题色 / 语言 / 界面字体",
+    "aiSettings": "AI 服务商 / 提示词 / 上下文参数",
+    "storage": "简历存储位置与备份"
+  },
+  "homeEmpty": {
+    "resumes": "还没有简历，点击「新建空白」开始"
+  },
+  "preview": {
+    "locateHint": "点击定位到编辑区"
+  },
+  "common": {
+    "comingSoon": "规划中",
+    "back": "返回",
+    "open": "打开"
+  }
+}

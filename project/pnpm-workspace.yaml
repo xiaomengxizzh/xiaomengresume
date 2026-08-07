@@ -1,0 +1,12 @@
+packages:
+  - .
+
+verifyDepsBeforeRun: false
+
+onlyBuiltDependencies:
+  - electron
+  - esbuild
+  - '@swc/core'
+
+allowBuilds:
+  esbuild: true

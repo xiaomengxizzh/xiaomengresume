@@ -1,0 +1,230 @@
+{
+  "app": {
+    "name": "xiaomengresume",
+    "tagline": "Open-source · Privacy-first · Resume workbench against AI-blind trust"
+  },
+  "welcome": {
+    "title": "Welcome back",
+    "subtitle": "Your resume data stays on this device. AI only assists editing."
+  },
+  "verify": {
+    "title": "M0 Skeleton Verification",
+    "ping": "IPC round-trip test",
+    "pingOk": "IPC OK (pong at {{at}})",
+    "pdf": "CJK PDF export test",
+    "pdfOk": "PDF exported: {{bytes}} bytes",
+    "ai": "AI streaming channel test",
+    "aiOk": "AI streaming OK: {{text}}",
+    "run": "Run",
+    "status": "Status: {{state}}"
+  },
+  "status": {
+    "idle": "Idle",
+    "running": "Running…",
+    "ok": "Passed",
+    "error": "Failed"
+  },
+  "editor": {
+    "resumeName": "Resume name",
+    "undo": "Undo",
+    "redo": "Redo",
+    "template": {
+      "classic": "Classic",
+      "modern": "Modern",
+      "compact": "Compact"
+    },
+    "themeColor": "Accent color",
+    "font": {
+      "system": "System default",
+      "songti": "SimSun",
+      "heiti": "SimHei",
+      "yahei": "Microsoft YaHei",
+      "kaiti": "KaiTi",
+      "fangsong": "FangSong",
+      "times": "Times New Roman",
+      "arial": "Arial",
+      "georgia": "Georgia"
+    },
+    "aiPolish": "AI Polish",
+    "saveState": {
+      "saving": "Saving…",
+      "saved": "Saved",
+      "idle": "Unsaved",
+      "errorHint": "Save failed. Check if the storage folder is writable."
+    },
+    "section": {
+      "basics": "Basics",
+      "summary": "Summary",
+      "education": "Education",
+      "work": "Work",
+      "projects": "Projects",
+      "skills": "Skills",
+      "certificates": "Certificates",
+      "languages": "Languages"
+    },
+    "field": {
+      "name": "Name",
+      "englishName": "English name",
+      "phone": "Phone",
+      "email": "Email",
+      "address": "Address",
+      "location": "Location",
+      "website": "Website",
+      "headline": "Headline",
+      "birthDate": "Birth date",
+      "employmentStatus": "Employment status",
+      "profile": "Profile",
+      "customFieldLabel": "Label",
+      "customFieldValue": "Value",
+      "content": "Summary",
+      "school": "School",
+      "degree": "Degree",
+      "major": "Major",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "gpa": "GPA",
+      "description": "Description",
+      "company": "Company",
+      "title": "Title",
+      "current": "Present",
+      "summary": "Overview",
+      "highlights": "Highlights",
+      "addHighlight": "Add highlight",
+      "projectName": "Project name",
+      "role": "Role",
+      "organization": "Organization",
+      "url": "URL",
+      "category": "Category",
+      "level": "Level",
+      "issuer": "Issuer",
+      "date": "Date",
+      "proficiency": "Proficiency"
+    },
+    "action": {
+      "add": "Add",
+      "duplicate": "Duplicate",
+      "remove": "Remove",
+      "show": "Show",
+      "hide": "Hide",
+      "placeholder": "Click to fill…"
+    },
+    "skill": {
+      "了解": "Familiar",
+      "熟练": "Proficient",
+      "精通": "Expert"
+    },
+    "lang": {
+      "母语": "Native",
+      "流利": "Fluent",
+      "熟练": "Proficient",
+      "基础": "Basic"
+    },
+    "previewHint": "Click the preview area to jump to the matching editor section",
+    "emptySection": "Nothing yet",
+    "recovery": {
+      "confirm": "Unsaved edits detected ({{id}}…). Restore them?"
+    },
+    "hint": {
+      "previewClick": "Click the preview area to jump to the editor"
+    },
+    "newResume": "New",
+    "openSample": "Sample",
+    "sampleFailed": "Failed to open sample",
+    "layoutTitle": "Layout",
+    "layoutBaseFont": "Font size",
+    "layoutLineHeight": "Line height",
+    "layoutPadding": "Page padding",
+    "layoutParagraph": "Paragraph gap",
+    "layoutSection": "Section gap",
+    "layoutReset": "Reset",
+    "fontLabel": "Font",
+    "aiAssist": "AI Polish",
+    "templateLabel": "Template"
+  },
+  "themeColor": {
+    "preset": {
+      "slate": "Slate",
+      "ink": "Ink",
+      "blue": "Blue",
+      "teal": "Teal",
+      "green": "Green",
+      "amber": "Amber",
+      "red": "Red",
+      "purple": "Purple",
+      "pink": "Pink"
+    },
+    "custom": "Custom"
+  },
+  "nav": {
+    "resume": "Resume",
+    "ai": "AI",
+    "settings": "Settings",
+    "jobs": "Jobs",
+    "aiGrammar": "Grammar",
+    "aiIntro": "Intro",
+    "aiPolish": "Polish",
+    "aiMatch": "Match",
+    "setAppearance": "Appearance",
+    "setAi": "AI Settings",
+    "setStorage": "Storage",
+    "placeholder": "Planned",
+    "collapse": "Collapse nav",
+    "expand": "Expand nav"
+  },
+  "navMain": {
+    "resume": "Resume",
+    "ai": "AI",
+    "settings": "Settings"
+  },
+  "navSub": {
+    "newBlank": "New blank",
+    "openRecent": "Open or recent",
+    "import": "Import",
+    "manage": "Manage all",
+    "jobs": "Jobs",
+    "grammar": "Grammar",
+    "intro": "Intro",
+    "polish": "Polish",
+    "match": "Match",
+    "appearance": "Appearance",
+    "aiSettings": "AI settings",
+    "storage": "Storage"
+  },
+  "homeTitle": {
+    "resumes": "Resume",
+    "ai": "AI",
+    "settings": "Settings"
+  },
+  "homeCard": {
+    "newBlank": "New blank",
+    "newBlankDesc": "Create a new resume from scratch",
+    "openRecent": "Open or recent",
+    "openRecentDesc": "Pick from recently edited",
+    "import": "Import",
+    "importDesc": "Import from PDF / Word / JSON",
+    "manage": "Manage all",
+    "manageDesc": "View, rename, delete all resumes",
+    "jobs": "Jobs",
+    "jobsDesc": "Manage applied jobs and requirements"
+  },
+  "homeDesc": {
+    "grammar": "Check grammar & spelling in selected text",
+    "intro": "Generate intro draft from full resume",
+    "polish": "Polish selected section/field",
+    "match": "Score match against selected job requirements",
+    "appearance": "Theme / language / UI font",
+    "aiSettings": "AI provider / prompts / context",
+    "storage": "Storage folder & backup"
+  },
+  "homeEmpty": {
+    "resumes": "No resumes yet. Click New blank to start."
+  },
+  "preview": {
+    "locateHint": "Click to locate in editor"
+  },
+  "common": {
+    "comingSoon": "Planned",
+    "back": "Back",
+    "open": "Open"
+  }
+}

@@ -1,5 +1,4 @@
 /deps-cache-reusable.tar.gz
-/project/
 /.workbuddy/
 /.pnpm-store/
 /.pnpm-store-mirror/
@@ -7,3 +6,9 @@
 __pycache__/
 *.pyc
 *.log
+/node_modules/
+/out/
+/dist/
+/electron-dist/
+/.npmcache/
+/project/.git*
