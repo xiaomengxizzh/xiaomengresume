@@ -2,6 +2,7 @@
 /.dev/
 /.cache/
 /.mimosa/
+**/.mimosa/
 /.pnpm-store/
 /.pnpm-store-mirror/
 /.tmpnpm/
@@ -17,3 +18,5 @@ __pycache__/
 /electron-dist/
 /.npmcache/
 /project/.git*
+# 疑似敏感文件铁律：永不提交（AGENTS 关键铁律）
+/project/used_keys.txt

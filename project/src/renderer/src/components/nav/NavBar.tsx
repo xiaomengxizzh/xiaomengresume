@@ -21,20 +21,20 @@ interface SubItem {
 const SUBS: Record<MainKey, SubItem[]> = {
   resume: [
     { key: 'newBlank', titleKey: 'navSub.newBlank', view: 'editor' },
-    { key: 'openRecent', titleKey: 'navSub.openRecent', view: 'resumes-list' },
+    { key: 'openRecent', titleKey: 'navSub.openRecent', view: 'resumes-recent' },
     { key: 'import', titleKey: 'navSub.import', view: 'coming:import', disabled: true },
     { key: 'manage', titleKey: 'navSub.manage', view: 'resumes-list' },
-    { key: 'jobs', titleKey: 'navSub.jobs', view: 'coming:jobs', disabled: true }
+    { key: 'jobs', titleKey: 'navSub.jobs', view: 'jobs-home' }
   ],
   ai: [
-    { key: 'grammar', titleKey: 'navSub.grammar', view: 'coming:grammar', disabled: true },
-    { key: 'intro', titleKey: 'navSub.intro', view: 'coming:intro', disabled: true },
-    { key: 'polish', titleKey: 'navSub.polish', view: 'coming:polish', disabled: true },
-    { key: 'match', titleKey: 'navSub.match', view: 'coming:match', disabled: true }
+    { key: 'grammar', titleKey: 'navSub.grammar', view: 'ai:grammar' },
+    { key: 'intro', titleKey: 'navSub.intro', view: 'ai:intro' },
+    { key: 'polish', titleKey: 'navSub.polish', view: 'ai:polish' },
+    { key: 'match', titleKey: 'navSub.match', view: 'ai:match' }
   ],
   settings: [
     { key: 'appearance', titleKey: 'navSub.appearance', view: 'coming:appearance', disabled: true },
-    { key: 'aiSettings', titleKey: 'navSub.aiSettings', view: 'coming:aiSettings', disabled: true },
+    { key: 'aiSettings', titleKey: 'navSub.aiSettings', view: 'settings-ai' },
     { key: 'storage', titleKey: 'navSub.storage', view: 'coming:storage', disabled: true }
   ]
 }

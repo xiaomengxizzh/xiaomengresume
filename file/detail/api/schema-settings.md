@@ -62,15 +62,15 @@ z.object({
   /** R 批 aiPrompts（缺省回退内置默认，主进程统一处理） */
   aiPrompts: AiPromptsSchema.optional(),
 
-  /** F21 简历存储位置（S 批 WP-S3，#18 = 方案 B 主存迁移） */
-  storage: z
-    .object({
-      folderPath: z.string().optional()
-    })
-    .default(() => ({})),
-
-  /** T 批 #23 字体系统（T4） */
-  uiFont: z.string().default('system'),
-  resumeFont: z.string().default('system'),
+  /** M3 Q10（2026-08-09 拍板）：自定义 OpenAI 兼容服务商（仅增不改；apiKey 走 safeStorage 按 id 存） */
+  customProviders: z
+    .array(
+      z.object({
+        id: z.uuid(),
+        name: z.string().min(1).max(64),
+        baseURL: z.string().max(2048),
+        modelId: z.string().max(256).optional(),
+        enabled: z.boolean().default(false),
+        createdAt: z.string()
 ```
 

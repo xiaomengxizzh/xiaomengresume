@@ -145,6 +145,10 @@
     "layoutReset": "Reset",
     "fontLabel": "Font",
     "aiAssist": "AI Polish",
+    "grammarCheck": "Grammar check",
+    "summaryLang": "Language",
+    "summaryZh": "Chinese",
+    "summaryEn": "English",
     "templateLabel": "Template",
     "layoutHeader": "Header size",
     "infoIcon": {
@@ -242,7 +246,9 @@
   "common": {
     "comingSoon": "Planned",
     "back": "Back",
-    "open": "Open"
+    "open": "Open",
+    "cancel": "Cancel",
+    "save": "Save"
   },
   "export": {
     "title": "Export",
@@ -271,5 +277,121 @@
     "privacyHint": "Privacy mode is on — export will be redacted",
     "atsNote": "Single-column vector PDF, ATS-friendly",
     "timeoutError": "Export timed out: the print engine did not respond (common in GPU-less environments). Please retry or check your graphics driver."
+  },
+  "ai": {
+    "context": {
+      "resume": "Current resume",
+      "job": "Job",
+      "noResume": "No resume selected",
+      "noJob": "No job bound",
+      "selectResume": "Select resume…",
+      "bindJob": "+ Bind job"
+    },
+    "noResumeHint": "Select a resume from the top bar first",
+    "polishDisabledHint": "Polish requires a resume and a job",
+    "matchDisabledHint": "Match scoring requires a resume and a job",
+    "grammar": {
+      "scope": "Scope",
+      "scopeSelection": "Selected text",
+      "scopeFull": "Full resume",
+      "run": "Check",
+      "running": "Checking…",
+      "issues": "{{count}} issue(s) found",
+      "noIssues": "No issues found",
+      "replace": "Replace",
+      "ignore": "Ignore",
+      "emptySelection": "Select text in the editor first",
+      "staleRange": "The source text has changed, please re-check",
+      "invalidRange": "Selection is no longer valid, please select again"
+    },
+    "intro": {
+      "generate": "Generate draft",
+      "translate": "AI translate",
+      "generating": "Generating…",
+      "translating": "Translating…",
+      "accept": "Accept",
+      "discard": "Discard",
+      "emptySummary": "Summary is empty, cannot translate",
+      "translateHint": "Translate the current summary into an English draft"
+    },
+    "polish": {
+      "running": "Polishing…",
+      "cancel": "Cancel",
+      "refresh": "Refresh",
+      "apply": "Apply",
+      "staleRange": "The source text has changed, please select and polish again",
+      "applied": "Polish result applied",
+      "result": "Polish result"
+    },
+    "match": {
+      "run": "Score",
+      "running": "Scoring…",
+      "overall": "Overall match",
+      "dimensions": "Dimensions",
+      "suggestions": "Suggestions",
+      "goPolish": "Polish",
+      "noSuggestion": "No suggestions"
+    },
+    "prompts": {
+      "title": "AI prompts",
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "reset": "Reset",
+      "saved": "Saved",
+      "resetted": "Reset to default",
+      "hint": "Custom prompt for this feature; falls back to built-in default when unset"
+    },
+    "error": {
+      "PROVIDER_DISABLED": "This provider is disabled — enable it in AI settings",
+      "NO_PROVIDER": "No AI provider enabled — configure one in Settings → AI settings",
+      "CONFIG_INVALID": "Incomplete AI configuration (API key / model / endpoint)",
+      "TIMEOUT": "AI request timed out, please retry",
+      "NETWORK": "Network error — check your connection or the provider endpoint",
+      "RATE_LIMIT": "Too many requests, please retry later",
+      "INVALID_RESPONSE": "AI returned unparseable content, please retry",
+      "CANCELLED": "Cancelled",
+      "UNKNOWN": "AI call failed: {{message}}"
+    }
+  },
+  "job": {
+    "title": "Job board",
+    "empty": "No jobs yet — create one below",
+    "newJob": "New job",
+    "editJob": "Edit",
+    "deleteJob": "Delete",
+    "name": "Job name",
+    "appliedAt": "Applied at",
+    "requirements": "Requirements",
+    "boundResumes": "Bound resumes",
+    "noBound": "None",
+    "save": "Save",
+    "cancel": "Cancel",
+    "deleteConfirm": "Delete job “{{name}}”? Bound resumes will not be deleted",
+    "reqPlaceholder": "Paste the job JD / requirements (used by AI polish & match)",
+    "namePlaceholder": "e.g. Frontend Engineer (ByteDance)"
+  },
+  "settings": {
+    "ai": {
+      "title": "AI Settings",
+      "providers": "AI providers",
+      "apiKey": "API Key",
+      "getApiKey": "Get API Key",
+      "modelId": "Model ID",
+      "enabled": "Enabled",
+      "statusConnected": "Configured",
+      "statusNotConfigured": "Not configured",
+      "statusDisabled": "Disabled",
+      "temperature": "Temperature",
+      "maxTokens": "Max tokens",
+      "custom": {
+        "add": "Add custom provider",
+        "name": "Name",
+        "baseURL": "Endpoint (OpenAI-compatible)",
+        "save": "Save",
+        "delete": "Delete",
+        "deleteConfirm": "Delete custom provider “{{name}}”?"
+      }
+    }
   }
 }

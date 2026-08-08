@@ -4,11 +4,32 @@ import {
   type AppInfo,
   type RecentResume,
   type ResumeSummary,
+  type JobSummary,
   type ExportRunArgs,
   type ExportRunResult,
-  type ExportProgress
+  type ExportProgress,
+  type AiResult,
+  type AiStreamChunk,
+  type AiConfigView,
+  type AiGrammarArgs,
+  type AiIntroArgs,
+  type AiPolishArgs,
+  type AiMatchArgs
 } from '@shared/ipc-channels'
 import type { Resume } from '@shared/schema/resume'
+import type { Job } from '@shared/schema/job'
+import type { GrammarIssue } from '@shared/schema/grammar'
+import type { MatchScore } from '@shared/schema/match'
+import type { AiConfigSaveArgs } from '@shared/schema/ai-config'
+
+/** 订阅流式 chunk（返回退订函数） */
+function subscribe<T>(channel: string, cb: (payload: T) => void): () => void {
+  const listener = (_e: Electron.IpcRendererEvent, payload: T): void => cb(payload)
+  ipcRenderer.on(channel, listener)
+  return () => {
+    ipcRenderer.removeListener(channel, listener)
+  }
+}
 
 /** preload 暴露的 API（类型见 index.d.ts 全局增强） */
 const electronAPI = {
@@ -24,25 +45,49 @@ const electronAPI = {
   export: {
     /** M2 F5：导出（textPdf/json v1.0；imagePdf/image v1.1）；进度经 onProgress 订阅 */
     run: (args: ExportRunArgs): Promise<ExportRunResult> => ipcRenderer.invoke(IPC.Export.Run, args),
-    onProgress: (cb: (p: ExportProgress) => void): (() => void) => {
-      const listener = (_e: Electron.IpcRendererEvent, p: ExportProgress): void => cb(p)
-      ipcRenderer.on('export:progress', listener)
-      return () => {
-        ipcRenderer.removeListener('export:progress', listener)
-      }
-    }
+    onProgress: (cb: (p: ExportProgress) => void): (() => void) => subscribe('export:progress', cb)
   },
   ai: {
+    /** M0 流式链路验证（XM_AI_MOCK 专用） */
     streamTest: (): Promise<{ ok: boolean; full: string }> =>
       ipcRenderer.invoke(IPC.Ai.StreamTest),
-    onStreamChunk: (cb: (delta: string) => void): (() => void) => {
-      const listener = (_e: Electron.IpcRendererEvent, payload: { delta: string }): void =>
-        cb(payload.delta)
-      ipcRenderer.on('ai:stream:chunk', listener)
-      return () => {
-        ipcRenderer.removeListener('ai:stream:chunk', listener)
-      }
+    onStreamChunk: (cb: (delta: string) => void): (() => void) =>
+      subscribe<{ delta: string }>('ai:stream:chunk', (p) => cb(p.delta)),
+
+    /** M3 F8 语法纠正（非流式） */
+    grammar: (args: AiGrammarArgs): Promise<AiResult<GrammarIssue[]>> =>
+      ipcRenderer.invoke(IPC.Ai.Grammar, args),
+    /** M3 F20 自我介绍生成/翻译（流式，增量经 onIntroChunk） */
+    intro: (args: AiIntroArgs): Promise<AiResult<string>> =>
+      ipcRenderer.invoke(IPC.Ai.Intro, args),
+    introCancel: (requestId: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC.Ai.IntroCancel, { requestId }),
+    onIntroChunk: (cb: (chunk: AiStreamChunk) => void): (() => void) =>
+      subscribe('ai:intro:chunk', cb),
+    /** M3 F7 润色（流式，增量经 onPolishChunk） */
+    polish: (args: AiPolishArgs): Promise<AiResult<string>> =>
+      ipcRenderer.invoke(IPC.Ai.Polish, args),
+    polishCancel: (requestId: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC.Ai.PolishCancel, { requestId }),
+    onPolishChunk: (cb: (chunk: AiStreamChunk) => void): (() => void) =>
+      subscribe('ai:polish:chunk', cb),
+    /** M3 F9 匹配打分（非流式） */
+    match: (args: AiMatchArgs): Promise<AiResult<MatchScore>> =>
+      ipcRenderer.invoke(IPC.Ai.Match, args),
+
+    /** M3 服务商配置（脱敏读 / 保存，apiKey 走 safeStorage） */
+    config: {
+      get: (): Promise<AiResult<AiConfigView>> => ipcRenderer.invoke(IPC.Ai.ConfigGet),
+      save: (args: AiConfigSaveArgs): Promise<AiResult<boolean>> =>
+        ipcRenderer.invoke(IPC.Ai.ConfigSave, args)
     }
+  },
+  jobs: {
+    /** M3 F19 岗位目录 */
+    list: (): Promise<JobSummary[]> => ipcRenderer.invoke(IPC.Jobs.List),
+    get: (id: string): Promise<Job> => ipcRenderer.invoke(IPC.Jobs.Get, id),
+    save: (job: Job): Promise<Job> => ipcRenderer.invoke(IPC.Jobs.Save, job),
+    delete: (id: string): Promise<boolean> => ipcRenderer.invoke(IPC.Jobs.Delete, id)
   },
   resumes: {
     /** F11 简历生命周期（M1 落码） */
@@ -61,7 +106,12 @@ const electronAPI = {
     recent: (): Promise<RecentResume[]> => ipcRenderer.invoke(IPC.Resumes.Recent),
     scanRecovery: (): Promise<string[]> => ipcRenderer.invoke(IPC.Resume.ScanRecovery),
     recover: (id: string): Promise<Resume | null> => ipcRenderer.invoke(IPC.Resume.Recover, id),
-    createSample: (): Promise<{ id: string; resume: Resume }> => ipcRenderer.invoke(IPC.Resume.CreateSample)
+    createSample: (): Promise<{ id: string; resume: Resume }> => ipcRenderer.invoke(IPC.Resume.CreateSample),
+    /** M3 F19 岗位绑定 */
+    bindJob: (resumeId: string, jobId: string): Promise<Resume> =>
+      ipcRenderer.invoke(IPC.Resume.BindJob, { resumeId, jobId }),
+    unbindJob: (resumeId: string, jobId: string): Promise<Resume> =>
+      ipcRenderer.invoke(IPC.Resume.UnbindJob, { resumeId, jobId })
   },
   backup: {
     exportZip: (): Promise<string | null> => ipcRenderer.invoke(IPC.Backup.Export),

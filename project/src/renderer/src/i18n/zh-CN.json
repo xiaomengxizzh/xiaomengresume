@@ -145,6 +145,10 @@
     "layoutReset": "恢复默认",
     "fontLabel": "字体",
     "aiAssist": "AI 润色",
+    "grammarCheck": "语法检查",
+    "summaryLang": "语言",
+    "summaryZh": "中文",
+    "summaryEn": "英文",
     "templateLabel": "模板",
     "layoutHeader": "节标题字号",
     "infoIcon": {
@@ -242,7 +246,9 @@
   "common": {
     "comingSoon": "规划中",
     "back": "返回",
-    "open": "打开"
+    "open": "打开",
+    "cancel": "取消",
+    "save": "保存"
   },
   "export": {
     "title": "导出",
@@ -271,5 +277,121 @@
     "privacyHint": "隐私模式已开启，导出将自动脱敏",
     "atsNote": "单栏矢量 PDF，ATS 可正常解析",
     "timeoutError": "导出超时：打印引擎未响应（常见于无 GPU 环境）。请重试或检查显卡驱动。"
+  },
+  "ai": {
+    "context": {
+      "resume": "当前简历",
+      "job": "岗位",
+      "noResume": "未选择简历",
+      "noJob": "未绑定岗位",
+      "selectResume": "选择简历…",
+      "bindJob": "+ 绑定岗位"
+    },
+    "noResumeHint": "请先在顶栏选择一份简历",
+    "polishDisabledHint": "润色需要简历与岗位",
+    "matchDisabledHint": "匹配打分需要简历与岗位",
+    "grammar": {
+      "scope": "检查范围",
+      "scopeSelection": "选中文本",
+      "scopeFull": "全文",
+      "run": "开始检查",
+      "running": "检查中…",
+      "issues": "发现 {{count}} 处问题",
+      "noIssues": "未发现问题",
+      "replace": "替换",
+      "ignore": "忽略",
+      "emptySelection": "请先在编辑器中选中文本",
+      "staleRange": "原文已变化，请重新检查",
+      "invalidRange": "所选范围已失效，请重新选中"
+    },
+    "intro": {
+      "generate": "生成草稿",
+      "translate": "AI 翻译",
+      "generating": "生成中…",
+      "translating": "翻译中…",
+      "accept": "接受",
+      "discard": "放弃",
+      "emptySummary": "自我评价为空，无法翻译",
+      "translateHint": "将当前自我评价翻译为英文草稿"
+    },
+    "polish": {
+      "running": "润色中…",
+      "cancel": "取消",
+      "refresh": "刷新",
+      "apply": "应用",
+      "staleRange": "原文已变化，请重新选中润色",
+      "applied": "已应用润色结果",
+      "result": "润色结果"
+    },
+    "match": {
+      "run": "开始打分",
+      "running": "打分中…",
+      "overall": "综合匹配度",
+      "dimensions": "维度评分",
+      "suggestions": "改进建议",
+      "goPolish": "去润色",
+      "noSuggestion": "暂无建议"
+    },
+    "prompts": {
+      "title": "AI 提示词",
+      "edit": "编辑",
+      "save": "保存",
+      "cancel": "取消",
+      "reset": "刷新还原",
+      "saved": "已保存",
+      "resetted": "已还原为默认",
+      "hint": "修改后作为该功能的提示词；留空由主进程回退内置默认"
+    },
+    "error": {
+      "PROVIDER_DISABLED": "该服务商未启用，请在 AI 设置中启用",
+      "NO_PROVIDER": "尚未启用任何 AI 服务商，请先到「设置 → AI 设置」配置",
+      "CONFIG_INVALID": "AI 配置不完整（API Key / 模型 / 接口地址）",
+      "TIMEOUT": "AI 请求超时，请重试",
+      "NETWORK": "网络错误，请检查网络或服务商接口地址",
+      "RATE_LIMIT": "请求过于频繁，请稍后重试",
+      "INVALID_RESPONSE": "AI 返回内容无法解析，请重试",
+      "CANCELLED": "已取消",
+      "UNKNOWN": "AI 调用失败：{{message}}"
+    }
+  },
+  "job": {
+    "title": "岗位目录",
+    "empty": "暂无岗位，点击下方新建",
+    "newJob": "新建岗位",
+    "editJob": "编辑",
+    "deleteJob": "删除",
+    "name": "岗位名称",
+    "appliedAt": "投递时间",
+    "requirements": "岗位要求",
+    "boundResumes": "绑定简历",
+    "noBound": "未绑定",
+    "save": "保存",
+    "cancel": "取消",
+    "deleteConfirm": "删除岗位「{{name}}」？已绑定的简历不会级联删除",
+    "reqPlaceholder": "粘贴岗位 JD / 要求（供 AI 润色与匹配打分）",
+    "namePlaceholder": "如：前端工程师（字节跳动）"
+  },
+  "settings": {
+    "ai": {
+      "title": "AI 设置",
+      "providers": "AI 服务商",
+      "apiKey": "API Key",
+      "getApiKey": "获取 API Key",
+      "modelId": "模型 ID",
+      "enabled": "启用",
+      "statusConnected": "已配置",
+      "statusNotConfigured": "未配置",
+      "statusDisabled": "已禁用",
+      "temperature": "温度",
+      "maxTokens": "最长上下文",
+      "custom": {
+        "add": "添加自定义服务商",
+        "name": "名称",
+        "baseURL": "接口地址（OpenAI 兼容）",
+        "save": "保存",
+        "delete": "删除",
+        "deleteConfirm": "删除自定义服务商「{{name}}」？"
+      }
+    }
   }
 }

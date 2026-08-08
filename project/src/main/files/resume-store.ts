@@ -17,6 +17,7 @@ import {
 } from '../../shared/schema/resume'
 import { createZip, extractZip, type ZipEntry } from './zip'
 import { extractPendingIds } from './recovery'
+import { JobSchema } from '../../shared/schema/job'
 import type { Settings } from '../../shared/schema/settings'
 import type { RecentResume, ResumeSummary } from '../../shared/ipc-channels'
 
@@ -283,6 +284,26 @@ export async function deleteResume(id: string): Promise<boolean> {
   return true
 }
 
+/* ── F19 岗位绑定（R 批 WP-R1 · 数据层 M1 冻结契约，M3 实现）───────────── */
+
+/** 绑定岗位：boundJobIds 追加去重（复用 saveResume 三件套写入链） */
+export async function bindJob(resumeId: string, jobId: string): Promise<Resume> {
+  assertUuid(resumeId)
+  assertUuid(jobId)
+  const resume = await openResume(resumeId)
+  if (resume.boundJobIds.includes(jobId)) return resume
+  return saveResume(resumeId, { ...resume, boundJobIds: [...resume.boundJobIds, jobId] })
+}
+
+/** 解绑岗位：从 boundJobIds 移除（软引用，不级联删岗位） */
+export async function unbindJob(resumeId: string, jobId: string): Promise<Resume> {
+  assertUuid(resumeId)
+  assertUuid(jobId)
+  const resume = await openResume(resumeId)
+  if (!resume.boundJobIds.includes(jobId)) return resume
+  return saveResume(resumeId, { ...resume, boundJobIds: resume.boundJobIds.filter((j) => j !== jobId) })
+}
+
 /* ── 聚合：list / recent（WP-T1）───────────────────────────────────────── */
 
 async function scanResumeFiles(): Promise<Array<{ id: string; resume: Resume; mtime: number }>> {
@@ -425,7 +446,7 @@ export async function exportBackup(win: BrowserWindow): Promise<string | null> {
  *  - 跳过 providers（API Key 敏感 + safeStorage 机器绑定，跨机迁移必然失效）
  *  - 跳过 storage.folderPath（导入会导致简历存储目录漂移，与已还原的 resumes/ 不一致）
  *  - 跳过 importedFonts（自定义字体列表，跨机本地路径失效）
- *  jobs/ 条目随 F19 数据层落码后再接。
+ *  jobs/ 条目随 F19 数据层落码（M3）接入：uuid 白名单 + JobSchema 校验，损坏跳过。
  */
 export async function importBackup(win: BrowserWindow): Promise<number> {
   const { canceled, filePaths } = await dialog.showOpenDialog(win, {
@@ -452,6 +473,22 @@ export async function importBackup(win: BrowserWindow): Promise<number> {
           }
         }
         console.log(`[ImportBackup] settings: merged ${merged}/${SETTINGS_SAFE_KEYS.length} safe keys (providers/storage/importedFonts skipped)`)
+      } catch {
+        skipped++
+      }
+      continue
+    }
+    // jobs/<uuid>.json：F19 岗位恢复（M3 接入；JobSchema 校验 + uuid 白名单，损坏跳过）
+    if (e.name.startsWith('jobs/')) {
+      const jobRel = e.name.replace(/^jobs\//, '')
+      if (!jobRel.endsWith('.json') || jobRel.includes('/')) continue
+      if (!UUID_RE.test(jobRel.slice(0, -5))) continue
+      try {
+        const job = JobSchema.parse(JSON.parse(e.data.toString('utf-8')))
+        const jobsDir = path.join(app.getPath('userData'), 'jobs')
+        await fs.mkdir(jobsDir, { recursive: true })
+        await fs.writeFile(path.join(jobsDir, `${job.id}.json`), JSON.stringify(job, null, 2))
+        count++
       } catch {
         skipped++
       }

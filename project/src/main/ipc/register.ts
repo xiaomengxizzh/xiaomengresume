@@ -1,13 +1,15 @@
 /**
- * IPC 注册（M0 扩展 · M1）
+ * IPC 注册（M0 扩展 · M1 · M3 AI/岗位）
  * 契约冻结于 src/shared/ipc-channels.ts；渲染进程一律经 preload 暴露的 electronAPI 调用。
  * resume:* 通道（F11）：save / open / duplicate / rename / delete / list + resumes:recent
- * + backup:export/import（F19 数据层契约已冻结，jobs:* 主进程实现随 v1.1）。
+ * + backup:export/import；jobs:*（F19）+ resume:bind-job/unbind-job（M3 实现）；
+ * ai:* 四分区 + ai:config:*（M3，见 registerAiIpc）。
  */
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { IPC, type AppInfo, type RecentResume, type ResumeSummary } from '@shared/ipc-channels'
 import { printHtmlToPdf } from '../print/pdf'
 import { registerExportIpc } from '../export/run'
+import { registerAiIpc } from '../ai/register-ai'
 import {
   saveResume,
   openResume,
@@ -19,8 +21,11 @@ import {
   scanPendingRecovery,
   recoverPending,
   exportBackup,
-  importBackup
+  importBackup,
+  bindJob,
+  unbindJob
 } from '../files/resume-store'
+import { listJobs, getJob, saveJob, deleteJob } from '../files/job-store'
 import { createSampleResume } from '../files/sample-resume'
 
 export function registerIpc(): void {
@@ -127,4 +132,21 @@ export function registerIpc(): void {
     const resume = await saveResume(id, createSampleResume())
     return { id, resume }
   })
+
+  // ── F19 岗位绑定（M3，契约 M1 已冻结）───────────────────────────────────
+  ipcMain.handle(IPC.Resume.BindJob, async (_e, payload: { resumeId: string; jobId: string }) =>
+    bindJob(payload.resumeId, payload.jobId)
+  )
+  ipcMain.handle(IPC.Resume.UnbindJob, async (_e, payload: { resumeId: string; jobId: string }) =>
+    unbindJob(payload.resumeId, payload.jobId)
+  )
+
+  // ── F19 岗位目录（M3，契约 M1 已冻结；rename/duplicate 由渲染层 get→改→save 组合）──
+  ipcMain.handle(IPC.Jobs.List, async () => listJobs())
+  ipcMain.handle(IPC.Jobs.Get, async (_e, id: string) => getJob(id))
+  ipcMain.handle(IPC.Jobs.Save, async (_e, job: unknown) => saveJob(job as never))
+  ipcMain.handle(IPC.Jobs.Delete, async (_e, id: string) => deleteJob(id))
+
+  // ── M3 AI：四分区 + 服务商配置（registerAiIpc 内部注册 ai:* 全部通道）──────
+  registerAiIpc()
 }

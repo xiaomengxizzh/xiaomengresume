@@ -2,11 +2,11 @@
 
 > 本文件由 `scripts/gen_api_docs.mjs` 自动生成，**禁止手写**。事实源 = `src/shared/ipc-channels.ts`（契约冻结区，变更需组长批准，见《项目规范.md》§三.8）。
 
-IPC 通道契约（M0 冻结 · M1 扩展）
+IPC 通道契约（M0 冻结 · M1 扩展 · M2 F5 扩展 export:*）
 铁律：通道名一经冻结，变更需组长批准（《项目规范.md》三 §8 契约先行）。
-命名空间：app:* 应用信息 / print:* 打印导出 / ai:* AI 通道 / resume:* 简历生命周期
-         / resumes:* 简历聚合（最近/列表）/ backup:* 备份导出导入 / storage:* 存储位置（F21）
-         / jobs:* 岗位目录（F19，契约冻结于 M1，主进程实现随 v1.1）
+命名空间：app:* 应用信息 / print:* 打印导出 / export:* 导出（M2 F5）/ ai:* AI 通道
+         / resume:* 简历生命周期 / resumes:* 简历聚合（最近/列表）
+         / backup:* 备份导出导入 / storage:* 存储位置（F21）/ jobs:* 岗位目录（F19）
 
 ## 通道总览
 
@@ -15,8 +15,18 @@ IPC 通道契约（M0 冻结 · M1 扩展）
 | App | `app:get-info` | — |
 | App | `app:ping` | — |
 | Print | `print:pdf` | 渲染 HTML → 打印 PDF（M0 端到端验证） |
-| Ai | `ai:stream:test` | 流式测试（无 key 时 mock 回包，验证 IPC 链路） |
+| Export | `export:run` | 导出简历（format 分流；进度经 'export:progress' 事件回传） |
+| Ai | `ai:stream:test` | 流式链路验证（无 key 时 mock 回包；M3 起 XM_AI_MOCK 专用） |
+| Ai | `ai:grammar` | 语法纠正（非流式，generateObject → GrammarIssue[]） |
+| Ai | `ai:intro` | 自我介绍生成/翻译（流式，mode: generate\|translate） |
+| Ai | `ai:intro:cancel` | 中断自我介绍流（按 requestId） |
+| Ai | `ai:polish` | 简历润色（流式） |
+| Ai | `ai:polish:cancel` | 中断润色流（按 requestId） |
+| Ai | `ai:match` | 岗位匹配打分（非流式，generateObject → MatchScore） |
+| Ai | `ai:config:get` | 读 AI 服务商配置（脱敏形态，apiKey 前4后4） |
+| Ai | `ai:config:save` | 保存 AI 服务商配置（apiKey 入 safeStorage，其余入 electron-store） |
 | Resume | `resume:save` | 保存简历（主进程校验 Zod → 三件套原子写） |
+| Resume | `resume:save-now` | 关窗前静默保存（单向 send，不依赖回执——P2：beforeunload 中 invoke 回执 |
 | Resume | `resume:open` | 打开简历（读文件 + 刷新 meta.lastOpenedAt 轻量写） |
 | Resume | `resume:duplicate` | 复制简历（深拷贝赋新 uuid → 写 <newId>.json） |
 | Resume | `resume:rename` | 重命名简历（仅改 basics.name，文件不变） |
@@ -50,17 +60,32 @@ IPC 通道契约（M0 冻结 · M1 扩展）
 
 - `Pdf` → `print:pdf`：渲染 HTML → 打印 PDF（M0 端到端验证）
 
+### Export
+
+导出（M2 F5，取代原规划 pdf:export；v1.0 落地 textPdf + json，图片类 v1.1）
+
+- `Run` → `export:run`：导出简历（format 分流；进度经 'export:progress' 事件回传）
+
 ### Ai
 
-AI 通道（M0 流式 IPC 验证；M3 扩展四分区）
+AI 通道（M0 流式验证；M3 扩展四分区 + 服务商配置。流式增量事件：'ai:intro:chunk' / 'ai:polish:chunk'）
 
-- `StreamTest` → `ai:stream:test`：流式测试（无 key 时 mock 回包，验证 IPC 链路）
+- `StreamTest` → `ai:stream:test`：流式链路验证（无 key 时 mock 回包；M3 起 XM_AI_MOCK 专用）
+- `Grammar` → `ai:grammar`：语法纠正（非流式，generateObject → GrammarIssue[]）
+- `Intro` → `ai:intro`：自我介绍生成/翻译（流式，mode: generate|translate）
+- `IntroCancel` → `ai:intro:cancel`：中断自我介绍流（按 requestId）
+- `Polish` → `ai:polish`：简历润色（流式）
+- `PolishCancel` → `ai:polish:cancel`：中断润色流（按 requestId）
+- `Match` → `ai:match`：岗位匹配打分（非流式，generateObject → MatchScore）
+- `ConfigGet` → `ai:config:get`：读 AI 服务商配置（脱敏形态，apiKey 前4后4）
+- `ConfigSave` → `ai:config:save`：保存 AI 服务商配置（apiKey 入 safeStorage，其余入 electron-store）
 
 ### Resume
 
 简历生命周期（F11 WP-P5 定案 + M1 落码；路径 = <storageFolderPath>/<id>.json，F21 #18）
 
 - `Save` → `resume:save`：保存简历（主进程校验 Zod → 三件套原子写）
+- `SaveNow` → `resume:save-now`：关窗前静默保存（单向 send，不依赖回执——P2：beforeunload 中 invoke 回执
 - `Open` → `resume:open`：打开简历（读文件 + 刷新 meta.lastOpenedAt 轻量写）
 - `Duplicate` → `resume:duplicate`：复制简历（深拷贝赋新 uuid → 写 <newId>.json）
 - `Rename` → `resume:rename`：重命名简历（仅改 basics.name，文件不变）
@@ -131,5 +156,119 @@ boundJobIds: string[]
 id: string
 name: string
 appliedAt?: string
+```
+
+### `ExportRunArgs`
+
+```ts
+format: ExportFormat
+/** 目标目录：显式 folderPath > SettingsSchema.export.lastFolder > storage.folderPath > 下载目录 */
+folderPath?: string
+/** 仅 image/imagePdf 相关；默认 'png'（v1.1） */
+imageFormat?: 'png' | 'jpg'
+/** 仅 jpg：0–1，默认 0.92（v1.1） */
+quality?: number
+/** 多页语义（D5）：'all' 全部（默认）/ 'first' 仅第一页（v2.0 起 pdf-lib 裁剪） */
+pages?: 'all' | 'first'
+/** 目标简历 id（主进程 openResume 读取；json/textPdf 必填） */
+resumeId?: string
+/** F16 隐私打码：true 时 PDF 敏感字段置 ████（与预览 data-redact 对齐；2026-08-08 v2.0） */
+privacyMode?: boolean
+```
+
+### `ExportRunResult`
+
+```ts
+canceled: boolean
+/** image 多页时为数组 */
+filePath?: string | string[]
+error?: string
+```
+
+### `ExportProgress`
+
+```ts
+phase: 'measure' | 'render' | 'print' | 'write'
+ratio: number
+```
+
+### `AiError`
+
+```ts
+code: AiErrorCode
+message?: string
+```
+
+### `AiStreamChunk`
+
+```ts
+requestId: string
+delta: string
+```
+
+### `AiGrammarArgs`
+
+```ts
+resumeId: string
+scope: 'selection' | 'full'
+text?: string
+locale?: string
+```
+
+### `AiIntroArgs`
+
+```ts
+/** 客户端生成（uuid），用于 chunk 匹配与 cancel */
+requestId: string
+resumeId: string
+mode: 'generate' | 'translate'
+locale?: string
+```
+
+### `AiPolishArgs`
+
+```ts
+/** 客户端生成（uuid），用于 chunk 匹配与 cancel */
+requestId: string
+resumeId: string
+/** 字段路径（方括号规范：summary.content / work[0].summary / …） */
+field: string
+text: string
+jobId?: string
+locale?: string
+```
+
+### `AiMatchArgs`
+
+```ts
+resumeId: string
+jobId: string
+locale?: string
+```
+
+### `ProviderConfigView`
+
+```ts
+/** 'deepseek' | 'volcengine' | 'openai' | 'google' | 'custom:<uuid>' */
+providerId: string
+kind: 'builtin' | 'custom'
+/** 显示名（custom 用用户填写名） */
+name: string
+apiKeyMasked: string | null
+hasApiKey: boolean
+modelId: string | null
+enabled: boolean
+/** 仅 custom */
+baseURL?: string
+```
+
+### `AiConfigView`
+
+```ts
+providers: ProviderConfigView[]
+temperature: number
+maxTokens: number
+/** aiPrompts 当前值；null = 未自定义（回退内置默认） */
+prompts: AiPrompts | null
 ```
 

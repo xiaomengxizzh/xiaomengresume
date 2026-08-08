@@ -443,6 +443,8 @@ SETTINGS_KEYS_EXPECTED = {
     "providers", "aiPrompts", "storage", "uiFont", "resumeFont", "importedFonts",
     # 2026-08-08 归档收口：M2 F5 导出记忆（export.lastFolder，SettingsSchema 已含）白名单同步
     "export",
+    # 2026-08-09 M3 Q10：自定义 OpenAI 兼容服务商（SettingsSchema.customProviders）
+    "customProviders",
 }
 RESUME_KEYS_EXPECTED = {
     "schemaVersion", "basics", "summary", "education", "work", "projects",

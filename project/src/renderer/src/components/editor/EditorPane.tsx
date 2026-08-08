@@ -4,8 +4,9 @@
  * 单元级工具：字体选择 + AI 润色占位；预览反查驱动滚动 + 高亮闪烁。
  * 全部走 i18n key（禁硬编码中文，CH4 扫描）。
  */
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { Editor } from '@tiptap/react'
 import { useResumeStore } from '../../store/useResumeStore'
 import { getByPath, parsePath } from '@shared/paths'
 import { SKILL_LEVELS, LANGUAGE_PROFICIENCIES } from '@shared/schema/resume'
@@ -16,6 +17,28 @@ import { TextField, DateField, SelectField } from '../fields'
 import { TiptapField } from '../tiptap/TiptapField'
 import { InfoIcon } from '../icons/InfoIcons'
 import { LayoutBar } from './LayoutBar'
+import { AiAssistPanel } from './AiAssistPanel'
+
+/* ── M3 F7/F8：字段编辑器注册表 + 白名单 ────────────────────────────────── */
+
+/** TiptapField onEditorReady 登记（润色/语法取实例读选区/替换） */
+const fieldEditorRegistry = new Map<string, Editor>()
+
+function registerFieldEditor(path: string, editor: Editor | null): void {
+  if (editor) fieldEditorRegistry.set(path, editor)
+  else fieldEditorRegistry.delete(path)
+}
+
+/** 润色/语法白名单 section → 首选字段（F7 白名单；basics 数据型字段不出入口） */
+const POLISH_FIELDS: Record<string, string> = {
+  summary: 'summary.content',
+  education: 'education[0].description',
+  work: 'work[0].summary',
+  projects: 'projects[0].description'
+}
+
+/** 由主组件注入的 AI 辅助面板打开函数（Form 内 SectionCard 按钮回调） */
+let openAssist: ((kind: 'polish' | 'grammar', field: string) => void) | null = null
 
 /* ── SectionCard / EntryCard ────────────────────────────────────────────── */
 
@@ -56,12 +79,18 @@ export function SectionCard({
   section,
   onAdd,
   addLabel,
+  onPolish,
+  onGrammar,
   children
 }: {
   title: string
   section?: string
   onAdd?: () => void
   addLabel?: string
+  /** M3 F7：AI 润色入口（仅白名单 section 提供） */
+  onPolish?: () => void
+  /** M3 F8：语法检查入口（仅白名单 section 提供） */
+  onGrammar?: () => void
   children: ReactNode
 }): React.JSX.Element {
   const { t } = useTranslation()
@@ -71,9 +100,14 @@ export function SectionCard({
         <h3 className="text-[15px] font-medium">{title}</h3>
         <div className="section-toolbar">
           {section ? <SectionFontSelect section={section} /> : null}
-          {section ? (
-            <Button size="sm" variant="ghost" disabled title={t('nav.placeholder')}>
+          {onPolish ? (
+            <Button size="sm" variant="ghost" onClick={onPolish}>
               ✨ {t('editor.aiAssist')}
+            </Button>
+          ) : null}
+          {onGrammar ? (
+            <Button size="sm" variant="ghost" onClick={onGrammar}>
+              {t('editor.grammarCheck')}
             </Button>
           ) : null}
           {onAdd ? (
@@ -357,7 +391,11 @@ function BasicsForm(): React.JSX.Element {
       {/* L8（M2）：profile 个人简介（短头部版，Tiptap 富文本） */}
       <div className="mt-2 border-t border-border/70 pt-3">
         <FieldRow label={t('editor.field.profile')}>
-          <TiptapField value={resume.basics.profile as never} onChange={(v) => setField('basics.profile', v)} />
+          <TiptapField
+            value={resume.basics.profile as never}
+            onChange={(v) => setField('basics.profile', v)}
+            onEditorReady={(ed) => registerFieldEditor('basics.profile', ed)}
+          />
         </FieldRow>
       </div>
     </SectionCard>
@@ -367,10 +405,47 @@ function BasicsForm(): React.JSX.Element {
 function SummaryForm(): React.JSX.Element {
   const { t } = useTranslation()
   const [content, setContent] = useField('summary.content')
+  const enContent = useResumeStore((s) => s.resume.summary.enContent)
+  const [lang, setLang] = useState<'zh' | 'en'>('zh')
+  const setEnContent = (v: unknown): void => useResumeStore.getState().setField('summary.enContent', v)
   return (
-    <SectionCard section="summary" title={t('editor.section.summary')}>
-      <FieldRow label={t('editor.field.content')}>
-        <TiptapField value={content as never} onChange={(v) => setContent(v)} />
+    <SectionCard
+      section="summary"
+      title={t('editor.section.summary')}
+      onPolish={() => openAssist?.('polish', POLISH_FIELDS.summary)}
+      onGrammar={() => openAssist?.('grammar', POLISH_FIELDS.summary)}
+    >
+      <div className="mb-2 flex items-center gap-3 text-xs">
+        <button
+          type="button"
+          className={lang === 'zh' ? 'font-medium text-foreground' : 'text-foreground/50 hover:text-foreground'}
+          onClick={() => setLang('zh')}
+        >
+          {t('editor.summaryZh')}
+        </button>
+        <button
+          type="button"
+          className={lang === 'en' ? 'font-medium text-foreground' : 'text-foreground/50 hover:text-foreground'}
+          onClick={() => setLang('en')}
+        >
+          {t('editor.summaryEn')}
+        </button>
+        {lang === 'en' && !enContent ? <span className="text-foreground/40">{t('ai.intro.emptySummary')}</span> : null}
+      </div>
+      <FieldRow label={lang === 'zh' ? t('editor.field.content') : `${t('editor.field.content')} · ${t('editor.summaryEn')}`}>
+        {lang === 'zh' ? (
+          <TiptapField
+            value={content as never}
+            onChange={(v) => setContent(v)}
+            onEditorReady={(ed) => registerFieldEditor('summary.content', ed)}
+          />
+        ) : (
+          <TiptapField
+            value={enContent as never}
+            onChange={(v) => setEnContent(v)}
+            onEditorReady={(ed) => registerFieldEditor('summary.enContent', ed)}
+          />
+        )}
       </FieldRow>
     </SectionCard>
   )
@@ -382,7 +457,14 @@ function EducationForm(): React.JSX.Element {
   const { appendItem, duplicateItem, removeItem, toggleItemVisible } = useResumeStore.getState()
 
   return (
-    <SectionCard section="education" title={t('editor.section.education')} onAdd={() => appendItem('education', undefined)} addLabel={t('editor.action.add')}>
+    <SectionCard
+      section="education"
+      title={t('editor.section.education')}
+      onAdd={() => appendItem('education', undefined)}
+      addLabel={t('editor.action.add')}
+      onPolish={() => openAssist?.('polish', POLISH_FIELDS.education)}
+      onGrammar={() => openAssist?.('grammar', POLISH_FIELDS.education)}
+    >
       {items.length === 0 ? <div className="py-4 text-center text-xs text-foreground/50">{t('editor.emptySection')}</div> : null}
       {items.map((item, i) => (
         <EntryCard
@@ -419,7 +501,11 @@ function EducationForm(): React.JSX.Element {
             </FieldRow>
           </div>
           <FieldRow label={t('editor.field.description')}>
-            <TiptapField value={item.description as never} onChange={(v) => useResumeStore.getState().setField(`education[${i}].description`, v)} />
+            <TiptapField
+              value={item.description as never}
+              onChange={(v) => useResumeStore.getState().setField(`education[${i}].description`, v)}
+              onEditorReady={(ed) => registerFieldEditor(`education[${i}].description`, ed)}
+            />
           </FieldRow>
         </EntryCard>
       ))}
@@ -433,7 +519,14 @@ function WorkForm(): React.JSX.Element {
   const { appendItem, duplicateItem, removeItem, toggleItemVisible } = useResumeStore.getState()
 
   return (
-    <SectionCard section="work" title={t('editor.section.work')} onAdd={() => appendItem('work', undefined)} addLabel={t('editor.action.add')}>
+    <SectionCard
+      section="work"
+      title={t('editor.section.work')}
+      onAdd={() => appendItem('work', undefined)}
+      addLabel={t('editor.action.add')}
+      onPolish={() => openAssist?.('polish', POLISH_FIELDS.work)}
+      onGrammar={() => openAssist?.('grammar', POLISH_FIELDS.work)}
+    >
       {items.length === 0 ? <div className="py-4 text-center text-xs text-foreground/50">{t('editor.emptySection')}</div> : null}
       {items.map((item, i) => (
         <EntryCard
@@ -475,7 +568,11 @@ function WorkForm(): React.JSX.Element {
             </FieldRow>
           </div>
           <FieldRow label={t('editor.field.summary')}>
-            <TiptapField value={item.summary as never} onChange={(v) => useResumeStore.getState().setField(`work[${i}].summary`, v)} />
+            <TiptapField
+              value={item.summary as never}
+              onChange={(v) => useResumeStore.getState().setField(`work[${i}].summary`, v)}
+              onEditorReady={(ed) => registerFieldEditor(`work[${i}].summary`, ed)}
+            />
           </FieldRow>
         </EntryCard>
       ))}
@@ -489,7 +586,14 @@ function ProjectsForm(): React.JSX.Element {
   const { appendItem, duplicateItem, removeItem, toggleItemVisible } = useResumeStore.getState()
 
   return (
-    <SectionCard section="projects" title={t('editor.section.projects')} onAdd={() => appendItem('projects', undefined)} addLabel={t('editor.action.add')}>
+    <SectionCard
+      section="projects"
+      title={t('editor.section.projects')}
+      onAdd={() => appendItem('projects', undefined)}
+      addLabel={t('editor.action.add')}
+      onPolish={() => openAssist?.('polish', POLISH_FIELDS.projects)}
+      onGrammar={() => openAssist?.('grammar', POLISH_FIELDS.projects)}
+    >
       {items.length === 0 ? <div className="py-4 text-center text-xs text-foreground/50">{t('editor.emptySection')}</div> : null}
       {items.map((item, i) => (
         <EntryCard
@@ -523,7 +627,11 @@ function ProjectsForm(): React.JSX.Element {
             </FieldRow>
           </div>
           <FieldRow label={t('editor.field.description')}>
-            <TiptapField value={item.description as never} onChange={(v) => useResumeStore.getState().setField(`projects[${i}].description`, v)} />
+            <TiptapField
+              value={item.description as never}
+              onChange={(v) => useResumeStore.getState().setField(`projects[${i}].description`, v)}
+              onEditorReady={(ed) => registerFieldEditor(`projects[${i}].description`, ed)}
+            />
           </FieldRow>
         </EntryCard>
       ))}
@@ -658,7 +766,36 @@ export function EditorPane(): React.JSX.Element {
   const activeSection = useResumeStore((s) => s.activeSection)
   const setActiveSection = useResumeStore((s) => s.setActiveSection)
   const activeFieldPath = useResumeStore((s) => s.activeFieldPath)
+  const resumeId = useResumeStore((s) => s.resumeId)
+  const jobId = useResumeStore((s) => s.aiContext.jobId)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  /** M3 F7/F8：AI 辅助面板会话（polish/grammar + 目标字段 + 选区冻结快照） */
+  const [assist, setAssist] = useState<{
+    kind: 'polish' | 'grammar'
+    field: string
+    frozen: { from: number; to: number; text: string } | null
+  } | null>(null)
+
+  // 注入 SectionCard 按钮的打开函数（Form 内按钮经模块级 openAssist 回调）
+  useEffect(() => {
+    openAssist = (kind, field) => {
+      if (!resumeId) return
+      const raw = fieldEditorRegistry.get(field)
+      const editor = raw && !raw.isDestroyed ? raw : null
+      let frozen: { from: number; to: number; text: string } | null = null
+      if (kind === 'polish' && editor) {
+        const { from, to } = editor.state.selection
+        if (from !== to) {
+          frozen = { from, to, text: editor.state.doc.textBetween(from, to) }
+        }
+      }
+      setAssist({ kind, field, frozen })
+    }
+    return () => {
+      openAssist = null
+    }
+  }, [resumeId])
 
   // 预览反查：切到目标 section + 滚动 + 高亮闪烁（§3.7）
   useEffect(() => {
@@ -706,6 +843,22 @@ export function EditorPane(): React.JSX.Element {
       <div className="editor-scroll-body">
         <div data-section={activeSection}>{renderForm()}</div>
       </div>
+      {assist ? (
+        <AiAssistPanel
+          kind={assist.kind}
+          resumeId={resumeId ?? ''}
+          jobId={jobId}
+          field={assist.field}
+          editor={
+            (() => {
+              const raw = fieldEditorRegistry.get(assist.field)
+              return raw && !raw.isDestroyed ? raw : null
+            })()
+          }
+          frozen={assist.frozen}
+          onClose={() => setAssist(null)}
+        />
+      ) : null}
     </div>
   )
 }

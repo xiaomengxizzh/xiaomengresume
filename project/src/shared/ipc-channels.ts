@@ -22,10 +22,26 @@ export const IPC = {
     /** 导出简历（format 分流；进度经 'export:progress' 事件回传） */
     Run: 'export:run'
   },
-  /** AI 通道（M0 流式 IPC 验证；M3 扩展四分区） */
+  /** AI 通道（M0 流式验证；M3 扩展四分区 + 服务商配置。流式增量事件：'ai:intro:chunk' / 'ai:polish:chunk'） */
   Ai: {
-    /** 流式测试（无 key 时 mock 回包，验证 IPC 链路） */
-    StreamTest: 'ai:stream:test'
+    /** 流式链路验证（无 key 时 mock 回包；M3 起 XM_AI_MOCK 专用） */
+    StreamTest: 'ai:stream:test',
+    /** 语法纠正（非流式，generateObject → GrammarIssue[]） */
+    Grammar: 'ai:grammar',
+    /** 自我介绍生成/翻译（流式，mode: generate|translate） */
+    Intro: 'ai:intro',
+    /** 中断自我介绍流（按 requestId） */
+    IntroCancel: 'ai:intro:cancel',
+    /** 简历润色（流式） */
+    Polish: 'ai:polish',
+    /** 中断润色流（按 requestId） */
+    PolishCancel: 'ai:polish:cancel',
+    /** 岗位匹配打分（非流式，generateObject → MatchScore） */
+    Match: 'ai:match',
+    /** 读 AI 服务商配置（脱敏形态，apiKey 前4后4） */
+    ConfigGet: 'ai:config:get',
+    /** 保存 AI 服务商配置（apiKey 入 safeStorage，其余入 electron-store） */
+    ConfigSave: 'ai:config:save'
   },
   /** 简历生命周期（F11 WP-P5 定案 + M1 落码；路径 = <storageFolderPath>/<id>.json，F21 #18） */
   Resume: {
@@ -141,4 +157,100 @@ export interface ExportRunResult {
 export interface ExportProgress {
   phase: 'measure' | 'render' | 'print' | 'write'
   ratio: number
+}
+
+// ── M3 AI 契约（四分区 + 服务商配置，2026-08-09 冻结）────────────────────────
+
+/** AI 失败码（前端按 code 查 i18n；结构化错误 = 常态路径，不抛错） */
+export type AiErrorCode =
+  | 'PROVIDER_DISABLED' // 目标服务商 enabled=false
+  | 'NO_PROVIDER' // 无任何 enabled 服务商
+  | 'CONFIG_INVALID' // 配置缺失/非法（custom 缺 modelId、baseURL 非法等）
+  | 'TIMEOUT' // AI 调用超时
+  | 'NETWORK' // 网络/端点错误
+  | 'RATE_LIMIT' // 限流
+  | 'INVALID_RESPONSE' // 模型返回无法解析
+  | 'CANCELLED' // 用户中断
+  | 'UNKNOWN'
+
+export interface AiError {
+  code: AiErrorCode
+  message?: string
+}
+
+/** 四分区 + 配置通道统一返回（流式通道另经 chunk 事件推送增量） */
+export type AiResult<T> = { ok: true; data: T } | { ok: false; error: AiError }
+
+/** 流式增量事件负载（webContents.send('ai:intro:chunk' | 'ai:polish:chunk')） */
+export interface AiStreamChunk {
+  requestId: string
+  delta: string
+}
+
+/** ai:grammar 入参（F08：scope=selection 时 text 必填；scope=full 主进程按 resumeId 逐字段） */
+export interface AiGrammarArgs {
+  resumeId: string
+  scope: 'selection' | 'full'
+  text?: string
+  locale?: string
+}
+
+/** ai:intro 入参（F20：mode=translate 翻译 summary.content → enContent；禁注入岗位 requirements） */
+export interface AiIntroArgs {
+  /** 客户端生成（uuid），用于 chunk 匹配与 cancel */
+  requestId: string
+  resumeId: string
+  mode: 'generate' | 'translate'
+  locale?: string
+}
+
+/** ai:polish 入参（F07：text 为渲染层当前文本；range 失效由渲染层拦截；jobId 可空） */
+export interface AiPolishArgs {
+  /** 客户端生成（uuid），用于 chunk 匹配与 cancel */
+  requestId: string
+  resumeId: string
+  /** 字段路径（方括号规范：summary.content / work[0].summary / …） */
+  field: string
+  text: string
+  jobId?: string
+  locale?: string
+}
+
+/** ai:match 入参（F09：jd 由主进程按 resumeId.boundJobIds → jobId.requirements 内部解析） */
+export interface AiMatchArgs {
+  resumeId: string
+  jobId: string
+  locale?: string
+}
+
+/** 单个服务商配置视图（脱敏：apiKey 仅前 4 后 4 + ••••） */
+export interface ProviderConfigView {
+  /** 'deepseek' | 'volcengine' | 'openai' | 'google' | 'custom:<uuid>' */
+  providerId: string
+  kind: 'builtin' | 'custom'
+  /** 显示名（custom 用用户填写名） */
+  name: string
+  apiKeyMasked: string | null
+  hasApiKey: boolean
+  modelId: string | null
+  enabled: boolean
+  /** 仅 custom */
+  baseURL?: string
+}
+
+/** ai:config:get 返回（全量脱敏视图 + 全局参数 + 提示词原文） */
+export interface AiConfigView {
+  providers: ProviderConfigView[]
+  temperature: number
+  maxTokens: number
+  /** aiPrompts 当前值；null = 未自定义（回退内置默认） */
+  prompts: AiPrompts | null
+}
+
+// 类型引用（避免循环依赖：settings 不依赖 ipc-channels）
+type AiPrompts = {
+  grammar: string
+  intro: string
+  polish: string
+  match: string
 }

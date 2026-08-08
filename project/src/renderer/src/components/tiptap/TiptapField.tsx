@@ -6,7 +6,7 @@
  * store 50 步栈，消除双栈双向污染（详见 useEditor 注释）。
  */
 import { useEffect, useState } from 'react'
-import { useEditor, EditorContent } from '@tiptap/react'
+import { useEditor, EditorContent, type Editor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
 import type { RichText } from '@shared/schema/resume'
@@ -15,6 +15,8 @@ interface TiptapFieldProps {
   value: RichText | undefined
   onChange: (v: RichText) => void
   className?: string
+  /** M3 F7/F8：编辑器实例上抛（选区读取/语法 Mark/替换需要；可选，向后兼容） */
+  onEditorReady?: (editor: Editor) => void
 }
 
 function ToolBtn({
@@ -43,7 +45,7 @@ function ToolBtn({
   )
 }
 
-export function TiptapField({ value, onChange }: TiptapFieldProps): React.JSX.Element {
+export function TiptapField({ value, onChange, onEditorReady }: TiptapFieldProps): React.JSX.Element {
   const [linkUrl, setLinkUrl] = useState('')
   const [linkOpen, setLinkOpen] = useState(false)
 
@@ -63,6 +65,11 @@ export function TiptapField({ value, onChange }: TiptapFieldProps): React.JSX.El
       onChange({ type: 'doc', content: json.content ?? [] })
     }
   })
+
+  // M3 F7/F8：编辑器实例上抛（父组件读选区/语法 Mark/替换；幂等，StrictMode 安全）
+  useEffect(() => {
+    if (editor && onEditorReady) onEditorReady(editor)
+  }, [editor, onEditorReady])
 
   // 外部 value 变化（撤销/重做/加载/HTML 降级快照）→ 同步编辑器。
   // P1/P2 修复：移除 isFocused 拦截——统一撤销栈后 store undo 在 Tiptap 聚焦时也必须

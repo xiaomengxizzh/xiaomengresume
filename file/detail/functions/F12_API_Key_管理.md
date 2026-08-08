@@ -1,6 +1,7 @@
 # F12 · API Key 管理（BYOK）— M5
 
 > 本文件由 `scripts/split_docs.py` 从《项目功能.md》拆分（2026-08-08 路由化定案）；真相源 = 本文档。
+> **✅ 已落码（2026-08-09 M3，设置屏 UI 提前 + Q10 扩展）**：settings.ai 屏——四家 tab（DeepSeek/火山/OpenAI/Gemini：apiKey 脱敏输入 + 官网「获取 API Key」+ 模型 ID + 启用开关）+ **自定义 OpenAI 兼容服务商**（`customProviders`：名称/baseURL/modelId/apiKey/启用）+ 全局参数（温度/最长上下文）+ 提示词四卡；`ai:config:get/save`（apiKey 入 safeStorage keyring，其余明文 store）。
 
 ### F12 · API Key 管理（BYOK）— M5
 - **需求**：用户填写自带供应商 API Key，加密存本地，运行时解密使用。

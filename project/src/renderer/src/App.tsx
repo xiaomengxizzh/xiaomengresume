@@ -9,6 +9,12 @@ import { SettingsHome } from './views/SettingsHome'
 import { ResumesList } from './views/ResumesList'
 import { ComingSoon } from './views/ComingSoon'
 import { EditorView } from './views/EditorView'
+import { AiGrammar } from './views/AiGrammar'
+import { AiIntro } from './views/AiIntro'
+import { AiPolish } from './views/AiPolish'
+import { AiMatch } from './views/AiMatch'
+import { JobsHome } from './views/JobsHome'
+import { SettingsAi } from './views/SettingsAi'
 import { useResumeStore } from './store/useResumeStore'
 import { getTemplate } from './templates/registry'
 
@@ -74,20 +80,22 @@ export default function App(): React.JSX.Element {
     if (currentView === 'editor') return <EditorView />
     if (currentView === 'resumes-home') return <ResumesHome />
     if (currentView === 'resumes-list') return <ResumesList />
+    if (currentView === 'resumes-recent') return <ResumesList mode="recent" />
+    if (currentView === 'jobs-home') return <JobsHome />
     if (currentView === 'ai-home') return <AiHome />
+    // M3 AI 四分区（导航子项直达；共享 store.aiContext 与「当前简历」）
+    if (currentView === 'ai:grammar') return <AiGrammar />
+    if (currentView === 'ai:intro') return <AiIntro />
+    if (currentView === 'ai:polish') return <AiPolish />
+    if (currentView === 'ai:match') return <AiMatch />
     if (currentView === 'settings-home') return <SettingsHome />
+    if (currentView === 'settings-ai') return <SettingsAi />
     if (currentView.startsWith('coming:')) {
-      // 子页占位：'coming:grammar' → title 用对应子项 title
+      // 子页占位（M3 后剩余：import / appearance / storage）
       const sub = currentView.slice('coming:'.length)
       const titleMap: Record<string, { title: string; desc?: string }> = {
         import: { title: t('homeCard.import'), desc: t('homeCard.importDesc') },
-        jobs: { title: t('homeCard.jobs'), desc: t('homeCard.jobsDesc') },
-        grammar: { title: t('navSub.grammar'), desc: t('homeDesc.grammar') },
-        intro: { title: t('navSub.intro'), desc: t('homeDesc.intro') },
-        polish: { title: t('navSub.polish'), desc: t('homeDesc.polish') },
-        match: { title: t('navSub.match'), desc: t('homeDesc.match') },
         appearance: { title: t('navSub.appearance'), desc: t('homeDesc.appearance') },
-        aiSettings: { title: t('navSub.aiSettings'), desc: t('homeDesc.aiSettings') },
         storage: { title: t('navSub.storage'), desc: t('homeDesc.storage') }
       }
       const m = titleMap[sub] ?? { title: sub }
