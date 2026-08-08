@@ -9,7 +9,7 @@ import { readFileSync, existsSync } from 'node:fs'
 import * as path from 'node:path'
 import * as zlib from 'node:zlib'
 import { PDFDocument } from 'pdf-lib'
-import { buildTextPdf } from '../build'
+import { buildTextPdf, resolvePdfPhotoSrc } from '../build'
 import { richTextToPdfParagraphs, paragraphsToPlainText } from '../richtext'
 import { _resetFontRegistryForTest } from '../fonts'
 import { migrate, type Resume } from '@shared/schema/resume'
@@ -49,6 +49,20 @@ describe('pdf/build (文字版 PDF 纯代码生成)', () => {
   beforeAll(() => {
     // 字体注册为全局单例：重置保证本套测试独立注册
     _resetFontRegistryForTest()
+  })
+
+  it('头像解析（P1 回归：Windows 绝对路径走 fetch 必失败 → 转 data URL）', async () => {
+    // avatar 标记 → 内置资源转 data URL（本机 dev 资源存在时）
+    const avatarSrc = await resolvePdfPhotoSrc('avatar')
+    if (avatarSrc !== null) {
+      expect(avatarSrc.startsWith('data:image/png;base64,')).toBe(true)
+    }
+    // 空值/无 photo → null
+    expect(await resolvePdfPhotoSrc('')).toBeNull()
+    expect(await resolvePdfPhotoSrc(undefined)).toBeNull()
+    // data URL / https 直通
+    expect(await resolvePdfPhotoSrc('data:image/png;base64,AAAA')).toBe('data:image/png;base64,AAAA')
+    expect(await resolvePdfPhotoSrc('https://x.dev/a.png')).toBe('https://x.dev/a.png')
   })
 
   it('生成 PDF：%PDF- 魔数 + 非空（用户底线：任何环境可导出）', async () => {
@@ -124,13 +138,32 @@ describe('pdf/build (文字版 PDF 纯代码生成)', () => {
     expect(priv.buffer.length).toBeGreaterThan(100)
     const doc = await PDFDocument.load(priv.buffer)
     expect(doc.getPageCount()).toBeGreaterThanOrEqual(1)
-    // 隐私与正常至少字节不同（打码改变了内容）；若字体缺失两者可能同构，宽容断言
-    expect(priv.buffer.length).toBeGreaterThan(0)
-    if (sample.basics.name) {
-      // 姓名应被打码（正常版含姓名文本，隐私版不含——通过 PDF 文本提取验证需要 pdf 解析；
-      // 这里用启发式：打码后字节数一般不同）
-      expect(priv.buffer.length).not.toBe(normal.buffer.length)
+    // P0 回归：infoItems 的 UI id（emp/birth/mail/loc/web）不在规范字段名集合，
+    // 原按 key 匹配导致邮箱/地址/网址漏打码。修复后按位置全打码：
+    // 隐私 PDF 的解压流中必须出现 █（U+2588）的 ToUnicode 映射（<2588>），
+    // 且正常 PDF 不应包含该映射（有字体环境才断言，Helvetica 兜底时 █ 为 notdef）
+    const streams = (b: Buffer): string[] => {
+      const out: string[] = []
+      for (const m of b.toString('latin1').matchAll(/stream\r?\n(.*?)\r?\nendstream/gs)) {
+        try {
+          out.push(zlib.inflateSync(Buffer.from(m[1], 'latin1')).toString('latin1'))
+        } catch {
+          /* 非 deflate 流忽略 */
+        }
+      }
+      return out
     }
+    const privInflated = streams(priv.buffer).join('\n')
+    const normalInflated = streams(normal.buffer).join('\n')
+    const hasCjkFont = privInflated.includes('<2588>')
+    if (hasCjkFont) {
+      // 打码占位符确实渲染进 PDF
+      expect(privInflated).toContain('<2588>')
+      // 正常 PDF 无打码占位
+      expect(normalInflated).not.toContain('<2588>')
+    }
+    // 字节层面：打码后内容必然变化
+    expect(priv.buffer.length).not.toBe(normal.buffer.length)
   })
 })
 

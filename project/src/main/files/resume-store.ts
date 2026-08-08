@@ -16,12 +16,28 @@ import {
   type Resume
 } from '../../shared/schema/resume'
 import { createZip, extractZip, type ZipEntry } from './zip'
+import { extractPendingIds } from './recovery'
 import type { Settings } from '../../shared/schema/settings'
 import type { RecentResume, ResumeSummary } from '../../shared/ipc-channels'
 
 const store = new Store<Settings>()
 const MAX_BACKUPS = 5
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** 备份导入白名单（非敏感键；P2 用户拍板 B）：
+ *  providers（API Key 敏感 + safeStorage 机器绑定）、storage（目录漂移）、
+ *  importedFonts（跨机路径失效）一律跳过。 */
+const SETTINGS_SAFE_KEYS = [
+  'appearance',
+  'appearanceMode',
+  'language',
+  'temperature',
+  'maxTokens',
+  'aiPrompts',
+  'export',
+  'uiFont',
+  'resumeFont'
+] as const
 
 /* ── 写入健壮性（2026-08-07 二次评估采纳）────────────────────────────────── */
 
@@ -143,11 +159,12 @@ async function rotateBackup(id: string): Promise<void> {
   const file = resumeFilePath(id)
   try {
     const data = await fs.readFile(file)
-    const bak = `${file}.bak.${Date.now()}`
+    const bak = `${file}.bak.${Date.now()}` // <dir>/<uuid>.json.bak.<ts>
     await fs.writeFile(bak, data)
-    // 轮转：保留最近 N=5
+    // 轮转：保留最近 N=5（P2 修复：备份文件以 "<uuid>.json.bak." 为前缀，
+    // 原按 `${id}.bak.` 匹配永远命中不了 → 备份无限累积）
     const dir = getStorageDir()
-    const files = (await fs.readdir(dir)).filter((f) => f.startsWith(`${id}.bak.`)).sort()
+    const files = (await fs.readdir(dir)).filter((f) => f.startsWith(`${id}.json.bak.`)).sort()
     while (files.length > MAX_BACKUPS) {
       const oldest = files.shift()
       if (oldest) await fs.unlink(path.join(dir, oldest)).catch(() => {})
@@ -245,15 +262,24 @@ export async function duplicateResume(id: string): Promise<{ id: string; resume:
   return { id: newId, resume: copy }
 }
 
-/** 删除：unlink + 同步删 .bak 序列 */
+/** 删除：unlink + 同步删 .bak 序列（P2 修复：走 per-id 写锁，防与在途自动保存竞态——
+ *  unlink 后 save 的 rename 会让已删简历"复活"；同时清理 .tmp 与 readdir 防护） */
 export async function deleteResume(id: string): Promise<boolean> {
   assertUuid(id)
   const dir = getStorageDir()
-  await fs.unlink(resumeFilePath(id)).catch(() => {})
-  const files = (await fs.readdir(dir)).filter((f) => f.startsWith(`${id}.bak.`))
-  for (const f of files) {
-    await fs.unlink(path.join(dir, f)).catch(() => {})
-  }
+  await withWriteLock(id, async () => {
+    await fs.unlink(resumeFilePath(id)).catch(() => {})
+    await fs.unlink(`${resumeFilePath(id)}.tmp`).catch(() => {})
+    let files: string[] = []
+    try {
+      files = await fs.readdir(dir)
+    } catch {
+      /* 目录不可读：跳过 .bak 清理 */
+    }
+    for (const f of files.filter((x) => x.startsWith(`${id}.json.bak.`))) {
+      await fs.unlink(path.join(dir, f)).catch(() => {})
+    }
+  })
   return true
 }
 
@@ -323,7 +349,7 @@ export async function scanPendingRecovery(): Promise<string[]> {
   } catch {
     return []
   }
-  return files.filter((f) => f.endsWith('.tmp')).map((f) => f.slice(0, -4))
+  return extractPendingIds(files)
 }
 
 /** 用 .tmp 内容覆盖正式文件（用户确认恢复后调用） */
@@ -359,6 +385,20 @@ export async function exportBackup(win: BrowserWindow): Promise<string | null> {
     if (data) entries.push({ name: `resumes/${f}`, data })
   }
 
+  // jobs/（F19 数据层，P2 修复：导出实现补上注释承诺的 jobs 目录——
+  // 目录不存在（F19 v1.1 未落码）时跳过，不阻塞）
+  const jobsDir = path.join(app.getPath('userData'), 'jobs')
+  let jobFiles: string[] = []
+  try {
+    jobFiles = await fs.readdir(jobsDir)
+  } catch {
+    /* jobs 目录不存在 */
+  }
+  for (const f of jobFiles) {
+    const data = await fs.readFile(path.join(jobsDir, f)).catch(() => null)
+    if (data) entries.push({ name: `jobs/${f}`, data })
+  }
+
   // settings（electron-store 配置 JSON，无 Key 明文——Key 走 safeStorage 不在此文件）
   const settingsFile = store.path
   try {
@@ -379,7 +419,14 @@ export async function exportBackup(win: BrowserWindow): Promise<string | null> {
   return filePath
 }
 
-/** 导入备份 zip：解包 → 覆盖写回（导入前先打一份 .bak 防误操作） */
+/**
+ * 导入备份 zip：解包 → 覆盖写回 resumes/ + 合并非敏感 settings（导入前先打一份 .bak 防误操作）。
+ * settings 仅合并白名单非敏感键（用户拍板 B）：
+ *  - 跳过 providers（API Key 敏感 + safeStorage 机器绑定，跨机迁移必然失效）
+ *  - 跳过 storage.folderPath（导入会导致简历存储目录漂移，与已还原的 resumes/ 不一致）
+ *  - 跳过 importedFonts（自定义字体列表，跨机本地路径失效）
+ *  jobs/ 条目随 F19 数据层落码后再接。
+ */
 export async function importBackup(win: BrowserWindow): Promise<number> {
   const { canceled, filePaths } = await dialog.showOpenDialog(win, {
     title: 'Import backup',
@@ -390,20 +437,51 @@ export async function importBackup(win: BrowserWindow): Promise<number> {
   const buf = await fs.readFile(filePaths[0])
   const entries = extractZip(buf)
   let count = 0
+  let skipped = 0
   for (const e of entries) {
+    // settings/config.json：仅合并非敏感白名单键（P2，用户拍板 B）
+    if (e.name === 'settings/config.json') {
+      try {
+        const imported = JSON.parse(e.data.toString('utf-8')) as Record<string, unknown>
+        let merged = 0
+        for (const key of SETTINGS_SAFE_KEYS) {
+          const v = imported[key]
+          if (v !== undefined && v !== null) {
+            store.set(key, v)
+            merged++
+          }
+        }
+        console.log(`[ImportBackup] settings: merged ${merged}/${SETTINGS_SAFE_KEYS.length} safe keys (providers/storage/importedFonts skipped)`)
+      } catch {
+        skipped++
+      }
+      continue
+    }
     const rel = e.name.replace(/^resumes\//, '')
     if (!rel.endsWith('.json') || rel.includes('/')) continue
     if (e.name.startsWith('resumes/')) {
       // 2026-08-08 低危加固：仅接受 <uuid>.json，防恶意 zip 把任意文件名写入存储目录
       if (!UUID_RE.test(rel.slice(0, -5))) continue
-      const raw = JSON.parse(e.data.toString('utf-8')) as unknown
-      const resume = migrate(raw) // 版本化校验，损坏条目跳过
+      // P1 修复（2026-08-08）：单条损坏（JSON 解析失败/版本不合法）跳过而非中断整批——
+      // 原实现 JSON.parse/migrate 无 try/catch，一条损坏 reject 整批且前面已写盘（半导入不一致）
+      let resume: Resume
+      try {
+        const raw = JSON.parse(e.data.toString('utf-8')) as unknown
+        resume = migrate(raw) // 版本化校验，损坏条目跳过
+      } catch {
+        skipped++
+        continue
+      }
       const file = path.join(getStorageDir(), path.basename(rel))
       const bak = `${file}.bak.${Date.now()}` // 导入前备份防误操作
       await fs.writeFile(bak, await fs.readFile(file).catch(() => Buffer.alloc(0)))
       await fs.writeFile(file, JSON.stringify(resume, null, 2))
       count++
     }
+  }
+  if (skipped > 0) {
+    // 部分跳过不静默：写入日志（IPC 契约扩展留待 v1.1，至少主进程可观测）
+    console.warn(`[ImportBackup] skipped ${skipped} corrupted entries, imported ${count}`)
   }
   return count
 }

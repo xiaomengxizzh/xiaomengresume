@@ -127,7 +127,8 @@
     "previewHint": "Click the preview area to jump to the matching editor section",
     "emptySection": "Nothing yet",
     "recovery": {
-      "confirm": "Unsaved edits detected ({{id}}…). Restore them?"
+      "confirm": "Unsaved edits detected ({{id}}…). Restore them?",
+      "failed": "Restore failed ({{id}}…) — the temp file may be corrupted"
     },
     "hint": {
       "previewClick": "Click the preview area to jump to the editor"

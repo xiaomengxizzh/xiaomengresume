@@ -58,6 +58,20 @@ export function parseFieldIndex(field: string): { field: string; index?: number 
   return { field: name, index: indexRaw === undefined ? undefined : Number(indexRaw) }
 }
 
+/**
+ * 解析字段链（支持两级点号 + 各段子下标）：
+ *   'highlights[2]'            → [{ name:'highlights', index:2 }]
+ *   'infoItems[0].icon'        → [{ name:'infoItems', index:0 }, { name:'icon' }]
+ * 2026-08-08 修复：原 getByPath/setByPath 只支持单段，EditorPane 的
+ * 'basics.infoItems[0].icon' 等两级路径抛 invalid field segment → 控件编辑失效（P1）。
+ */
+export function parseFieldSegments(field: string): Array<{ name: string; index?: number }> {
+  return field.split('.').map((seg) => {
+    const { field: name, index } = parseFieldIndex(seg)
+    return { name, index }
+  })
+}
+
 type UnknownRecord = Record<string, unknown>
 
 /** 读取路径值（不存在返回 undefined） */
@@ -74,15 +88,16 @@ export function getByPath(target: unknown, path: FieldPath): unknown {
   }
 
   if (!field) return cur
-  const { field: fname, index: fIndex } = parseFieldIndex(field)
-  if (!cur || typeof cur !== 'object') return undefined
-  const obj = cur as UnknownRecord
-  if (!(fname in obj)) return undefined
-  cur = obj[fname]
-  if (fIndex !== undefined) {
-    const arr = cur as unknown[] | undefined
-    if (!Array.isArray(arr) || fIndex >= arr.length) return undefined
-    cur = arr[fIndex]
+  for (const { name, index: fIndex } of parseFieldSegments(field)) {
+    if (!cur || typeof cur !== 'object') return undefined
+    const obj = cur as UnknownRecord
+    if (!(name in obj)) return undefined
+    cur = obj[name]
+    if (fIndex !== undefined) {
+      const arr = cur as unknown[] | undefined
+      if (!Array.isArray(arr) || fIndex >= arr.length) return undefined
+      cur = arr[fIndex]
+    }
   }
   return cur
 }
@@ -107,18 +122,39 @@ export function setByPath(target: Resume, path: FieldPath, value: unknown): void
   if (!field) {
     throw new Error(`write failed: missing field segment ${path}`)
   }
-  const { field: fname, index: fIndex } = parseFieldIndex(field)
+  const segments = parseFieldSegments(field)
+  const last = segments[segments.length - 1]
+  // 中间段导航（只读，缺失/越界抛错，保持与单段版本一致的失败语义）
+  for (let i = 0; i < segments.length - 1; i++) {
+    const { name, index: fIndex } = segments[i]
+    if (!cur || typeof cur !== 'object') {
+      throw new Error(`write failed: intermediate node is not an object ${path}`)
+    }
+    const obj = cur as UnknownRecord
+    if (!(name in obj)) {
+      throw new Error(`write failed: intermediate field missing ${path}`)
+    }
+    cur = obj[name]
+    if (fIndex !== undefined) {
+      const arr = cur as unknown[] | undefined
+      if (!Array.isArray(arr) || fIndex >= arr.length) {
+        throw new Error(`write failed: array index out of range ${path}`)
+      }
+      cur = arr[fIndex]
+    }
+  }
+  // 末段写入
   if (!cur || typeof cur !== 'object') {
     throw new Error(`write failed: intermediate node is not an object ${path}`)
   }
   const obj = cur as UnknownRecord
-  if (fIndex !== undefined) {
-    const arr = obj[fname] as unknown[] | undefined
-    if (!Array.isArray(arr) || fIndex >= arr.length) {
+  if (last.index !== undefined) {
+    const arr = obj[last.name] as unknown[] | undefined
+    if (!Array.isArray(arr) || last.index >= arr.length) {
       throw new Error(`write failed: array index out of range ${path}`)
     }
-    arr[fIndex] = value
+    arr[last.index] = value
   } else {
-    obj[fname] = value
+    obj[last.name] = value
   }
 }

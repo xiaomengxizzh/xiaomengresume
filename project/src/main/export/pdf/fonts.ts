@@ -51,8 +51,20 @@ const CANDIDATES: FontCandidate[] = [
 /** 黑体兜底候选（中文+粗体；TTC 不行就用它） */
 const FALLBACK_HEI = CANDIDATES.find((c) => c.id === 'heiti')!
 
-/** 已注册标记（@react-pdf/renderer Font 全局单例，避免重复注册） */
-let registered = false
+/** 已注册字体指纹（cjk|en 字体 id）；同指纹跳过，变化时 Font.clear() 重注册。
+ *  P2 修复：原 `registered` 布尔永不复位——首次导出锁定字体，用户改字体配置后再导出不生效。 */
+let registeredFingerprint: string | null = null
+
+/** 只移除本项目注册的 family（'zh'/'en'），保留 @react-pdf 内置 Helvetica 等。
+ *  FontStore.clear() 会连内置 family 一起清空（不可用）；fontFamilies 标私有但运行时公共
+ *  （与 pdf-lib Info dict 同类先例，见 build.ts cropFirstPage 注释）。 */
+function clearPdfFamilies(): void {
+  const store = Font as unknown as { fontFamilies?: Record<string, unknown> }
+  if (store.fontFamilies) {
+    delete store.fontFamilies['zh']
+    delete store.fontFamilies['en']
+  }
+}
 
 export interface FontRegistrationWarnings {
   warnings: string[]
@@ -99,9 +111,16 @@ async function findAnyFontFile(candidate: FontCandidate): Promise<string | null>
  */
 export async function registerPdfFonts(layout: Layout | undefined): Promise<FontRegistrationWarnings> {
   const warnings: string[] = []
-  if (registered) return { warnings, usedCjkFont: 'already-registered' }
-
   const resolved = resolveFontIds(layout)
+  const fingerprint = `${resolved.cjk}|${resolved.en}`
+  if (registeredFingerprint === fingerprint) {
+    return { warnings, usedCjkFont: 'already-registered' }
+  }
+  // 字体选择变化（或首次）：移除本项目已注册的 family 再按新配置注册
+  // （FontStore.register 对同名 family 是追加 sources，必须移除才能覆盖）
+  clearPdfFamilies()
+  registeredFingerprint = fingerprint
+
   const cjkCandidate = CANDIDATES.find((c) => c.id === resolved.cjk) ?? FALLBACK_HEI
   const enCandidate = CANDIDATES.find((c) => c.id === resolved.en) ?? CANDIDATES.find((c) => c.id === 'times')!
 
@@ -129,7 +148,6 @@ export async function registerPdfFonts(layout: Layout | undefined): Promise<Font
     }
   }
 
-  registered = true
   return { warnings, usedCjkFont: cjkFile ? path.basename(cjkFile) : 'none' }
 }
 
@@ -148,5 +166,6 @@ function resolveFontIds(layout: Layout | undefined): { cjk: string; en: string }
 
 /** 测试辅助：重置注册状态 */
 export function _resetFontRegistryForTest(): void {
-  registered = false
+  registeredFingerprint = null
+  clearPdfFamilies()
 }

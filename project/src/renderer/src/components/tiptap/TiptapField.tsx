@@ -2,7 +2,8 @@
  * TiptapField —— F2 富文本控件（§3.4）
  * Tiptap v3 + StarterKit（加粗/斜体/列表）+ Link。绑定 RichText 字段：
  * 编辑时输出 Tiptap JSON（{type:'doc',content}），读入时 JSON 优先、HTML 降级。
- * 内部 undo 隔离（F3 §4.1）：Ctrl+Z 在编辑器聚焦时交回 Tiptap 内部栈（快捷键 hook 处理）。
+ * F3 统一撤销栈（2026-08-08 修复 P1）：禁用 Tiptap 内部 UndoRedo，Ctrl+Z/Y 全部走
+ * store 50 步栈，消除双栈双向污染（详见 useEditor 注释）。
  */
 import { useEffect, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
@@ -48,7 +49,11 @@ export function TiptapField({ value, onChange }: TiptapFieldProps): React.JSX.El
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      // F3 统一撤销栈（2026-08-08 修复 P1）：禁用 Tiptap 内部 UndoRedo。
+      // 原实现：Tiptap 内部 undo 触发 onUpdate → setField → history.record 把
+      // 「撤销前的状态」压入 store 栈；store 撤销后的 setContent 又进 Tiptap 内部栈——
+      // 双栈双向污染致撤销行为不可预测。统一走 store 栈后撤销/重做语义单一、可预测。
+      StarterKit.configure({ undoRedo: false }),
       Link.configure({ openOnClick: false, autolink: true })
     ],
     content: value ?? { type: 'doc', content: [] },
@@ -59,16 +64,23 @@ export function TiptapField({ value, onChange }: TiptapFieldProps): React.JSX.El
     }
   })
 
-  // 外部 value 变化（撤销/重做/加载）→ 同步编辑器（聚焦时不打断输入）
+  // 外部 value 变化（撤销/重做/加载/HTML 降级快照）→ 同步编辑器。
+  // P1/P2 修复：移除 isFocused 拦截——统一撤销栈后 store undo 在 Tiptap 聚焦时也必须
+  // 更新编辑器（原守卫导致聚焦时撤销无效）；用户输入产生的 value 变化 current===incoming
+  // 天然跳过 setContent，不会打断打字。HTML 字符串分支原直接 return（撤销回 HTML 字符串
+  // 快照时编辑器不更新，继续输入会把错误内容写回 store），现以 HTML 解析同步。
   useEffect(() => {
     if (!editor) return
     if (typeof value === 'string') {
-      // HTML 降级：仅初始渲染
+      const currentHtml = editor.getHTML()
+      if (currentHtml !== value) {
+        editor.commands.setContent(value, { emitUpdate: false })
+      }
       return
     }
     const current = JSON.stringify(editor.getJSON().content ?? [])
     const incoming = JSON.stringify(value?.content ?? [])
-    if (current !== incoming && !editor.isFocused) {
+    if (current !== incoming) {
       editor.commands.setContent(value ?? { type: 'doc', content: [] }, { emitUpdate: false })
     }
   }, [value, editor])

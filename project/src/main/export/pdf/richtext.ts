@@ -8,10 +8,14 @@
  */
 import type { RichText } from '@shared/schema/resume'
 
-/** PDF 内联文本段：文本 + 是否粗体 */
+/** PDF 内联文本段：文本 + 标记（bold/italic/strike/link） */
 export interface PdfTextRun {
   text: string
   bold: boolean
+  italic?: boolean
+  strike?: boolean
+  /** 链接 href（渲染为 accent 色 + 下划线） */
+  link?: string
 }
 
 /** PDF 段落：一组 run（含列表前缀标记） */
@@ -33,15 +37,24 @@ interface RichTextNode {
 
 interface RichTextMark {
   type: string
+  attrs?: Record<string, unknown>
 }
 
-/** 节点 → 文本 run 列表（粗体标记展开） */
+/** 节点 → 文本 run 列表（bold/italic/strike/link 标记展开；P2：补 italic/strike/link，
+ *  原只识别 bold——斜体/删除线/链接在 PDF 中退化为普通文本） */
 function nodeToRuns(node: unknown): PdfTextRun[] {
   const n = node as RichTextNode
   switch (n.type) {
     case 'text': {
-      const bold = (n.marks ?? []).some((m) => (m as RichTextMark).type === 'bold')
-      return [{ text: n.text ?? '', bold }]
+      const marks = (n.marks ?? []) as RichTextMark[]
+      const run: PdfTextRun = {
+        text: n.text ?? '',
+        bold: marks.some((m) => m.type === 'bold'),
+        italic: marks.some((m) => m.type === 'italic') || undefined,
+        strike: marks.some((m) => m.type === 'strike') || undefined,
+        link: (marks.find((m) => m.type === 'link')?.attrs?.href as string | undefined) || undefined
+      }
+      return [run]
     }
     case 'hardBreak':
       return [{ text: '\n', bold: false }]
@@ -64,13 +77,17 @@ function nodesToRuns(nodes: unknown[]): PdfTextRun[] {
   return out
 }
 
-/** 合并相邻同 bold 的 run（减少 PDF 组件渲染节点数） */
+/** 合并相邻同标记的 run（减少 PDF 组件渲染节点数） */
+function sameMark(a: PdfTextRun, b: PdfTextRun): boolean {
+  return a.bold === b.bold && a.italic === b.italic && a.strike === b.strike && a.link === b.link
+}
+
 function mergeRuns(runs: PdfTextRun[]): PdfTextRun[] {
   const out: PdfTextRun[] = []
   for (const r of runs) {
     const last = out[out.length - 1]
-    if (last && last.bold === r.bold) last.text += r.text
-    else out.push({ text: r.text, bold: r.bold })
+    if (last && sameMark(last, r)) last.text += r.text
+    else out.push({ text: r.text, bold: r.bold, italic: r.italic, strike: r.strike, link: r.link })
   }
   return out.filter((r) => r.text.length > 0)
 }

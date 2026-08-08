@@ -48,6 +48,9 @@ const electronAPI = {
     /** F11 简历生命周期（M1 落码） */
     save: (id: string, resume: Resume): Promise<Resume> =>
       ipcRenderer.invoke(IPC.Resume.Save, { id, resume }),
+    /** 关窗前静默保存（单向 send，不等待回执；P2） */
+    saveNow: (id: string, resume: Resume): void =>
+      ipcRenderer.send(IPC.Resume.SaveNow, { id, resume }),
     open: (id: string): Promise<Resume> => ipcRenderer.invoke(IPC.Resume.Open, id),
     duplicate: (id: string): Promise<{ id: string; resume: Resume }> =>
       ipcRenderer.invoke(IPC.Resume.Duplicate, id),

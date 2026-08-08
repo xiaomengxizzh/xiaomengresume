@@ -17,6 +17,8 @@ interface ExportDialogProps {
   open: boolean
   onClose: () => void
   resumeId: string
+  /** P1 修复：导出前立即落盘最新 resume（打印窗口按磁盘读取，防抖窗内编辑会导出陈旧内容） */
+  flush?: () => Promise<boolean>
 }
 
 type FormatCard = {
@@ -41,7 +43,7 @@ export function estimatePageCount(resumeHeightPx: number): number {
   return Math.max(1, Math.ceil(resumeHeightPx / 1038))
 }
 
-export function ExportDialog({ open, onClose, resumeId }: ExportDialogProps): React.JSX.Element | null {
+export function ExportDialog({ open, onClose, resumeId, flush }: ExportDialogProps): React.JSX.Element | null {
   const { t } = useTranslation()
   const [selected, setSelected] = useState<ExportFormat>('textPdf')
   const [folder, setFolder] = useState('')
@@ -93,6 +95,10 @@ export function ExportDialog({ open, onClose, resumeId }: ExportDialogProps): Re
 
   const runExport = useCallback(async (): Promise<void> => {
     if (!resumeId) return
+    // P1 修复：导出前先 flush 落盘最新 resume（打印窗口按磁盘读取，防抖窗内编辑会导出陈旧内容）
+    if (flush) {
+      await flush()
+    }
     setRunning(true)
     setError('')
     setProgress(0.05)
@@ -104,12 +110,15 @@ export function ExportDialog({ open, onClose, resumeId }: ExportDialogProps): Re
     const EXPORT_TIMEOUT_MS = 30_000
     let timer: ReturnType<typeof setTimeout> | null = null
     try {
+      // P2 修复：读 store 最新值而非闭包捕获值（模态开启期间 Ctrl+Shift+P 切换隐私，
+      // useCallback 闭包持有旧 privacyMode 会把未脱敏 PDF 导出）
+      const privacyNow = useResumeStore.getState().privacyMode
       const runPromise = window.electronAPI.export.run({
         format: selected,
         folderPath: folder || undefined,
         pages,
         resumeId,
-        privacyMode
+        privacyMode: privacyNow
       } as never)
       const timeoutPromise = new Promise<never>((_, reject) => {
         timer = setTimeout(() => reject(new Error(t('export.timeoutError'))), EXPORT_TIMEOUT_MS)
@@ -130,7 +139,7 @@ export function ExportDialog({ open, onClose, resumeId }: ExportDialogProps): Re
       unsub()
       setRunning(false)
     }
-  }, [selected, folder, pages, resumeId, onClose, t])
+  }, [selected, folder, pages, resumeId, onClose, t, flush])
 
   if (!open) return null
 

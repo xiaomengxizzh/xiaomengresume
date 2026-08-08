@@ -45,27 +45,6 @@ export function SectionBlock({
   )
 }
 
-/** 节标题（classic：全大写下划线；modern/compact 由 style 覆盖） */
-export function SecTitle({ children, size, style }: { children: ReactNode; size: number; style?: CSSProperties }): React.JSX.Element {
-  return (
-    <h2
-      style={{
-        fontSize: `${size}px`,
-        fontWeight: 600,
-        letterSpacing: '1px',
-        color: '#444',
-        borderBottom: '2px solid #e8e8e8',
-        paddingBottom: '4px',
-        marginBottom: '10px',
-        textTransform: 'uppercase',
-        ...style
-      }}
-    >
-      {children}
-    </h2>
-  )
-}
-
 export function Placeholder({ label }: { label: string }): React.JSX.Element {
   return <div style={{ color: '#bbb', fontSize: '13px', fontStyle: 'italic' }}>{label}</div>
 }

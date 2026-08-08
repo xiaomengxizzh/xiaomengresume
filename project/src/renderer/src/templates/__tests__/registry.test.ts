@@ -13,7 +13,6 @@ describe('templateRegistry（F4）', () => {
       expect(meta.nameKey).toBeTruthy()
       expect(meta.component).toBeTypeOf('function')
       expect(meta.thumbnail).toBeTypeOf('function')
-      expect(meta.spacing).toBeGreaterThan(0)
       expect(meta.preset.baseFontSize).toBeGreaterThan(0)
     }
   })

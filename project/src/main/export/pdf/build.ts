@@ -10,10 +10,42 @@
 import { renderToBuffer } from '@react-pdf/renderer'
 import { createElement } from 'react'
 import { PDFDocument } from 'pdf-lib'
+import { existsSync } from 'node:fs'
+import { promises as fs } from 'node:fs'
+import * as path from 'node:path'
 import type { Resume } from '@shared/schema/resume'
 import type { Language } from '@shared/schema/settings'
 import { registerPdfFonts } from './fonts'
 import { ResumePdfDocument } from './template'
+
+/**
+ * 头像来源解析（供 PDF <Image> 使用）：
+ *  - 'avatar' / '/avatar.png' 标记 → 读内置 avatar.png 转 data URL
+ *  - data URL / https 外链 → 直通
+ * P1 修复（2026-08-08）：@react-pdf/image 的 fetchLocalFile 用 url.parse 解析 src，
+ * Windows 绝对路径 `C:\...` 的 protocol='c:' 被判定为"非 file: 远程路径"→ 走 fetchRemoteFile
+ * → fetch('C:\...') 必然失败（实测 'fetch failed'）→ PDF 头像缺失。转 data URL 彻底规避。
+ */
+export async function resolvePdfPhotoSrc(photo: string | undefined): Promise<string | null> {
+  if (typeof photo !== 'string' || photo.trim().length === 0) return null
+  const v = photo.trim()
+  if (v === 'avatar' || v === '/avatar.png' || v === 'avatar.png') {
+    // dev 资源路径（electron-vite dev：cwd=project/）；生产打包无此资源则跳过，不阻塞导出
+    const candidates = [
+      path.join(process.cwd(), 'src', 'renderer', 'src', 'assets', 'avatar.png'),
+      path.join(process.cwd(), 'resources', 'avatar.png')
+    ]
+    const file = candidates.find((p) => existsSync(p))
+    if (!file) return null
+    try {
+      const data = await fs.readFile(file)
+      return `data:image/png;base64,${data.toString('base64')}`
+    } catch {
+      return null
+    }
+  }
+  return v // data URL / https 外链直通
+}
 
 export interface BuildTextPdfOptions {
   language: Language
@@ -68,10 +100,12 @@ async function cropFirstPage(srcBuffer: Buffer): Promise<Buffer | null> {
 export async function buildTextPdf(resume: Resume, opts: BuildTextPdfOptions): Promise<BuildTextPdfResult> {
   const { warnings } = await registerPdfFonts(resume.layout)
 
+  const photoSrc = await resolvePdfPhotoSrc(resume.basics.photo)
   const element = createElement(ResumePdfDocument, {
     resume,
     language: opts.language,
-    privacyMode: opts.privacyMode
+    privacyMode: opts.privacyMode,
+    photoSrc
   })
   const buffer = await renderToBuffer(element)
 

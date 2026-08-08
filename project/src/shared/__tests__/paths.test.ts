@@ -149,6 +149,25 @@ describe('getByPath / setByPath', () => {
     expect(() => setByPath(r, 'work[0].highlights[9]', 'x')).toThrow(/out of range/)
   })
 
+  it('P1 回归：两级点号路径（数组条目内部属性）读/写', () => {
+    const r = sample()
+    // 读取
+    expect(getByPath(r, 'basics.customFields[0].label')).toBe('个人网站')
+    expect(getByPath(r, 'basics.customFields[0].value')).toBe('https://x.dev')
+    // 写入
+    setByPath(r, 'basics.customFields[0].label', '博客')
+    expect(r.basics.customFields[0].label).toBe('博客')
+    // infoItems 数组条目内部字段（EditorPane 添加条目时先初始化数组）
+    r.basics.infoItems = [{ id: 'mail', icon: 'mail', label: '邮箱', value: 'a@b.c' }]
+    expect(getByPath(r, 'basics.infoItems[0].icon')).toBe('mail')
+    setByPath(r, 'basics.infoItems[0].icon', 'web')
+    setByPath(r, 'basics.infoItems[0].value', 'x.dev')
+    expect(r.basics.infoItems[0]).toMatchObject({ icon: 'web', value: 'x.dev' })
+    // 越界仍抛错
+    expect(() => setByPath(r, 'basics.customFields[9].label', 'x')).toThrow(/out of range/)
+    expect(() => setByPath(r, 'basics.customFields[0].ghost', 'x')).not.toThrow()
+  })
+
   it('FieldPath 为字符串类型（宽松起步）', () => {
     const p: FieldPath = 'basics.name'
     expect(typeof p).toBe('string')

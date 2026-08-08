@@ -255,9 +255,12 @@ body {
 /* 纸张缩放 wrapper（2026-08-07 修复：实际宽高由 JS 同步 = 794s × 纸高s，
    内部 .preview-paper 做 transform:scale，避免 wrapper 自身再被 scale 导致双重缩放）。
    2026-08-07 用户需求定案：A4 纸水平居中显示在右侧预览区正中间（margin:0 auto）；
-   宽度完整可见（窄则缩、最大 A4 100%）；高度超过可视区由 .preview-pane 的 overflow-y:auto 滚动。 */
+   宽度完整可见（窄则缩、最大 A4 100%）；高度超过可视区由 .preview-pane 的 overflow-y:auto 滚动。
+   2026-08-08 P2 修复：overflow:hidden 裁剪纸张未变换的 794×1123 布局盒溢出——
+   CSS transform 不参与可滚动溢出计算，无裁剪时 .preview-pane 出现幽灵滚动条。 */
 .preview-scale-wrapper {
   margin: 0 auto;
+  overflow: hidden;
 }
 
 /* 预览白纸（2026-08-07 用户最终需求：纸张永远是一页 A4，不随内容撑高；
@@ -282,6 +285,9 @@ body {
 .preview-paper-body a {
   color: var(--rm-accent, #475569);
   text-decoration: underline;
+  /* P1 修复：长 URL 溢出预览容器——任意位置断行（https://x/very-long-path 不再横向溢出） */
+  overflow-wrap: anywhere;
+  word-break: break-all;
 }
 
 /* ── 表单卡片（SectionCard）────────────────────────────────────────────── */

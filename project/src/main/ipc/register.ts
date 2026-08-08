@@ -73,6 +73,15 @@ export function registerIpc(): void {
     }
   )
 
+  // resume:save-now —— 关窗前静默保存（P2：单向 send，beforeunload 时渲染进程
+  // 入队即达、不依赖回执；复用 saveResume 的 Zod 校验 + 三件套原子写）
+  ipcMain.on(IPC.Resume.SaveNow, (_evt, payload: { id: string; resume: unknown }) => {
+    if (!payload || typeof payload.id !== 'string') return
+    void saveResume(payload.id, payload.resume as never).catch(() => {
+      /* 关窗静默保存失败不阻塞退出 */
+    })
+  })
+
   // resume:open —— 打开简历（读 + migrate + 刷新 lastOpenedAt 轻量写）
   ipcMain.handle(IPC.Resume.Open, async (_evt, id: string) => openResume(id))
 

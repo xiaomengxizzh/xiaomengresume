@@ -28,14 +28,12 @@ export interface TemplateMeta {
   component: ComponentType // store 驱动（D11），无 props
   thumbnail: ComponentType // CSS 缩略图组件（thumb.tsx）
   preset: TemplatePreset // 排版预设（layout 覆盖链的缺省值）
-  /** --resume-spacing 预设系数（F4 定案：classic 1.0 / modern 1.15 / compact 0.85） */
-  spacing: number
 }
 
 export const templateRegistry: Record<TemplateId, TemplateMeta> = {
-  classic: { id: 'classic', nameKey: 'editor.template.classic', component: ClassicTemplate, thumbnail: ClassicThumb, preset: PRESETS.classic, spacing: 1.0 },
-  modern: { id: 'modern', nameKey: 'editor.template.modern', component: ModernTemplate, thumbnail: ModernThumb, preset: PRESETS.modern, spacing: 1.15 },
-  compact: { id: 'compact', nameKey: 'editor.template.compact', component: CompactTemplate, thumbnail: CompactThumb, preset: PRESETS.compact, spacing: 0.85 }
+  classic: { id: 'classic', nameKey: 'editor.template.classic', component: ClassicTemplate, thumbnail: ClassicThumb, preset: PRESETS.classic },
+  modern: { id: 'modern', nameKey: 'editor.template.modern', component: ModernTemplate, thumbnail: ModernThumb, preset: PRESETS.modern },
+  compact: { id: 'compact', nameKey: 'editor.template.compact', component: CompactTemplate, thumbnail: CompactThumb, preset: PRESETS.compact }
 }
 
 export const defaultTemplateId: TemplateId = 'classic'

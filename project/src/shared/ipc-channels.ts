@@ -31,6 +31,9 @@ export const IPC = {
   Resume: {
     /** 保存简历（主进程校验 Zod → 三件套原子写） */
     Save: 'resume:save',
+    /** 关窗前静默保存（单向 send，不依赖回执——P2：beforeunload 中 invoke 回执
+     *  无法保证送达，send 消息入队即达，比 invoke 可靠） */
+    SaveNow: 'resume:save-now',
     /** 打开简历（读文件 + 刷新 meta.lastOpenedAt 轻量写） */
     Open: 'resume:open',
     /** 复制简历（深拷贝赋新 uuid → 写 <newId>.json） */

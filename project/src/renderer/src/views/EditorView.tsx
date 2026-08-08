@@ -24,8 +24,15 @@ export function EditorView(): React.JSX.Element {
   const dragging = useRef(false)
   const raf = useRef<number | null>(null)
   // 2026-08-08 P0-1 修复：挂载自动保存（此前全仓库零调用，编辑内容永不落盘）。
-  // 防抖窗内切走视图会取消未落盘的最后一次编辑（500ms 窗口极小；退出兜底见 M5 计划）。
-  const { state: saveState } = useAutoSave()
+  // P1 修复：flush 立即落盘——卸载（切走视图）与导出前各调一次，杜绝防抖窗内丢最后编辑。
+  const { state: saveState, flush } = useAutoSave()
+
+  // 切走视图（EditorView 卸载）前 flush 落盘最后编辑
+  useEffect(() => {
+    return () => {
+      void flush()
+    }
+  }, [flush])
   // M2 F5：导出弹窗开关（D4 模态弹窗，EditorView 持有）
   const [exportOpen, setExportOpen] = useState(false)
   const resumeId = useResumeStore((s) => s.resumeId)
@@ -87,7 +94,7 @@ export function EditorView(): React.JSX.Element {
           {t('status.privacyOn')} · {t('export.privacyHint')}
         </div>
       ) : null}
-      <ExportDialog open={exportOpen} onClose={() => setExportOpen(false)} resumeId={resumeId ?? ''} />
+      <ExportDialog open={exportOpen} onClose={() => setExportOpen(false)} resumeId={resumeId ?? ''} flush={flush} />
     </>
   )
 }

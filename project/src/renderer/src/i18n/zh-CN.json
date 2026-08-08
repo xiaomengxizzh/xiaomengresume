@@ -127,7 +127,8 @@
     "previewHint": "点击预览区可定位到左侧对应栏目",
     "emptySection": "暂无内容",
     "recovery": {
-      "confirm": "检测到未保存的编辑（{{id}}…），是否恢复？"
+      "confirm": "检测到未保存的编辑（{{id}}…），是否恢复？",
+      "failed": "恢复（{{id}}…）失败，临时文件可能已损坏"
     },
     "hint": {
       "previewClick": "点击预览区可定位到编辑器"

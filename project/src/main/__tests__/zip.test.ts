@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { createZip, extractZip } from '../files/zip'
+import { extractPendingIds } from '../files/recovery'
 
 describe('zip 零依赖工具（F11 备份）', () => {
   it('create → extract round-trip 无损', () => {
@@ -24,5 +25,18 @@ describe('zip 零依赖工具（F11 备份）', () => {
 
   it('非 zip 数据抛错', () => {
     expect(() => extractZip(Buffer.from('not a zip at all'))).toThrow(/EOCD/)
+  })
+})
+
+describe('崩溃恢复协议 extractPendingIds（P0-1 回归）', () => {
+  const UUID = '3b1f2c6a-8e4d-4f2a-9b0c-1a2b3c4d5e6f'
+
+  it('剥掉 .json.tmp 得裸 uuid（原 slice(0,-4) 留下 .json 致 recover 必失败）', () => {
+    const files = [`${UUID}.json.tmp`, 'other-file.json', `${UUID}.bak.1234567890`, 'notes.txt']
+    expect(extractPendingIds(files)).toEqual([UUID])
+  })
+
+  it('非 .tmp 与非法 uuid 均过滤', () => {
+    expect(extractPendingIds([`${UUID}.json`, 'bad-id.json.tmp', 'x.json.tmp'])).toEqual([])
   })
 })

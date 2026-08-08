@@ -63,8 +63,9 @@ export async function runExportVerify(): Promise<void> {
     const resumeId = sample?.id
     if (!resumeId) throw new Error('createSample returned no id')
 
-    // 2) 走真实 export:run 链路（textPdf → 打印窗口 → printToPDF → 落盘）
-    //    注意：主进程内 printToPDF 已有 15s race 超时；此处外层 45s 再兜一层。
+    // 2) 走真实 export:run 链路（textPdf → 纯代码 @react-pdf 生成 → 落盘）
+    //    注意：主进程 export:run 内已有 30s 构建超时（见 run.ts textPdf 分支）；
+    //    此处外层 45s 再兜一层。此前的 printToPDF 路线已退役（GPU 依赖）。
     const result = await callRenderer<{ canceled: boolean; filePath?: string; error?: string }>(
       win,
       `window.electronAPI.export.run(${JSON.stringify({

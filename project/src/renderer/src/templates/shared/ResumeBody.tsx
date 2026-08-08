@@ -4,7 +4,7 @@
  * variant 差异：SecTitle 样式（underline / accent-bar / compact）+ 间距乘数 + 头部布局。
  * classic 对标 material/简历示例1.pdf（视觉细节在 variant==='classic' 分支完整保留）。
  */
-import type { CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useResumeStore } from '../../store/useResumeStore'
 import { InfoIcon, type InfoIconId } from '../../components/icons/InfoIcons'
@@ -13,6 +13,7 @@ import { richTextToHtml } from '../../preview/richtext-html'
 import { getTemplate, type TemplateId } from '../registry'
 import { lv, resolveFontFamily, type TemplatePreset } from './preset'
 import { SectionBlock, Placeholder, entryHead, fmtDate, useJump } from './primitives'
+import { useThrottledResume } from '../../hooks/useThrottledResume'
 
 const CLASSIC_PHOTO = { width: 90, height: 120 }
 
@@ -53,7 +54,8 @@ const TITLE_STYLES: Record<TitleVariant, CSSProperties> = {
 
 export function ResumeBody({ variant }: { variant: TemplateId }): React.JSX.Element {
   const { t } = useTranslation()
-  const resume = useResumeStore((s) => s.resume)
+  // P2（用户拍板 C）：resume 经 rAF 合并节流订阅——同帧多次 setField 只渲染一次
+  const resume = useThrottledResume()
   const privacyMode = useResumeStore((s) => s.privacyMode)
   const layout = resume.layout
   const jump = useJump()
@@ -74,8 +76,6 @@ export function ResumeBody({ variant }: { variant: TemplateId }): React.JSX.Elem
     lineHeight,
     padding: `${pagePad}px ${pagePad + (variant === 'classic' ? 24 : 20)}px`,
     ['--rm-section-gap' as string]: `${sectionGap}px`,
-    ['--rm-paragraph-gap' as string]: `${paragraphGap}px`,
-    ['--rm-header-size' as string]: `${headerSize}px`,
     ['--rm-accent' as string]: layout?.themeColor ?? '#475569'
   }
 
@@ -94,6 +94,11 @@ export function ResumeBody({ variant }: { variant: TemplateId }): React.JSX.Elem
   const showPhoto = photoSrc !== null
   const photoW = basics.photoWidth ?? CLASSIC_PHOTO.width
   const photoH = basics.photoHeight ?? CLASSIC_PHOTO.height
+  // P1 修复：外链头像加载失败时隐藏（避免裂图占位挤压布局）；本地/内嵌资源不受影响
+  const [photoBroken, setPhotoBroken] = useState(false)
+  useEffect(() => {
+    setPhotoBroken(false) // photo 变化时重置
+  }, [photoSrc])
 
   const contactItems = [
     basics.phone,
@@ -101,7 +106,11 @@ export function ResumeBody({ variant }: { variant: TemplateId }): React.JSX.Elem
     basics.location,
     basics.website,
     ...basics.customFields.map((c) => c.value)
-  ].filter((v): v is string => typeof v === 'string' && v.length > 0)
+  ]
+    .filter((v): v is string => typeof v === 'string' && v.length > 0)
+    // P1 修复：与 PDF 端一致——website 与 customFields 值可能重复（示例简历两处同 URL），
+    // 底部拼接显示时去重，避免"网页链接多次出现"
+    .filter((v, i, arr) => arr.indexOf(v) === i)
 
   const pStyle: CSSProperties = { fontSize: '0.92em', lineHeight, marginBottom: paragraphGap }
 
@@ -122,13 +131,14 @@ export function ResumeBody({ variant }: { variant: TemplateId }): React.JSX.Elem
       {/* basics：左头像 | 中名字+职位 | 右基本信息（classic 三列；modern/compact 简化两列） */}
       <SectionBlock path="basics" onClick={() => jump('basics')} style={{ fontFamily: fontFor('basics') }} hint={t('preview.locateHint')}>
         <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
-          {showPhoto ? (
+          {showPhoto && !photoBroken ? (
             <img
               src={photoSrc as string}
               alt=""
               width={photoW}
               height={photoH}
               className="redact-field"
+              onError={() => setPhotoBroken(true)}
               style={{ width: photoW, height: photoH, borderRadius: '4px', objectFit: 'cover', flexShrink: 0 }}
             />
           ) : null}

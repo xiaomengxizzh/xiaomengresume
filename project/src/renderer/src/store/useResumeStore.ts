@@ -21,8 +21,10 @@ interface ResumeState {
   resume: Resume
   /** 当前编辑 section（左侧导航/折叠状态） */
   activeSection: string
-  /** 当前活动字段路径（预览反查定位用） */
+  /** 预览反查定位路径（仅预览点击置位，触发 EditorPane 滚动+闪烁；2026-08-08 与 lastEditedPath 拆分） */
   activeFieldPath: FieldPath | null
+  /** 最近一次编辑提交的字段路径（纯记录，不触发预览反查；每键更新） */
+  lastEditedPath: FieldPath | null
   /** 历史栈版本号（工具栏 undo/redo 可用性响应式） */
   historyTick: number
   /** 侧边栏完全收起标志（true = 宽 0；false = 展开 220px；2026-08-07 改为硬性完全收起） */
@@ -63,7 +65,12 @@ interface ResumeState {
 }
 
 function cloneResume(r: Resume): Resume {
-  return structuredClone(r)
+  const next = structuredClone(r)
+  // P2 修复：photo 可能是超大 data URL（≤2MB），structuredClone 每提交复制一份 →
+  // 历史栈 50 步 ≈ 50 份副本（50~100MB 常驻）。photo 为不可变字符串，
+  // 克隆后共享引用安全（仅当 photo 本身被编辑时才产生新字符串），历史栈内存只存 1 份。
+  next.basics.photo = r.basics.photo
+  return next
 }
 
 /** 数组型 section 的追加工厂（带 uuid id） */
@@ -93,6 +100,7 @@ export const useResumeStore = create<ResumeState>()((set, get) => ({
   resume: createEmptyResume(),
   activeSection: 'basics',
   activeFieldPath: null,
+  lastEditedPath: null,
   historyTick: 0,
   sidebarCollapsed: false,
   currentView: 'resumes-home',
@@ -106,7 +114,10 @@ export const useResumeStore = create<ResumeState>()((set, get) => ({
       next.layout = {}
     }
     setByPath(next, path, value)
-    set({ resume: next, activeFieldPath: path, historyTick: get().historyTick + 1 })
+    // P2 修复：编辑提交只写 lastEditedPath（纯记录），不再污染 activeFieldPath——
+    // 原每次按键都置位 activeFieldPath，EditorPane 反查 effect 随每次提交触发
+    // 滚动 + rm-flash 闪烁（打字时整卡高亮抖动）
+    set({ resume: next, lastEditedPath: path, historyTick: get().historyTick + 1 })
   },
 
   appendItem: (section, item) => {
@@ -163,6 +174,7 @@ export const useResumeStore = create<ResumeState>()((set, get) => ({
       resume: structuredClone(resume),
       activeSection: 'basics',
       activeFieldPath: null,
+      lastEditedPath: null,
       historyTick: get().historyTick + 1
     })
   },
@@ -179,6 +191,7 @@ export const useResumeStore = create<ResumeState>()((set, get) => ({
       resume: createEmptyResume(),
       activeSection: 'basics',
       activeFieldPath: null,
+      lastEditedPath: null,
       historyTick: get().historyTick + 1
     })
   },

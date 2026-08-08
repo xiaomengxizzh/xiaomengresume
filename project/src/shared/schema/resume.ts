@@ -244,8 +244,11 @@ export const ResumeSchema = z.object({
 })
 export type Resume = z.infer<typeof ResumeSchema>
 
-/** 默认空简历工厂（layout / targetJobDescription / meta 省略 = 回落模板预设） */
+/** 默认空简历工厂（layout / targetJobDescription / meta 省略 = 回落模板预设）。
+ *  P2 修复：EMPTY_DOC 为模块级共享常量，直接引用会令 basics.profile 与 summary.content
+ *  恒等别名（编辑一处污染另一处），且所有新简历共享同一对象——此处按次独立克隆。 */
 export function createEmptyResume(): Resume {
+  const emptyDoc = (): RichText => ({ type: 'doc', content: [] })
   return {
     schemaVersion: 1,
     basics: {
@@ -258,12 +261,12 @@ export function createEmptyResume(): Resume {
       website: '',
       photo: '',
       headline: '',
-      profile: EMPTY_DOC,
+      profile: emptyDoc(),
       birthDate: '',
       employmentStatus: '',
       customFields: []
     },
-    summary: { content: EMPTY_DOC },
+    summary: { content: emptyDoc() },
     education: [],
     work: [],
     projects: [],

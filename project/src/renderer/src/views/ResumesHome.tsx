@@ -11,7 +11,6 @@ export function ResumesHome(): React.JSX.Element {
   const { t } = useTranslation()
   const newResume = useResumeStore((s) => s.newResume)
   const setCurrentView = useResumeStore((s) => s.setCurrentView)
-  const resumeId = useResumeStore((s) => s.resumeId)
 
   const items: HomeItem[] = [
     {
@@ -19,13 +18,11 @@ export function ResumesHome(): React.JSX.Element {
       titleKey: 'homeCard.newBlank',
       descKey: 'homeCard.newBlankDesc',
       onClick: () => {
-        // 若已有当前简历（recent 自动加载），直接进编辑器；否则创建新空白
-        if (resumeId) {
-          setCurrentView('editor')
-        } else {
-          newResume()
-          setCurrentView('editor')
-        }
+        // P1 修复（2026-08-08）：无条件新建空白。原实现用 resumeId 判断"是否已在编辑器上下文"，
+        // 但启动恢复永久置位 resumeId → newResume() 分支不可达，老用户「新建空白」永远只是
+        // 回到编辑器显示最近简历。当前简历内容已由自动保存落盘，新建不会丢失。
+        newResume()
+        setCurrentView('editor')
       }
     },
     {

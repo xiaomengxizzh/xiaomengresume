@@ -30,7 +30,12 @@ export function useAppBootstrap(): void {
         for (const id of pending) {
           // 同步确认弹窗（Electron renderer 支持 window.confirm）
           if (window.confirm(t('editor.recovery.confirm', { id: id.slice(0, 8) }))) {
-            await window.electronAPI.resumes.recover(id)
+            try {
+              await window.electronAPI.resumes.recover(id)
+            } catch {
+              // 2026-08-08：单条恢复失败不阻断其余恢复与最近简历加载（原抛错连带跳过下方流程）
+              window.alert(t('editor.recovery.failed', { id: id.slice(0, 8) }))
+            }
           }
         }
         // 启动恢复最近简历（2026-08-07 修正：仅预加载数据，不自动切编辑器——

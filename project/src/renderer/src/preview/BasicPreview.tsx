@@ -21,9 +21,10 @@ export function BasicPreview(): React.JSX.Element {
   const wrapRef = useRef<HTMLDivElement>(null)
   const paperRef = useRef<HTMLDivElement>(null)
   const templateId = useResumeStore((s) => s.resume.layout?.templateId)
-  useResumeStore((s) => s.resume)
 
   // L1 修复：按 templateId 取组件（缺省回落 classic）
+  // 注：resume 内容订阅在 ResumeBody 内部（useThrottledResume，P2 rAF 合并），
+  // 本壳不再额外订阅 resume——避免每键多一层重渲。
   const Template = getTemplate(templateId).component
 
   useEffect(() => {

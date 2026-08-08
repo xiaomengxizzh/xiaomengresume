@@ -113,11 +113,30 @@ export function registerExportIpc(): void {
 
           const language = (store.get('language') ?? 'zh-CN') as 'zh-CN' | 'en'
           const privacyMode = args.privacyMode ?? false
-          const { buffer: pdfData, warnings } = await buildTextPdf(parsed, {
+          // P1 修复（2026-08-08）：主进程侧超时兜底——renderToBuffer 挂起（超大简历 + CJK 字体内嵌）
+          // 时拒绝并**不写盘**。原实现渲染端 30s race 只解 UI 冻结，主进程任务继续运行并写文件
+          // （僵尸写盘），超时后再次导出并发双写同一路径。
+          const buildPromise = buildTextPdf(parsed, {
             language,
             privacyMode,
             pages: pages === 'first' ? 'first' : 'all'
           })
+          const BUILD_TIMEOUT_MS = 30_000
+          let timer: ReturnType<typeof setTimeout> | null = null
+          let pdfData: Buffer
+          let warnings: string[]
+          try {
+            const buildResult = await Promise.race([
+              buildPromise,
+              new Promise<never>((_, reject) => {
+                timer = setTimeout(() => reject(new Error('export: pdf build timed out (>30s)')), BUILD_TIMEOUT_MS)
+              })
+            ])
+            pdfData = buildResult.buffer
+            warnings = buildResult.warnings
+          } finally {
+            if (timer) clearTimeout(timer)
+          }
           for (const w of warnings) console.warn(`[Export] ${w}`)
           emitProgress(sender, 'write', 0.9)
 

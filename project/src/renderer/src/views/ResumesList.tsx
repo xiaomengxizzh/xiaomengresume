@@ -27,8 +27,13 @@ export function ResumesList(): React.JSX.Element {
   }, [])
 
   const open = async (id: string): Promise<void> => {
-    const resume = await window.electronAPI.resumes.open(id)
-    loadResume(id, resume)
+    try {
+      const resume = await window.electronAPI.resumes.open(id)
+      loadResume(id, resume)
+    } catch (e) {
+      // P2 修复：文件被删/损坏时 open 抛错，原 unhandled rejection 无任何反馈
+      setError(String(e))
+    }
   }
 
   return (
