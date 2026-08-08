@@ -10,7 +10,7 @@ const BTN_VARIANTS: Record<Variant, string> = {
   default: 'bg-foreground text-surface hover:opacity-85',
   ghost: 'text-foreground hover:bg-border/50',
   outline: 'border border-border text-foreground hover:bg-border/40',
-  danger: 'bg-[#a32d2d] text-white hover:opacity-85'
+  danger: 'bg-danger text-white hover:opacity-85'
 }
 
 export function Button({

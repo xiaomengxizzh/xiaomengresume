@@ -3,6 +3,9 @@
 /.pnpm-store/
 /.pnpm-store-mirror/
 /.tmpnpm/
+/.tmp/
+/project/.tmp/
+/.codegraph/
 __pycache__/
 *.pyc
 *.log

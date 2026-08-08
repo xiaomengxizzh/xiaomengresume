@@ -108,7 +108,8 @@ export function ExportDialog({ open, onClose, resumeId }: ExportDialogProps): Re
         format: selected,
         folderPath: folder || undefined,
         pages,
-        resumeId
+        resumeId,
+        privacyMode
       } as never)
       const timeoutPromise = new Promise<never>((_, reject) => {
         timer = setTimeout(() => reject(new Error(t('export.timeoutError'))), EXPORT_TIMEOUT_MS)
@@ -151,7 +152,7 @@ export function ExportDialog({ open, onClose, resumeId }: ExportDialogProps): Re
 
         {/* 隐私联动提示（F16） */}
         {privacyMode ? (
-          <div className="mb-3 rounded-md bg-[#fcebeb] px-3 py-2 text-xs text-[#a32d2d]">{t('export.privacyHint')}</div>
+          <div className="mb-3 rounded-md bg-danger-bg px-3 py-2 text-xs text-danger">{t('export.privacyHint')}</div>
         ) : null}
 
         {/* 4 格式卡片 */}
@@ -175,7 +176,7 @@ export function ExportDialog({ open, onClose, resumeId }: ExportDialogProps): Re
 
         {/* 页数提示（D12/D13） */}
         {selected === 'textPdf' && pageCount > 1 ? (
-          <div className="mt-3 rounded-md bg-[#fff3cd] px-3 py-2 text-xs text-[#7a5c00]">
+          <div className="mt-3 rounded-md bg-warning-bg px-3 py-2 text-xs text-warning">
             {t('export.pageCountHint', { count: pageCount })}
             <div className="mt-1.5 flex items-center gap-2">
               <label className="flex items-center gap-1.5">
@@ -217,7 +218,7 @@ export function ExportDialog({ open, onClose, resumeId }: ExportDialogProps): Re
         ) : null}
 
         {/* 错误提示 */}
-        {error ? <div className="mt-2 text-xs text-[#a32d2d]">{error}</div> : null}
+        {error ? <div className="mt-2 text-xs text-danger">{error}</div> : null}
 
         {/* ATS 静态说明（D7：砍动态分级提示后的替代） */}
         <div className="mt-3 border-t border-border/70 pt-2 text-[11px] leading-relaxed text-foreground/45">{t('export.atsNote')}</div>

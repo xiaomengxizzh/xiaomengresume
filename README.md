@@ -119,7 +119,7 @@ Pre-built binaries will be published on the [Releases](https://github.com/xiaome
 | Validation | Zod |
 | AI SDK | Vercel AI SDK v7 (BYOK, streamText) |
 | i18n | react-i18next |
-| Encryption | electron-store + safeStorage (AES-256-GCM) |
+| Encryption | electron-store + safeStorage (AES-256-GCM) — API Key 加密（M3） |
 | Packaging | electron-builder + GitHub Releases (M5) |
 | CI | GitHub Actions |
 

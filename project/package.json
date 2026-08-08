@@ -22,8 +22,8 @@
   },
   "dependencies": {
     "@ai-sdk/deepseek": "^3.0.0",
-    "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
+    "@react-pdf/renderer": "4.5.1",
     "@tiptap/extension-link": "^3.29.2",
     "@tiptap/pm": "^3.29.2",
     "@tiptap/react": "^3.29.2",
@@ -31,6 +31,7 @@
     "ai": "^7.0.0",
     "electron-store": "^11.0.2",
     "i18next": "^24.2.0",
+    "pdf-lib": "1.17.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-i18next": "^15.4.0",

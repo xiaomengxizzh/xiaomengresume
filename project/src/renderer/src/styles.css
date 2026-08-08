@@ -12,6 +12,13 @@
   --color-surface: var(--card);
   --color-foreground: var(--foreground);
   --color-border: var(--border);
+  /* 2026-08-08 语义色令牌（danger/warning/success）：提示/徽标/错误文案用，替代硬编码 hex */
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
 }
 
 :root {
@@ -23,10 +30,18 @@
   --selected: #e5e5e7; /* 2026-08-07：派生选中令牌（F18 四色，与 --border 同值，hover 用 color-mix 派生浅色） */
   --radius: 12px;
   --shadow: 0 6px 24px rgba(0, 0, 0, 0.05);
+  /* 2026-08-08 语义色（light 基线）：danger=红 / warning=黄 / success=绿 */
+  --danger: #a32d2d;
+  --danger-bg: #fcebeb;
+  --warning: #7a5c00;
+  --warning-bg: #fff3cd;
+  --success: #3b6d11;
+  --success-bg: #eaf3de;
 }
 
 /* 2026-08-07：F18 四主题令牌骨架（切换逻辑随 M5，令牌先行）。
-   护栏：每块自包含全部 6 令牌（含 --foreground）；dark 前景 #E0E0E0 非绿；green 用深色前景保证可读。 */
+   护栏：每块自包含全部 6 令牌（含 --foreground）；dark 前景 #E0E0E0 非绿；green 用深色前景保证可读。
+   2026-08-08 补充：语义色各主题自包含；dark 用浅色变体保证深底可读，green 沿用 light 语义色（背景均为浅色卡）。 */
 [data-theme="dark"] {
   --background: #121212;
   --card: #202124;
@@ -35,6 +50,12 @@
   --border: #3c4043;
   --selected: #3c4043;
   --shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  --danger: #f2b8b5;
+  --danger-bg: #3d2323;
+  --warning: #ecd9a0;
+  --warning-bg: #3a3120;
+  --success: #b5d8a8;
+  --success-bg: #22301f;
 }
 
 [data-theme="beige"] {
@@ -45,6 +66,12 @@
   --border: #f0e3cb;
   --selected: #f0e3cb;
   --shadow: 0 6px 24px rgba(0, 0, 0, 0.05);
+  --danger: #a32d2d;
+  --danger-bg: #fcebeb;
+  --warning: #7a5c00;
+  --warning-bg: #fff3cd;
+  --success: #3b6d11;
+  --success-bg: #eaf3de;
 }
 
 [data-theme="green"] {
@@ -55,6 +82,12 @@
   --border: #dce8ce;
   --selected: #dce8ce;
   --shadow: 0 6px 24px rgba(0, 0, 0, 0.05);
+  --danger: #a32d2d;
+  --danger-bg: #fcebeb;
+  --warning: #7a5c00;
+  --warning-bg: #fff3cd;
+  --success: #3b6d11;
+  --success-bg: #eaf3de;
 }
 
 * {
@@ -365,18 +398,18 @@ body {
 }
 
 .status-badge.saving {
-  background: #fff3cd;
-  color: #7a5c00;
+  background: var(--warning-bg);
+  color: var(--warning);
 }
 
 .status-badge.saved {
-  background: #eaf3de;
-  color: #3b6d11;
+  background: var(--success-bg);
+  color: var(--success);
 }
 
 .status-badge.error {
-  background: #fcebeb;
-  color: #a32d2d;
+  background: var(--danger-bg);
+  color: var(--danger);
 }
 
 /* ── 排版条（编辑面板顶部，2026-08-07 UI 重构）────────────────────────── */

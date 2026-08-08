@@ -119,8 +119,12 @@ export interface ExportRunArgs {
   imageFormat?: 'png' | 'jpg'
   /** 仅 jpg：0–1，默认 0.92（v1.1） */
   quality?: number
-  /** 多页语义（D5）：'all' 全部（默认）/ 'first' 仅第一页（截断后续，D13 CSS 截断） */
+  /** 多页语义（D5）：'all' 全部（默认）/ 'first' 仅第一页（v2.0 起 pdf-lib 裁剪） */
   pages?: 'all' | 'first'
+  /** 目标简历 id（主进程 openResume 读取；json/textPdf 必填） */
+  resumeId?: string
+  /** F16 隐私打码：true 时 PDF 敏感字段置 ████（与预览 data-redact 对齐；2026-08-08 v2.0） */
+  privacyMode?: boolean
 }
 
 export interface ExportRunResult {
