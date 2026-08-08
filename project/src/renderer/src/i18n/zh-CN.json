@@ -268,6 +268,7 @@
     "pagesFirst": "仅第一页",
     "pagesFirstWarn": "（将截断后续内容）",
     "privacyHint": "隐私模式已开启，导出将自动脱敏",
-    "atsNote": "单栏矢量 PDF，ATS 可正常解析"
+    "atsNote": "单栏矢量 PDF，ATS 可正常解析",
+    "timeoutError": "导出超时：打印引擎未响应（常见于无 GPU 环境）。请重试或检查显卡驱动。"
   }
 }

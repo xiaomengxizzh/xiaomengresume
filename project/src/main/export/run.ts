@@ -27,6 +27,11 @@ import { openResume } from '../files/resume-store'
 const store = new Store<Settings>()
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
+/** 打印超时（2026-08-08 P1 根治）：GPU 不可用环境 printToPDF 永不 resolve（Chromium known issue）→ 必须 race 兜底 */
+const PRINT_TIMEOUT_MS = 15_000
+/** 页面加载超时：loadURL 卡死时 did-finish-load 永不触发，不能裸等 */
+const LOAD_TIMEOUT_MS = 8_000
+
 /** 打印窗口单例（懒创建；退出时由 main/index before-quit 清理） */
 let exportWindow: BrowserWindow | null = null
 
@@ -61,11 +66,16 @@ function rendererUrl(query: string): string {
 /** 等待 React 就绪（did-finish-load 不代表 React 渲染完 → 轮询 __exportReady） */
 async function waitForReact(win: BrowserWindow, timeoutMs = 5000): Promise<void> {
   const deadline = Date.now() + timeoutMs
-  // 页面在 did-finish-load 前不轮询
-  await new Promise<void>((resolve) => {
+  // 页面在 did-finish-load 前不轮询；加载本身带超时保护（loadURL 卡死时 did-finish-load 永不触发）
+  await new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('export: page load timeout')), LOAD_TIMEOUT_MS)
     if (win.webContents.isLoading()) {
-      win.webContents.once('did-finish-load', () => resolve())
+      win.webContents.once('did-finish-load', () => {
+        clearTimeout(timer)
+        resolve()
+      })
     } else {
+      clearTimeout(timer)
       resolve()
     }
   })
@@ -171,10 +181,16 @@ export function registerExportIpc(): void {
             new Promise((r) => setTimeout(r, 3000))
           ])
 
-          const data = await win.webContents.printToPDF({
-            printBackground: true,
-            preferCSSPageSize: true
-          })
+          // printToPDF 在 GPU 不可用环境永不 resolve（Chromium known issue）→ race 超时兜底（P1 2026-08-08）
+          const data = await Promise.race([
+            win.webContents.printToPDF({
+              printBackground: true,
+              preferCSSPageSize: true
+            }),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('export: printToPDF timeout (GPU unavailable?)')), PRINT_TIMEOUT_MS)
+            )
+          ])
           emitProgress(sender, 'write', 0.9)
 
           const dir = resolveExportDir(folderPath)
@@ -192,6 +208,8 @@ export function registerExportIpc(): void {
         // imagePdf / image：v1.1（pdf-lib 候选，见《技术栈.md》§3.18）
         return { canceled: false, error: `export: format ${format} coming in v1.1` }
       } catch (err) {
+        // 打印窗口单例：任何失败都销毁窗口，防「中毒」窗口让后续导出续挂（P1 2026-08-08）
+        destroyExportWindow()
         return { canceled: false, error: err instanceof Error ? err.message : String(err) }
       }
     }

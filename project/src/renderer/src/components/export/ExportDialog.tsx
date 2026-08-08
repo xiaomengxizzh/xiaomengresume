@@ -99,13 +99,21 @@ export function ExportDialog({ open, onClose, resumeId }: ExportDialogProps): Re
     const unsub = window.electronAPI.export.onProgress((p: ExportProgress) => {
       setProgress(p.ratio)
     })
+    // P0 兜底（2026-08-08）：主进程 printToPDF 已有 15s race 超时；
+    // 此处 30s 双保险，防 IPC 调用整体永不返回（如打印窗口加载卡死）时弹窗永久锁死。
+    const EXPORT_TIMEOUT_MS = 30_000
+    let timer: ReturnType<typeof setTimeout> | null = null
     try {
-      const result = await window.electronAPI.export.run({
+      const runPromise = window.electronAPI.export.run({
         format: selected,
         folderPath: folder || undefined,
         pages,
         resumeId
       } as never)
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(t('export.timeoutError'))), EXPORT_TIMEOUT_MS)
+      })
+      const result = await Promise.race([runPromise, timeoutPromise])
       if (result.canceled) {
         // 用户取消：静默关闭
       } else if (result.error) {
@@ -117,10 +125,11 @@ export function ExportDialog({ open, onClose, resumeId }: ExportDialogProps): Re
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
+      if (timer) clearTimeout(timer)
       unsub()
       setRunning(false)
     }
-  }, [selected, folder, pages, resumeId, onClose])
+  }, [selected, folder, pages, resumeId, onClose, t])
 
   if (!open) return null
 

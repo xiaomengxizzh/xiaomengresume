@@ -16,25 +16,38 @@ import { getTemplate } from './templates/registry'
  * M2 F5 D10：导出模式（隐藏打印窗口经 ?export=1&resumeId= 加载应用）
  * 只渲染当前简历的模板（含 data-redact 隐私）+ 「仅第一页」CSS 截断类，
  * 完成后置 window.__exportReady = true（主进程 waitForReact 轮询该标志）。
+ *
+ * 2026-08-08 竞态修复：__exportReady 必须在【简历数据加载完成】后置位。
+ * 原先在 mount 的 rAF 置位，而 useAppBootstrap 的 resumes.open 是异步 IPC
+ * （数十~数百 ms），rAF（≈16ms）几乎必然先触发 → 主进程打印空模板 PDF。
+ * 现以 resumeId 非空（loadResume 完成）为就绪条件，数据未就绪不渲染、不置位。
  */
 function ExportView(): React.JSX.Element | null {
   const resume = useResumeStore((s) => s.resume)
+  const resumeId = useResumeStore((s) => s.resumeId)
   const Template = getTemplate(resume.layout?.templateId).component
 
+  // 就绪 = 目标简历已加载（loadResume 设置 resumeId；初始为 null）
+  const ready = resumeId !== null
+
   useEffect(() => {
+    if (!ready) return
     const params = new URLSearchParams(window.location.search)
     // D13：仅第一页 → 根节点挂 print-first-page-only（CSS overflow 截断）
     if (params.get('pages') === 'first') {
       document.body.classList.add('print-first-page-only')
     }
-    // React 渲染完成后置位就绪标志（主进程轮询）
+    // React 渲染 + 数据就绪后置位就绪标志（主进程轮询）
     requestAnimationFrame(() => {
       window.__exportReady = true
     })
     return () => {
       document.body.classList.remove('print-first-page-only')
     }
-  }, [])
+  }, [ready])
+
+  // 数据未就绪：不渲染模板（避免主进程打印空内容），主进程 waitForReact 会等
+  if (!ready) return null
 
   return (
     <div className="export-root">

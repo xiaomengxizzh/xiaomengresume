@@ -15,6 +15,22 @@ export default tseslint.config(
     }
   },
   {
+    // CJS 工具脚本（如 scripts/verify-printpdf.cjs 本机 GPU 验证探针）
+    files: ['scripts/**/*.cjs'],
+    languageOptions: {
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        require: 'readonly',
+        setTimeout: 'readonly',
+        __dirname: 'readonly'
+      }
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off'
+    }
+  },
+  {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
       parserOptions: {

@@ -6,6 +6,7 @@ import { registerIpc } from './ipc/register'
 import { runM0Smoke } from './smoke'
 import { runUiSmoke } from './ui-smoke'
 import { runUiShot } from './ui-shot'
+import { runExportVerify } from './verify-export'
 import icon from '../../resources/icon.png?asset'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -88,6 +89,12 @@ app.whenReady().then(() => {
   // UI 自检：XM_UI_SHOT=1 时截图渲染页面 + 收集 console 错误（本地检查用）
   if (process.env.XM_UI_SHOT === '1') {
     setTimeout(() => void runUiShot(), 2500)
+  }
+
+  // PDF 导出全链路实测（2026-08-08）：XM_EXPORT_SMOKE=1 时走真实 export:run 链路
+  // createSample → 导出窗口 → printToPDF → 落盘校验（防 M0 smoke 只测 legacy print.pdf 的盲区）
+  if (process.env.XM_EXPORT_SMOKE === '1') {
+    setTimeout(() => void runExportVerify(), 2500)
   }
 
   app.on('activate', () => {
