@@ -62,6 +62,10 @@ function withWriteLock<T>(id: string, fn: () => Promise<T>): Promise<T> {
       // 队列尾吞错：错误已由调用方拿到，不污染队列链
     })
   )
+  // 2026-08-08 低危加固：写完成即释放队列条目，防 Map 随 id 无限增长
+  void next.finally(() => {
+    if (writeQueues.get(id) === next) writeQueues.delete(id)
+  })
   return next
 }
 
@@ -390,6 +394,8 @@ export async function importBackup(win: BrowserWindow): Promise<number> {
     const rel = e.name.replace(/^resumes\//, '')
     if (!rel.endsWith('.json') || rel.includes('/')) continue
     if (e.name.startsWith('resumes/')) {
+      // 2026-08-08 低危加固：仅接受 <uuid>.json，防恶意 zip 把任意文件名写入存储目录
+      if (!UUID_RE.test(rel.slice(0, -5))) continue
       const raw = JSON.parse(e.data.toString('utf-8')) as unknown
       const resume = migrate(raw) // 版本化校验，损坏条目跳过
       const file = path.join(getStorageDir(), path.basename(rel))

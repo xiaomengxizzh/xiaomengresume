@@ -40,6 +40,10 @@ export function registerIpc(): void {
 
   // print:pdf —— 端到端验证
   ipcMain.handle(IPC.Print.Pdf, async (_evt, html: string) => {
+    // 2026-08-08 低危加固：渲染进程被攻破时可传任意内容 → 限长度 + 限类型，防异常大 payload
+    if (typeof html !== 'string' || html.length > 1_000_000) {
+      throw new Error('print:pdf: bad payload')
+    }
     const { data, mimeType } = await printHtmlToPdf(html)
     return { data: data.buffer as ArrayBuffer, mimeType }
   })

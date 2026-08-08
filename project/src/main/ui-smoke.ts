@@ -2,6 +2,7 @@
  * ui-smoke —— UI 级走查（XM_UI_SMOKE=1 时由 index.ts 触发；G.3 双轨制 UI 轨）
  * 目标：防「IPC 级冒烟测不出的接线遗漏」（如 useAutoSave 定义了没人挂载的 P0-1）。
  * 走真实用户旅程：点卡片 → 受控输入编辑 → 500ms 防抖自动保存 → 读盘验证
+ *   → 【M2 F5 导出轨：顶栏导出按钮 → 模态 → runExport → textPdf 落盘验证】
  *   → app.relaunch() 真重启 → 新进程启动恢复（useAppBootstrap recent[0]）
  *   → UI 断言数据还在 + 磁盘确认 → 清理退出。
  *
@@ -10,9 +11,10 @@
  * 只有 React 组件树完整接线（事件 → store → useAutoSave → IPC → 落盘）才会通过。
  *
  * 双阶段 + marker 文件（userData/ui-smoke-phase2.json）：
- *   阶段 1：新建→编辑→保存→读盘→写 marker→relaunch（退出码由阶段 2 决定）
+ *   阶段 1：新建→编辑→保存→读盘验证→导出验证→写 marker→relaunch（退出码由阶段 2 决定）
  *   阶段 2：重启后启动恢复→UI/磁盘双确认→恢复存储设置→清理→退出
- * 存储隔离：临时目录（app.getPath('temp')/xm-ui-smoke-*），不污染用户数据。
+ * 存储隔离：临时目录（app.getPath('temp')/xm-ui-smoke-*），不污染用户数据；
+ * 导出轨同样把 export.lastFolder 指到临时目录（防记忆目录把 PDF 写到别处），清理时恢复。
  */
 import { app, BrowserWindow } from 'electron'
 import { promises as fs } from 'node:fs'
@@ -26,7 +28,7 @@ const MARKER_FILE = (): string => path.join(app.getPath('userData'), 'ui-smoke-p
 /** Windows 杀软/句柄占用下 electron-store 原子写 rename 偶发 EPERM → 退避重试（resume-store 同款对策） */
 async function storeSetWithRetry(
   store: Store<Settings>,
-  key: 'storage.folderPath',
+  key: 'storage.folderPath' | 'export.lastFolder',
   value: string | undefined
 ): Promise<void> {
   const RETRY_CODES = new Set(['EPERM', 'EBUSY'])
@@ -50,6 +52,7 @@ async function storeSetWithRetry(
 interface Marker {
   tmpDir: string
   prevStorage?: string
+  prevLastFolder?: string
   name: string
   phase1At: number
 }
@@ -100,13 +103,16 @@ async function findResumeOnDisk(dir: string, name: string): Promise<string | nul
   return null
 }
 
-/** 阶段 1：新建 → 编辑 → 保存 → 读盘验证 → 写 marker → relaunch */
+/** 阶段 1：新建 → 编辑 → 保存 → 读盘验证 → 导出轨验证 → 写 marker → relaunch */
 async function runPhase1(win: BrowserWindow): Promise<void> {
   const store = new Store<Settings>()
   const prevStorage = store.get('storage.folderPath')
+  const prevLastFolder = store.get('export.lastFolder')
   const tmpDir = path.join(app.getPath('temp'), `xm-ui-smoke-${Date.now()}`)
   await fs.mkdir(tmpDir, { recursive: true })
   await storeSetWithRetry(store, 'storage.folderPath', tmpDir)
+  // 导出轨验证：显式把导出目录指到临时目录，避免 memory 的 lastFolder 把 PDF 写到别处
+  await storeSetWithRetry(store, 'export.lastFolder', tmpDir)
 
   // 1) 等首页卡片渲染 → 点「新建空白」（ResumesHome items[0]，.home-card 第一个）
   await waitFor(win, "document.querySelector('.home-card') !== null", 'home card', 15000)
@@ -137,14 +143,76 @@ async function runPhase1(win: BrowserWindow): Promise<void> {
   }
   if (!onDisk) throw new Error('phase1: edited resume never reached disk (auto-save wiring broken?)')
 
+  // 4.5) 导出轨验证（2026-08-08 C3：防「导出接线遗漏」复发，P0-1 同款教训）：
+  //      真实 DOM 事件走 顶栏导出按钮 → ExportDialog 模态 → runExport → textPdf 落盘
+  await verifyExportViaUi(win, tmpDir, TEST_NAME)
+
   // 5) 写阶段 2 marker（含存储目录路径 + 期望名字 + 原设置，供重启后恢复）
   const marker: Marker = { tmpDir, name: TEST_NAME, phase1At: Date.now() }
   if (prevStorage !== undefined) marker.prevStorage = prevStorage
+  if (prevLastFolder !== undefined) marker.prevLastFolder = prevLastFolder
   await fs.writeFile(MARKER_FILE(), JSON.stringify(marker), 'utf-8')
 
   console.log(`UI_SMOKE_RESULT ${JSON.stringify({ phase: 1, ok: true, file: onDisk, relaunching: true })}`)
   app.relaunch()
   app.exit(0)
+}
+
+/** 导出轨 UI 级走查：点顶栏「导出」→ ExportDialog → 点「导出」主按钮 → 轮询 textPdf 落盘（%PDF- 魔数） */
+async function verifyExportViaUi(win: BrowserWindow, dir: string, name: string): Promise<void> {
+  // 1) 点顶栏「导出」按钮（ExportDialog 打开，EditorView onExport → setExportOpen(true)）
+  const clicked = await execJs(
+    win,
+    `(() => {
+      const btn = [...document.querySelectorAll('.topbar button')].find(
+        (b) => (b.textContent ?? '').trim() === ${JSON.stringify('导出')}
+      )
+      if (!btn) return false
+      btn.click()
+      return true
+    })()`
+  )
+  if (!clicked) throw new Error('phase1: export button not found in topbar')
+
+  // 2) 等 ExportDialog 模态出现（role=dialog；aria-label 由 i18n export.title 提供）
+  await waitFor(win, "document.querySelector('[role=dialog]') !== null", 'export dialog', 15000)
+
+  // 3) 点主按钮「导出」（ExportDialog 内唯一文本===导出 的 button；文本走 i18n export.run）
+  const runClicked = await execJs(
+    win,
+    `(() => {
+      const dlg = document.querySelector('[role=dialog]')
+      if (!dlg) return false
+      const btn = [...dlg.querySelectorAll('button')].find(
+        (b) => (b.textContent ?? '').trim() === ${JSON.stringify('导出')}
+      )
+      if (!btn) return false
+      btn.click()
+      return true
+    })()`
+  )
+  if (!runClicked) throw new Error('phase1: export run button not found in dialog')
+
+  // 4) 等 textPdf 落盘（主进程 @react-pdf/renderer 纯代码生成，无 GPU 依赖；90s 兜底）
+  const deadline = Date.now() + 90_000
+  let pdfOk = false
+  while (Date.now() < deadline) {
+    try {
+      const files = await fs.readdir(dir)
+      const pdf = files.find((f) => f.endsWith('.pdf'))
+      if (pdf) {
+        const buf = await fs.readFile(path.join(dir, pdf))
+        // %PDF- 魔数 + 非空（与 build.test.ts 同判据）
+        pdfOk = buf.length > 100 && buf.subarray(0, 5).toString('ascii') === '%PDF-'
+        if (pdfOk) break
+      }
+    } catch {
+      /* 目录尚未出现/文件正在写 → 继续轮询 */
+    }
+    await new Promise((r) => setTimeout(r, 500))
+  }
+  if (!pdfOk) throw new Error('phase1: textPdf never landed on disk (export wiring broken?)')
+  console.log(`UI_SMOKE_EXPORT ${JSON.stringify({ ok: true, name })}`)
 }
 
 /** 阶段 2（重启后）：启动恢复 → UI/磁盘双确认 → 清理 → 退出 */
@@ -174,9 +242,10 @@ async function runPhase2(win: BrowserWindow): Promise<void> {
   // 3) 磁盘确认：临时目录里名字匹配的简历仍在
   const diskFile = await findResumeOnDisk(marker.tmpDir, marker.name)
 
-  // 4) 清理：删 marker、恢复原存储设置、删临时目录
+  // 4) 清理：删 marker、恢复原存储设置、恢复导出记忆目录、删临时目录
   await fs.unlink(MARKER_FILE()).catch(() => {})
   await storeSetWithRetry(store, 'storage.folderPath', marker.prevStorage)
+  await storeSetWithRetry(store, 'export.lastFolder', marker.prevLastFolder)
   await fs.rm(marker.tmpDir, { recursive: true, force: true }).catch(() => {})
 
   console.log(
