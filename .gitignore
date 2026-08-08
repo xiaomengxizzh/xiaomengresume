@@ -1,5 +1,7 @@
 /deps-cache-reusable.tar.gz
-/.workbuddy/
+/.dev/
+/.cache/
+/.mimosa/
 /.pnpm-store/
 /.pnpm-store-mirror/
 /.tmpnpm/

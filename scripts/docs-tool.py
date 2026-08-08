@@ -4,17 +4,17 @@
 
 按《技术栈.md》八 规格实现（2026-08-06 V 阶段定案，本日落地）。
 
-**写权限红线**：只写 `.workbuddy/` 与 `file/draft/`；禁碰 `file/` 正式文档
+**写权限红线**：只写 `.dev/` 与 `file/draft/`；禁碰 `file/` 正式文档
 （与《项目规范.md》G.6 hooks 写权限红线同源——防击穿「单写者铁律」）。
 
 子命令：
-  snapshot  生成 file/ 下 *.md 哈希基线 → .workbuddy/docs-hashes.json（只读 file/）
+  snapshot  生成 file/ 下 *.md 哈希基线 → .dev/docs-hashes.json（只读 file/）
   diff      对比基线列出改动（新增/修改/删除）；无差异输出「0 文件改动」
   matrix    扫 draft/ 草稿「合并归属」→ 需求覆盖矩阵，标「有需求无落点」
   check     体检：引用断裂 + 索引完整性 + 遗留旧词提示（C1/C4/C6）
   state     生成 G.6 状态文件四要素（changedFiles/passedChecks/blockers 自动，
             goal 待 AI 补填；--goal-from-briefs 可从 draft/ 简报自动拼 goal）
-            → .workbuddy/memory/MEMORY.md「当前会话状态」小节
+            → .dev/G6-state.md（G.6 状态文件，独立于记忆）
   selfcheck G.7 结构化自检半自动化（CH1–CH7，证据输出，警告非硬失败；CH7 实现情况覆盖检查对比 git 最近 commit 改动与《项目实现情况》登记）
   where     查某编号/关键词在 file/ 各文档的引用位置（C5 人工核对加速器）
   brief     生成工作包简报骨架 → file/draft/（只写 draft/）
@@ -46,13 +46,15 @@ ROOT = Path(__file__).resolve().parent.parent
 FILE_DIR = ROOT / "file"
 DRAFT_DIR = FILE_DIR / "draft"
 RUBBISH_DIR = FILE_DIR / "rubbish"
-WB_DIR = ROOT / ".workbuddy"
-HASHES_FILE = WB_DIR / "docs-hashes.json"
-MEMORY_FILE = WB_DIR / "memory" / "MEMORY.md"
+# 2026-08-08 重构：工具写路径从 .workbuddy/ 迁到项目内 .dev/（git 忽略），
+# .workbuddy/ 目录已移除（WorkBuddy 记忆已迁移 ZCode 持久化记忆）。
+DEV_DIR = ROOT / ".dev"
+HASHES_FILE = DEV_DIR / "docs-hashes.json"
+STATE_FILE = DEV_DIR / "G6-state.md"
 
-# 引用《xxx.md/.html》与 `file/...` / `.workbuddy/...` 路径
+# 引用《xxx.md/.html》与 `file/...` / `.dev/...` 路径
 MD_REF_RE = re.compile(r"《([^《》]+?\.(?:md|html))》")
-PATH_REF_RE = re.compile(r"`?((?:file|\.workbuddy)/[\w./\-\u4e00-\u9fff]+?\.(?:md|html))`?")
+PATH_REF_RE = re.compile(r"`?((?:file|\.dev)/[\w./\-\u4e00-\u9fff]+?\.(?:md|html))`?")
 
 # 必须建索引的 4 份主文档（《项目规范.md》一 1.2）
 INDEX_REQUIRED = {"项目介绍.md", "项目规范.md", "技术栈.md", "项目功能.md"}
@@ -96,12 +98,12 @@ def _scan(base: Path) -> dict[str, dict[str, str]]:
 
 
 def _ensure_wb() -> None:
-    WB_DIR.mkdir(parents=True, exist_ok=True)
+    DEV_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # ── snapshot ─────────────────────────────────────────────────────────────
 def cmd_snapshot(args: argparse.Namespace) -> int:
-    """生成 file/ 下 *.md 哈希基线 → .workbuddy/docs-hashes.json（只读 file/）。"""
+    """生成 file/ 下 *.md 哈希基线 → .dev/docs-hashes.json（只读 file/）。"""
     _ensure_wb()
     data = _scan(FILE_DIR)
     HASHES_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -166,14 +168,14 @@ def cmd_matrix(args: argparse.Namespace) -> int:
 def _locate(ref: str) -> tuple[str, str]:
     """定位引用：返回 (kind, 说明)。kind ∈ ok / archived / retired / missing。
 
-    - ok：file/ 下或项目根/`.workbuddy/` 存在；
+    - ok：file/ 下或项目根/`.dev/` 存在；
     - archived：目标已归档于 rubbish/（历史溯源引用，非断裂）；
     - retired：目标为退役资产（线框图/导航图/生成脚本，2026-08-07 删除，非断裂）；
     - missing：任何位置都不存在（真断裂）。
     """
     if ref in RETIRED_REFS:
         return "retired", "退役资产（2026-08-07 删除，历史引用保留）"
-    if ref.startswith("file/") or ref.startswith(".workbuddy/"):
+    if ref.startswith("file/") or ref.startswith(".dev/"):
         return ("ok", "") if (ROOT / ref).exists() else ("missing", "")
     if (FILE_DIR / ref).exists():
         return "ok", ""
@@ -246,7 +248,7 @@ def cmd_check(args: argparse.Namespace) -> int:
 
 # ── state ────────────────────────────────────────────────────────────────
 def cmd_state(args: argparse.Namespace) -> int:
-    """生成 G.6 状态文件四要素 → .workbuddy/memory/MEMORY.md「当前会话状态」小节。
+    """生成 G.6 状态文件四要素 → .dev/G6-state.md（G.6 状态文件，独立于记忆）。
 
     changedFiles 复用 diff；passedChecks 读 draft/ 自检 + rubbish/ 复核报告；
     blockers 自动提取《项目实现情况.md》待拍板（❓）；
@@ -315,16 +317,15 @@ def cmd_state(args: argparse.Namespace) -> int:
 
     block = "\n".join(lines) + "\n"
     _ensure_wb()
-    (WB_DIR / "memory").mkdir(parents=True, exist_ok=True)
-    text = MEMORY_FILE.read_text(encoding="utf-8") if MEMORY_FILE.exists() else ""
+    text = STATE_FILE.read_text(encoding="utf-8") if STATE_FILE.exists() else ""
     marker = "## 当前会话状态"
     if marker in text:  # 幂等：同小节覆盖，不追加重复
         text = text.split(marker)[0].rstrip() + "\n\n" + block
     else:
         text = text.rstrip() + "\n\n" + block
-    MEMORY_FILE.write_text(text, encoding="utf-8")
+    STATE_FILE.write_text(text, encoding="utf-8")
 
-    print(f"state: 已写入 {_rel(MEMORY_FILE)}「当前会话状态」小节")
+    print(f"state: 已写入 {_rel(STATE_FILE)}（G.6 状态文件）")
     print(f"  goal        = {goal}")
     print(f"  changedFiles= {len(changed)} 项" + (f"（最近：{changed[-1]}）" if changed else "（无改动）"))
     print(f"  passedChecks= {len(passed)} 项")
@@ -708,11 +709,11 @@ def main(argv: list[str] | None = None) -> int:
         pass
     parser = argparse.ArgumentParser(
         prog="docs-tool",
-        description="项目文档运维工具层（零依赖；写权限只到 .workbuddy/ 与 file/draft/，禁碰 file/ 正式文档）",
+        description="项目文档运维工具层（零依赖；写权限只到 .dev/ 与 file/draft/，禁碰 file/ 正式文档）",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p = sub.add_parser("snapshot", help="生成 file/ *.md 哈希基线 → .workbuddy/docs-hashes.json")
+    p = sub.add_parser("snapshot", help="生成 file/ *.md 哈希基线 → .dev/docs-hashes.json")
     p.set_defaults(func=cmd_snapshot)
 
     p = sub.add_parser("diff", help="对比基线列出改动（新增/修改/删除）")
@@ -724,7 +725,7 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("check", help="体检：引用断裂 + 索引完整性 + 旧词提示")
     p.set_defaults(func=cmd_check)
 
-    p = sub.add_parser("state", help="生成 G.6 状态文件四要素 → .workbuddy/memory/MEMORY.md")
+    p = sub.add_parser("state", help="生成 G.6 状态文件四要素 → .dev/G6-state.md")
     p.add_argument("--goal-from-briefs", action="store_true", help="从 draft/ 简报自动拼接 goal（draft/ 空则回退待填）")
     p.set_defaults(func=cmd_state)
 

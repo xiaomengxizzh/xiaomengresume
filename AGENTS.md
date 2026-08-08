@@ -1,8 +1,8 @@
 # xiaomengresume · 项目指令（AGENTS.md）
 
 > 本文件为 ZCode 自动加载的项目级指令（与用户级 `~/.zcode/AGENTS.md` 合并生效），
-> 内容为**脱敏精简版记忆**（公开 GitHub 仓库安全）。完整记忆（含环境细节）见
-> `.workbuddy/memory/`（本地，git 忽略），按需深读。
+> 内容为**脱敏精简版记忆**（公开 GitHub 仓库安全）。完整记忆已迁移至
+> ZCode 持久化记忆 `~/.zcode/cli/memories/projects/xiaomengresume-*/memory/`（自动加载）。
 
 ## 项目本质
 - 开源免费（MIT）· 隐私优先 · 防盲信 AI 的桌面简历编辑器（Electron + React + TS）。
@@ -30,7 +30,7 @@
 - **验证**：改动收口必过 typecheck + lint（--max-warnings 0）+ vitest；涉及持久化/自动保存/启动恢复/路由跳转须 `XM_UI_SMOKE=1` 通过。
 
 ## 长期记忆深读指引
-- 完整记忆存 `.workbuddy/memory/`（本地，git 忽略，含环境操作细节）：
+- 完整记忆在 ZCode 持久化记忆 `~/.zcode/cli/memories/projects/xiaomengresume-*/memory/`（自动加载，含环境操作细节；项目内 `.workbuddy/` 已移除，2026-08-08 重构）：
   - `MEMORY.md` — 速查索引（项目本质/文档工具/维护规则/配色/界面/待拍板/环境/里程碑）
   - `REFERENCE.md` — 详细档案（界面定案全参、配色令牌全文、环境操作备忘全文）
   - `2026-08-*.md` — 按日记忆
