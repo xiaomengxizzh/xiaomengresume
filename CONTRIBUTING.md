@@ -24,14 +24,14 @@
 | 工具 | 版本要求 | 说明 |
 |------|---------|------|
 | Node.js | >= 22 | 推荐使用 [fnm](https://github.com/Schniz/fnm) 或 [nvm](https://github.com/nvm-sh/nvm) 管理 |
-| pnpm | >= 9 | 本项目强制使用 pnpm，`package.json` 中已锁定 `packageManager` |
+| pnpm | >= 11 | 本项目强制使用 pnpm，`package.json` 中已锁定 `packageManager` |
 | Git | >= 2.40 | 用于版本管理 |
 
 ## 本地开发
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/你的用户名/xiaomengresume.git
+git clone git@github.com:xiaomengxizzh/xiaomengresume.git
 cd xiaomengresume
 
 # 2. 安装依赖（pnpm 必须）
@@ -53,14 +53,15 @@ pnpm build        # 构建生产版本
 
 ```
 xiaomengresume/
-├── src/
-│   ├── shared/          # Zod schema、IPC 契约、类型（主/渲染进程共享）
-│   ├── main/            # Electron 主进程（AI / 文件 / 打印 / 加密 / IPC handlers）
-│   └── renderer/        # React SPA（编辑器 / 预览 / 设置 / 导入向导）
-├── .github/             # Issue 模板、PR 模板、CI 配置
-├── scripts/             # 工具脚本
-├── file/                # 项目文档
-├── electron-builder.yml # 打包配置
+├── project/            # 应用源码（Electron 主进程 + React 渲染进程 + shared 契约层）
+│   └── src/
+│       ├── shared/     # Zod schema、IPC 契约、类型（主/渲染进程共享）
+│       ├── main/       # Electron 主进程（AI / 文件 / 打印 / 加密 / IPC handlers）
+│       └── renderer/   # React SPA（编辑器 / 预览 / 设置 / 导入向导）
+├── file/               # 项目文档（6 主文档 + detail/ 子文档层）
+├── .github/            # Issue/PR 模板、CI、Release workflows
+├── scripts/            # 文档工具脚本（docs-tool / split_docs / git_docs_commit）
+├── LICENSE
 └── package.json
 ```
 
@@ -147,7 +148,7 @@ docs(readme): 更新快速开始指南
 
 - **Bug 报告**：请使用 Bug Report 模板，提供完整的复现步骤和环境信息，并附上日志（设置 → 关于 → 导出日志）
 - **功能请求**：请使用 Feature Request 模板，说明场景和方案，并确认不与三大信任承诺冲突
-- **提问 / 讨论**：请使用 [Discussions](https://github.com/你的用户名/xiaomengresume/discussions)
+- **提问 / 讨论**：请使用 [Discussions](https://github.com/xiaomengxizzh/xiaomengresume/discussions)
 
 ---
 
