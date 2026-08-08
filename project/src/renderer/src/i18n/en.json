@@ -22,7 +22,8 @@
     "idle": "Idle",
     "running": "Running…",
     "ok": "Passed",
-    "error": "Failed"
+    "error": "Failed",
+    "privacyOn": "Privacy mode is on"
   },
   "editor": {
     "resumeName": "Resume name",
@@ -98,7 +99,11 @@
       "level": "Level",
       "issuer": "Issuer",
       "date": "Date",
-      "proficiency": "Proficiency"
+      "proficiency": "Proficiency",
+      "photo": "Photo",
+      "photoPick": "Choose image",
+      "infoItemsLabel": "Info items (top two columns)",
+      "remove": "Remove"
     },
     "action": {
       "add": "Add",
@@ -139,7 +144,18 @@
     "layoutReset": "Reset",
     "fontLabel": "Font",
     "aiAssist": "AI Polish",
-    "templateLabel": "Template"
+    "templateLabel": "Template",
+    "layoutHeader": "Header size",
+    "infoIcon": {
+      "mail": "Email",
+      "phone": "Phone",
+      "pin": "Location",
+      "globe": "Website",
+      "briefcase": "Status",
+      "calendar": "Birthday"
+    },
+    "privacyOn": "Enable privacy mode (Ctrl+Shift+P)",
+    "privacyOff": "Disable privacy mode (Ctrl+Shift+P)"
   },
   "themeColor": {
     "preset": {
@@ -226,5 +242,32 @@
     "comingSoon": "Planned",
     "back": "Back",
     "open": "Open"
+  },
+  "export": {
+    "title": "Export",
+    "close": "Close",
+    "format": {
+      "textPdf": "Text PDF",
+      "textPdf.desc": "Vector · selectable text · matches preview",
+      "imagePdf": "Image PDF",
+      "imagePdf.desc": "Page screenshots composed (v1.1)",
+      "image": "Image",
+      "image.desc": "PNG / JPG per-page (v1.1)",
+      "json": "JSON",
+      "json.desc": "Raw data · with schemaVersion"
+    },
+    "commingSoon": "Coming in v1.1",
+    "target": "Destination",
+    "defaultFolder": "Default folder",
+    "chooseFolder": "Reset to default",
+    "run": "Export",
+    "cancel": "Cancel",
+    "progress": "Exporting…",
+    "pageCountHint": "About {{count}} pages",
+    "pagesAll": "All pages ({{count}})",
+    "pagesFirst": "First page only",
+    "pagesFirstWarn": "(rest will be truncated)",
+    "privacyHint": "Privacy mode is on — export will be redacted",
+    "atsNote": "Single-column vector PDF, ATS-friendly"
   }
 }

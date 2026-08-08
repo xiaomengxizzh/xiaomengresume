@@ -36,6 +36,13 @@ export function useKeyboardShortcuts(): void {
         return
       }
 
+      // M2 F16：Ctrl+Shift+P 切换隐私打码模式（D6；与 Ctrl+Shift+O 不冲突）
+      if (key === 'p' && e.shiftKey) {
+        e.preventDefault()
+        useResumeStore.getState().togglePrivacyMode()
+        return
+      }
+
       const isUndo = key === 'z' && !e.shiftKey
       const isRedo = key === 'y' || (key === 'z' && e.shiftKey)
       if (!isUndo && !isRedo) return

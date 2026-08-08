@@ -1,11 +1,14 @@
 /**
  * ResumesHome —— 简历主功能首页（5 卡片：新建/打开或最近/导入/管理/岗位目录）
  * 定案子功能清单（用户 2026-08-07 拍板）；「新建空白」直接进编辑器，其余跳子页或占位。
+ * 2026-08-08 M2 L7/D14：顶部欢迎面板（基础版：欢迎文案 + 引导，不含最近简历区——随 M3 WP-T1）。
  */
+import { useTranslation } from 'react-i18next'
 import { useResumeStore } from '../store/useResumeStore'
 import { HomeView, type HomeItem } from './HomeView'
 
 export function ResumesHome(): React.JSX.Element {
+  const { t } = useTranslation()
   const newResume = useResumeStore((s) => s.newResume)
   const setCurrentView = useResumeStore((s) => s.setCurrentView)
   const resumeId = useResumeStore((s) => s.resumeId)
@@ -56,5 +59,14 @@ export function ResumesHome(): React.JSX.Element {
       }
     }
   ]
-  return <HomeView items={items} />
+  return (
+    <>
+      {/* L7/D14：欢迎面板（基础版，welcome.* key 复活） */}
+      <div className="mb-4 rounded-xl bg-surface p-5 shadow-sm">
+        <div className="text-lg font-semibold text-foreground">{t('welcome.title')}</div>
+        <div className="mt-1 text-sm text-foreground/60">{t('welcome.subtitle')}</div>
+      </div>
+      <HomeView items={items} />
+    </>
+  )
 }

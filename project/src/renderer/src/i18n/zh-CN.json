@@ -22,7 +22,8 @@
     "idle": "待命",
     "running": "验证中…",
     "ok": "通过",
-    "error": "失败"
+    "error": "失败",
+    "privacyOn": "隐私模式已开启"
   },
   "editor": {
     "resumeName": "简历名称",
@@ -98,7 +99,11 @@
       "level": "熟练度",
       "issuer": "颁发机构",
       "date": "获得日期",
-      "proficiency": "熟练程度"
+      "proficiency": "熟练程度",
+      "photo": "照片",
+      "photoPick": "选择图片",
+      "infoItemsLabel": "基本信息条目（顶部两列）",
+      "remove": "移除"
     },
     "action": {
       "add": "新增",
@@ -139,7 +144,18 @@
     "layoutReset": "恢复默认",
     "fontLabel": "字体",
     "aiAssist": "AI 润色",
-    "templateLabel": "模板"
+    "templateLabel": "模板",
+    "layoutHeader": "节标题字号",
+    "infoIcon": {
+      "mail": "邮箱",
+      "phone": "电话",
+      "pin": "地址",
+      "globe": "网址",
+      "briefcase": "状态",
+      "calendar": "生日"
+    },
+    "privacyOn": "开启隐私模式（Ctrl+Shift+P）",
+    "privacyOff": "关闭隐私模式（Ctrl+Shift+P）"
   },
   "themeColor": {
     "preset": {
@@ -226,5 +242,32 @@
     "comingSoon": "规划中",
     "back": "返回",
     "open": "打开"
+  },
+  "export": {
+    "title": "导出",
+    "close": "关闭",
+    "format": {
+      "textPdf": "文字版 PDF",
+      "textPdf.desc": "矢量 · 文字可选 · 与预览一致",
+      "imagePdf": "图片版 PDF",
+      "imagePdf.desc": "逐页截图合成（v1.1）",
+      "image": "图片格式",
+      "image.desc": "PNG / JPG 逐页导出（v1.1）",
+      "json": "JSON 版本",
+      "json.desc": "原始数据 · 含 schemaVersion"
+    },
+    "commingSoon": "即将在 v1.1 提供",
+    "target": "目标位置",
+    "defaultFolder": "默认文件夹",
+    "chooseFolder": "重置为默认",
+    "run": "导出",
+    "cancel": "取消",
+    "progress": "导出中…",
+    "pageCountHint": "内容约 {{count}} 页",
+    "pagesAll": "全部导出（{{count}} 页）",
+    "pagesFirst": "仅第一页",
+    "pagesFirstWarn": "（将截断后续内容）",
+    "privacyHint": "隐私模式已开启，导出将自动脱敏",
+    "atsNote": "单栏矢量 PDF，ATS 可正常解析"
   }
 }

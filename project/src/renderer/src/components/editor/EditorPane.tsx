@@ -10,9 +10,11 @@ import { useResumeStore } from '../../store/useResumeStore'
 import { getByPath, parsePath } from '@shared/paths'
 import { SKILL_LEVELS, LANGUAGE_PROFICIENCIES } from '@shared/schema/resume'
 import { FONT_OPTIONS } from '@shared/constants/fonts'
+import { INFO_ICON_IDS, type InfoIconId } from '@shared/constants/info-icons'
 import { Button, Select } from '../ui'
 import { TextField, DateField, SelectField } from '../fields'
 import { TiptapField } from '../tiptap/TiptapField'
+import { InfoIcon } from '../icons/InfoIcons'
 import { LayoutBar } from './LayoutBar'
 
 /* ── SectionCard / EntryCard ────────────────────────────────────────────── */
@@ -163,6 +165,7 @@ function getString(value: unknown): string {
 function BasicsForm(): React.JSX.Element {
   const { t } = useTranslation()
   const [customFields] = useField('basics.customFields')
+  const [infoItems] = useField('basics.infoItems')
   const setField = useResumeStore((s) => s.setField)
   const resume = useResumeStore((s) => s.resume)
 
@@ -179,6 +182,38 @@ function BasicsForm(): React.JSX.Element {
     ['location', 'editor.field.location', 'text']
   ]
 
+  // L8（M2）：照片选择 → canvas 压缩 ≤2MB → dataURL（D15，防主存 JSON 膨胀）
+  const pickPhoto = (file: File): void => {
+    if (!file.type.startsWith('image/')) return
+    const reader = new FileReader()
+    reader.onload = (): void => {
+      const img = new Image()
+      img.onload = (): void => {
+        // canvas 降采样：最长边 ≤800px 后压缩，控制体积
+        const MAX = 800
+        let { width, height } = img
+        if (width > MAX || height > MAX) {
+          const ratio = Math.min(MAX / width, MAX / height)
+          width = Math.round(width * ratio)
+          height = Math.round(height * ratio)
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return
+        ctx.drawImage(img, 0, 0, width, height)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+        if (dataUrl.length > 2 * 1024 * 1024) return // >2MB 放弃（D15）
+        setField('basics.photo', dataUrl)
+        setField('basics.photoWidth', width)
+        setField('basics.photoHeight', height)
+      }
+      img.src = reader.result as string
+    }
+    reader.readAsDataURL(file)
+  }
+
   return (
     <SectionCard section="basics" title={t('editor.section.basics')}>
       <div className="grid grid-cols-1 gap-x-3">
@@ -191,6 +226,91 @@ function BasicsForm(): React.JSX.Element {
             )}
           </FieldRow>
         ))}
+      </div>
+
+      {/* L8（M2）：照片选择（canvas 压缩 ≤2MB → dataURL） */}
+      <div className="mt-2 border-t border-border/70 pt-3">
+        <div className="mb-2 text-xs font-medium text-foreground/70">{t('editor.field.photo')}</div>
+        <div className="flex items-center gap-3">
+          {resume.basics.photo ? (
+            <img
+              src={resume.basics.photo}
+              alt=""
+              className="h-16 w-12 rounded object-cover"
+              style={{ width: resume.basics.photoWidth ?? 48, height: resume.basics.photoHeight ?? 64, objectFit: 'cover' }}
+            />
+          ) : null}
+          <label className="cursor-pointer text-xs text-foreground/70 underline-offset-2 hover:underline">
+            {t('editor.field.photoPick')}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) pickPhoto(f)
+                e.target.value = ''
+              }}
+            />
+          </label>
+          {resume.basics.photo ? (
+            <Button size="sm" variant="ghost" onClick={() => setField('basics.photo', '')}>
+              {t('editor.action.remove')}
+            </Button>
+          ) : null}
+        </div>
+      </div>
+
+      {/* L8（M2）：infoItems 增删改（icon + label + value，PDF 顶部两列） */}
+      <div className="mt-2 border-t border-border/70 pt-3">
+        <div className="mb-2 text-xs font-medium text-foreground/70">{t('editor.field.infoItemsLabel')}</div>
+        {Array.isArray(infoItems) && infoItems.length > 0 ? (
+          infoItems.map((it, i) => {
+            const item = it as { id: string; icon: InfoIconId; label: string; value: string }
+            return (
+              <div key={item.id} className="mb-2 flex items-center gap-2">
+                <Select
+                  className="!w-28"
+                  value={item.icon}
+                  onChange={(e) => setField(`basics.infoItems[${i}].icon`, e.target.value)}
+                >
+                  {INFO_ICON_IDS.map((iconId) => (
+                    <option key={iconId} value={iconId}>
+                      <InfoIcon id={iconId} size={12} /> {t(`editor.infoIcon.${iconId}`)}
+                    </option>
+                  ))}
+                </Select>
+                <TextField value={item.label} onCommit={(v) => setField(`basics.infoItems[${i}].label`, v)} />
+                <TextField value={item.value} onCommit={(v) => setField(`basics.infoItems[${i}].value`, v)} />
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={() => {
+                    const next = (infoItems as unknown[]).filter((_, idx) => idx !== i)
+                    setField('basics.infoItems', next)
+                  }}
+                >
+                  ✕
+                </Button>
+              </div>
+            )
+          })
+        ) : (
+          <div className="text-xs text-foreground/50">{t('editor.emptySection')}</div>
+        )}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            const next = [
+              ...((infoItems as unknown[]) ?? []),
+              { id: crypto.randomUUID(), icon: 'mail' as InfoIconId, label: '', value: '' }
+            ]
+            setField('basics.infoItems', next)
+          }}
+        >
+          ＋
+        </Button>
       </div>
 
       {/* 自定义字段（2026-08-07 增补，M1 UI 即用） */}
@@ -232,6 +352,13 @@ function BasicsForm(): React.JSX.Element {
         >
           ＋
         </Button>
+      </div>
+
+      {/* L8（M2）：profile 个人简介（短头部版，Tiptap 富文本） */}
+      <div className="mt-2 border-t border-border/70 pt-3">
+        <FieldRow label={t('editor.field.profile')}>
+          <TiptapField value={resume.basics.profile as never} onChange={(v) => setField('basics.profile', v)} />
+        </FieldRow>
       </div>
     </SectionCard>
   )

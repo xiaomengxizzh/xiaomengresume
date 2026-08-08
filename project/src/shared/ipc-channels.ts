@@ -1,9 +1,9 @@
 /**
- * IPC 通道契约（M0 冻结 · M1 扩展）
+ * IPC 通道契约（M0 冻结 · M1 扩展 · M2 F5 扩展 export:*）
  * 铁律：通道名一经冻结，变更需组长批准（《项目规范.md》三 §8 契约先行）。
- * 命名空间：app:* 应用信息 / print:* 打印导出 / ai:* AI 通道 / resume:* 简历生命周期
- *          / resumes:* 简历聚合（最近/列表）/ backup:* 备份导出导入 / storage:* 存储位置（F21）
- *          / jobs:* 岗位目录（F19，契约冻结于 M1，主进程实现随 v1.1）
+ * 命名空间：app:* 应用信息 / print:* 打印导出 / export:* 导出（M2 F5）/ ai:* AI 通道
+ *          / resume:* 简历生命周期 / resumes:* 简历聚合（最近/列表）
+ *          / backup:* 备份导出导入 / storage:* 存储位置（F21）/ jobs:* 岗位目录（F19）
  */
 
 export const IPC = {
@@ -16,6 +16,11 @@ export const IPC = {
   Print: {
     /** 渲染 HTML → 打印 PDF（M0 端到端验证） */
     Pdf: 'print:pdf'
+  },
+  /** 导出（M2 F5，取代原规划 pdf:export；v1.0 落地 textPdf + json，图片类 v1.1） */
+  Export: {
+    /** 导出简历（format 分流；进度经 'export:progress' 事件回传） */
+    Run: 'export:run'
   },
   /** AI 通道（M0 流式 IPC 验证；M3 扩展四分区） */
   Ai: {
@@ -99,4 +104,34 @@ export interface JobSummary {
   id: string
   name: string
   appliedAt?: string
+}
+
+// ── M2 F5 导出契约（F5 落地点，冻结）───────────────────────────────────────
+
+/** 导出格式：v1.0 落地 textPdf + json；imagePdf / image 随 v1.1（pdf-lib） */
+export type ExportFormat = 'textPdf' | 'imagePdf' | 'image' | 'json'
+
+export interface ExportRunArgs {
+  format: ExportFormat
+  /** 目标目录：显式 folderPath > SettingsSchema.export.lastFolder > storage.folderPath > 下载目录 */
+  folderPath?: string
+  /** 仅 image/imagePdf 相关；默认 'png'（v1.1） */
+  imageFormat?: 'png' | 'jpg'
+  /** 仅 jpg：0–1，默认 0.92（v1.1） */
+  quality?: number
+  /** 多页语义（D5）：'all' 全部（默认）/ 'first' 仅第一页（截断后续，D13 CSS 截断） */
+  pages?: 'all' | 'first'
+}
+
+export interface ExportRunResult {
+  canceled: boolean
+  /** image 多页时为数组 */
+  filePath?: string | string[]
+  error?: string
+}
+
+/** 导出进度事件（webContents.send('export:progress')） */
+export interface ExportProgress {
+  phase: 'measure' | 'render' | 'print' | 'write'
+  ratio: number
 }

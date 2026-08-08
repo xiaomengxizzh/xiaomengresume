@@ -3,6 +3,7 @@
  * ① 崩溃恢复扫描：残留 .tmp → confirm 恢复（三件套 a，落地不降级）
  * ② 启动恢复：打开最近编辑的简历（M1 简化用 recent[0]；lastEditedResumeId 键随 M5 设置屏完善）
  * 空 → 保持空简历（M1 无欢迎面板，编辑器直达；欢迎态随导航中枢里程碑）
+ * M2 F5 D10：export 模式（打印窗口）→ 跳过恢复/最近，直接按 ?resumeId= 加载指定简历。
  */
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -13,6 +14,17 @@ export function useAppBootstrap(): void {
   useEffect(() => {
     const init = async (): Promise<void> => {
       try {
+        // M2 F5 D10：导出模式（打印窗口）→ 按 resumeId 加载，跳过常规启动流程
+        const params = new URLSearchParams(window.location.search)
+        if (params.get('export') === '1') {
+          const resumeId = params.get('resumeId')
+          if (resumeId) {
+            const resume = await window.electronAPI.resumes.open(resumeId)
+            useResumeStore.getState().loadResume(resumeId, resume)
+          }
+          return
+        }
+
         // 崩溃恢复
         const pending = await window.electronAPI.resumes.scanRecovery()
         for (const id of pending) {

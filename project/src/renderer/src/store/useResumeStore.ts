@@ -29,6 +29,8 @@ interface ResumeState {
   sidebarCollapsed: boolean
   /** 当前右侧视图路由（2026-08-07 导航中枢雏形：'resumes-home' | 'editor' | 其他子视图） */
   currentView: string
+  /** F16 隐私打码模式（2026-08-08 M2；只改渲染层，不触碰 Zod 数据模型） */
+  privacyMode: boolean
 
   /** 提交级字段写入（失焦/回车/按钮触发；进 F3 撤销栈） */
   setField(path: FieldPath, value: unknown): void
@@ -41,6 +43,8 @@ interface ResumeState {
   setActiveFieldPath(path: FieldPath | null): void
   toggleSidebar(): void
   setCurrentView(view: string): void
+  /** F16 隐私打码：切换隐私模式（不触碰 Zod 数据模型，只影响模板渲染层） */
+  togglePrivacyMode(): void
   /** 打开简历：设置 id + 数据（不切视图，纯数据加载） */
   loadResume(resumeId: string, resume: Resume): void
   /**
@@ -92,6 +96,7 @@ export const useResumeStore = create<ResumeState>()((set, get) => ({
   historyTick: 0,
   sidebarCollapsed: false,
   currentView: 'resumes-home',
+  privacyMode: false,
 
   setField: (path, value) => {
     const next = cloneResume(get().resume)
@@ -149,6 +154,7 @@ export const useResumeStore = create<ResumeState>()((set, get) => ({
   setActiveFieldPath: (path) => set({ activeFieldPath: path }),
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
   setCurrentView: (view) => set({ currentView: view }),
+  togglePrivacyMode: () => set((s) => ({ privacyMode: !s.privacyMode })),
 
   loadResume: (resumeId, resume) => {
     history.clear()

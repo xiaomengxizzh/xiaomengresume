@@ -1,164 +1,95 @@
 /**
- * ClassicTemplate —— classic 模板渲染组件（2026-08-07 UI 重构 · PDF 完整还原）
- * 排版对齐 material/简历示例1.pdf：
- *   顶部水平布局 = 左头像 + 右上 infoItems 两列（图标+文字）+ 右下姓名+职位
- *   section 标题 h2 uppercase + 灰色下划线（#e8e8e8，非主题色）
- *   各 section 按 PDF 顺序：教育/工作/项目/技能/证书/语言/自我评价
- * 消费全部 layout 参数；缺省回落模板预设。
- * 守 3.15.1：白纸（#fff/#333）与 UI 主题正交，挂 data-rm-path（§3.7 反查）。
+ * templates/shared/ResumeBody.tsx —— 简历正文泛化渲染器（F4 规格：三套模板共享）
+ * 三套模板 = 薄壳（classic/modern/compact），全部 section 渲染逻辑收敛于此单点。
+ * variant 差异：SecTitle 样式（underline / accent-bar / compact）+ 间距乘数 + 头部布局。
+ * classic 对标 material/简历示例1.pdf（视觉细节在 variant==='classic' 分支完整保留）。
  */
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useResumeStore } from '../store/useResumeStore'
-import type { Layout } from '@shared/schema/resume'
-import { FONT_OPTIONS } from '@shared/constants/fonts'
-import { InfoIcon, type InfoIconId } from '../components/icons/InfoIcons'
-import avatarUrl from '../assets/avatar.png'
-import { richTextToHtml } from './richtext-html'
+import { useResumeStore } from '../../store/useResumeStore'
+import { InfoIcon, type InfoIconId } from '../../components/icons/InfoIcons'
+import avatarUrl from '../../assets/avatar.png'
+import { richTextToHtml } from '../../preview/richtext-html'
+import { getTemplate, type TemplateId } from '../registry'
+import { lv, resolveFontFamily, type TemplatePreset } from './preset'
+import { SectionBlock, Placeholder, entryHead, fmtDate, useJump } from './primitives'
 
-/* ── 模板预设 ──────────────────────────────────────────────────────────── */
-const CLASSIC_PRESET = {
-  baseFontSize: 16,
-  lineHeight: 1.5,
-  pagePadding: 32,
-  paragraphSpacing: 12,
-  sectionSpacing: 16,
-  headerSize: 18
-} as const
 const CLASSIC_PHOTO = { width: 90, height: 120 }
 
-type LayoutKey = keyof typeof CLASSIC_PRESET
+export type TitleVariant = 'underline' | 'accent-bar' | 'compact'
 
-function lv(layout: Layout | undefined, key: LayoutKey): number {
-  const v = layout?.[key]
-  return typeof v === 'number' ? v : CLASSIC_PRESET[key]
+const TITLE_STYLES: Record<TitleVariant, CSSProperties> = {
+  // classic：全大写下划线（对齐 PDF）
+  underline: {
+    fontWeight: 600,
+    letterSpacing: '1px',
+    color: '#444',
+    borderBottom: '2px solid #e8e8e8',
+    paddingBottom: '4px',
+    marginBottom: '10px',
+    textTransform: 'uppercase'
+  },
+  // modern：左对齐 + 左侧 accent 色条（无下划线）
+  'accent-bar': {
+    fontWeight: 600,
+    letterSpacing: '0.5px',
+    color: '#333',
+    borderLeft: '4px solid var(--rm-accent, #475569)',
+    paddingLeft: '8px',
+    paddingBottom: '2px',
+    marginBottom: '10px',
+    textTransform: 'none'
+  },
+  // compact：小号加粗（无下划线、无装饰）
+  compact: {
+    fontWeight: 700,
+    letterSpacing: '0.3px',
+    color: '#333',
+    paddingBottom: '2px',
+    marginBottom: '6px',
+    textTransform: 'none'
+  }
 }
 
-function fmtDate(d: string | undefined): string {
-  if (!d) return ''
-  const [y, m] = d.split('-')
-  return m ? `${y}/${m}` : y
-}
-
-/* ── 预览区块小组件 ────────────────────────────────────────────────────── */
-
-function SectionBlock({
-  path,
-  onClick,
-  style,
-  hint,
-  children
-}: {
-  path: string
-  onClick: () => void
-  style?: CSSProperties
-  hint?: string
-  children: ReactNode
-}): React.JSX.Element {
-  return (
-    <section
-      data-rm-path={path}
-      data-rm-hint={hint}
-      onClick={onClick}
-      style={{
-        marginBottom: 'var(--rm-section-gap, 16px)',
-        paddingBottom: 'var(--rm-section-gap, 16px)',
-        borderBottom: '1px solid #e8e8e8',
-        ...style
-      }}
-    >
-      {children}
-    </section>
-  )
-}
-
-function SecTitle({ children, size }: { children: ReactNode; size: number }): React.JSX.Element {
-  return (
-    <h2
-      style={{
-        fontSize: `${size}px`,
-        fontWeight: 600,
-        letterSpacing: '1px',
-        color: '#444',
-        borderBottom: '2px solid #e8e8e8',
-        paddingBottom: '4px',
-        marginBottom: '10px',
-        textTransform: 'uppercase'
-      }}
-    >
-      {children}
-    </h2>
-  )
-}
-
-function Placeholder({ label }: { label: string }): React.JSX.Element {
-  return <div style={{ color: '#bbb', fontSize: '13px', fontStyle: 'italic' }}>{label}</div>
-}
-
-function entryHead(left: string, right: string, style: CSSProperties): React.JSX.Element {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', ...style }}>
-      <span>{left}</span>
-      <span style={{ opacity: 0.65, fontWeight: 400, whiteSpace: 'nowrap' }}>{right}</span>
-    </div>
-  )
-}
-
-/* ── 主组件 ────────────────────────────────────────────────────────────── */
-
-export function ClassicTemplate(): React.JSX.Element {
+export function ResumeBody({ variant }: { variant: TemplateId }): React.JSX.Element {
   const { t } = useTranslation()
   const resume = useResumeStore((s) => s.resume)
+  const privacyMode = useResumeStore((s) => s.privacyMode)
   const layout = resume.layout
-  const { setActiveSection, setActiveFieldPath } = useResumeStore.getState()
+  const jump = useJump()
+  const meta = getTemplate(layout?.templateId ?? variant)
+  const preset: TemplatePreset = meta.preset
+  const titleVariant: TitleVariant = variant === 'classic' ? 'underline' : variant === 'modern' ? 'accent-bar' : 'compact'
 
-  const jump = (path: string): void => {
-    setActiveSection(path.split('.')[0])
-    setActiveFieldPath(path)
-  }
-
-  const baseFont = lv(layout, 'baseFontSize')
-  const lineHeight = lv(layout, 'lineHeight')
-  const sectionGap = lv(layout, 'sectionSpacing')
-  const paragraphGap = lv(layout, 'paragraphSpacing')
-  const headerSize = lv(layout, 'headerSize')
-  const sectionFonts = layout?.sectionFonts ?? {}
-
-  const fontFor = (section: string): string | undefined => {
-    const sid = sectionFonts[section]
-    if (sid && sid !== 'system') {
-      const f = FONT_OPTIONS.find((x) => x.id === sid)
-      if (f?.family) return f.family
-    }
-    if (layout?.resumeFont && layout.resumeFont !== 'system') {
-      const f = FONT_OPTIONS.find((x) => x.id === layout.resumeFont)
-      if (f?.family) return f.family
-    }
-    return undefined
-  }
+  const baseFont = lv(layout, 'baseFontSize', preset)
+  const lineHeight = lv(layout, 'lineHeight', preset)
+  const sectionGap = lv(layout, 'sectionSpacing', preset)
+  const paragraphGap = lv(layout, 'paragraphSpacing', preset)
+  const headerSize = lv(layout, 'headerSize', preset)
+  const pagePad = lv(layout, 'pagePadding', preset)
+  const fontFor = (section: string): string | undefined => resolveFontFamily(layout, section)
 
   const rootStyle: CSSProperties = {
     fontSize: baseFont,
     lineHeight,
-    padding: `${lv(layout, 'pagePadding')}px ${lv(layout, 'pagePadding') + 24}px`,
+    padding: `${pagePad}px ${pagePad + (variant === 'classic' ? 24 : 20)}px`,
     ['--rm-section-gap' as string]: `${sectionGap}px`,
     ['--rm-paragraph-gap' as string]: `${paragraphGap}px`,
     ['--rm-header-size' as string]: `${headerSize}px`,
-    // 2026-08-08 P0-2 修复：消费 layout.themeColor（简历强调色，per-resume 参数）。
-    // 此前 TemplateBar 色板可写、schema 校验通过，但模板零消费=假功能。
-    // 应用位：简历名 + 富文本链接（section 下划线刻意保持 #e8e8e8，与 PDF 标尺对齐）。
     ['--rm-accent' as string]: layout?.themeColor ?? '#475569'
   }
 
+  const secTitle = (children: React.ReactNode, size: number): React.JSX.Element => (
+    <h2 style={{ fontSize: `${size}px`, ...TITLE_STYLES[titleVariant] }}>{children}</h2>
+  )
+
   const basics = resume.basics
-  // 2026-08-07：修复照片不显示 —— 此前写死 src={avatarUrl}，完全没读 basics.photo；
-  // 现按 photo 字段解析：路径/ID（'avatar'、'/avatar.png'）映射到打包资源，其他原样透传（data URL / 外链）
   const photoSrc: string | null = ((): string | null => {
     const p = basics.photo
     if (typeof p !== 'string' || p.trim().length === 0) return null
-    const t = p.trim()
-    if (t === 'avatar' || t === '/avatar.png' || t === 'avatar.png') return avatarUrl
-    return t
+    const v = p.trim()
+    if (v === 'avatar' || v === '/avatar.png' || v === 'avatar.png') return avatarUrl
+    return v
   })()
   const showPhoto = photoSrc !== null
   const photoW = basics.photoWidth ?? CLASSIC_PHOTO.width
@@ -174,8 +105,6 @@ export function ClassicTemplate(): React.JSX.Element {
 
   const pStyle: CSSProperties = { fontSize: '0.92em', lineHeight, marginBottom: paragraphGap }
 
-  // infoItems 缺省自动从基础字段推导（按 PDF 顺序：状态/生日/邮箱/电话/地址/网址）
-  // 类型用 string（zod enum + array.optional() 推断宽化为 string，渲染时逐项 cast InfoIconId）
   const infoItems: Array<{ id: string; icon: string; label: string; value: string }> =
     basics.infoItems && basics.infoItems.length > 0
       ? basics.infoItems.map((it) => ({ id: it.id, icon: it.icon, label: it.label, value: it.value }))
@@ -189,8 +118,8 @@ export function ClassicTemplate(): React.JSX.Element {
       ].filter((it) => it.value.length > 0)
 
   return (
-    <div className="preview-paper-body" style={rootStyle}>
-      {/* basics：三列水平布局（左头像 | 中名字+职位 | 右基本信息两列；对齐 PDF 真实坐标） */}
+    <div className="preview-paper-body" data-redact={privacyMode ? 'on' : 'off'} style={rootStyle}>
+      {/* basics：左头像 | 中名字+职位 | 右基本信息（classic 三列；modern/compact 简化两列） */}
       <SectionBlock path="basics" onClick={() => jump('basics')} style={{ fontFamily: fontFor('basics') }} hint={t('preview.locateHint')}>
         <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
           {showPhoto ? (
@@ -199,19 +128,18 @@ export function ClassicTemplate(): React.JSX.Element {
               alt=""
               width={photoW}
               height={photoH}
+              className="redact-field"
               style={{ width: photoW, height: photoH, borderRadius: '4px', objectFit: 'cover', flexShrink: 0 }}
             />
           ) : null}
-          {/* 中：名字（22.5pt≈30px）+ 职位（13.5pt≈18px） */}
           <div style={{ minWidth: 0, paddingTop: '2px' }}>
             {basics.name ? (
-              <h1 style={{ fontSize: '30px', fontWeight: 600, lineHeight: 1.2, marginBottom: '2px', color: 'var(--rm-accent)' }}>{basics.name}</h1>
+              <h1 className="redact-field" style={{ fontSize: variant === 'compact' ? '24px' : '30px', fontWeight: 600, lineHeight: 1.2, marginBottom: '2px', color: 'var(--rm-accent)' }}>{basics.name}</h1>
             ) : null}
             {basics.headline ? (
-              <div style={{ fontSize: '18px', opacity: 0.75, lineHeight: 1.4 }}>{basics.headline}</div>
+              <div className="redact-field" style={{ fontSize: variant === 'compact' ? '15px' : '18px', opacity: 0.75, lineHeight: 1.4 }}>{basics.headline}</div>
             ) : null}
           </div>
-          {/* 右：基本信息 3 行 2 列（图标 + 文字；PDF 12pt≈16px，右对齐到名字块右侧） */}
           {infoItems.length > 0 ? (
             <div
               style={{
@@ -225,7 +153,7 @@ export function ClassicTemplate(): React.JSX.Element {
               }}
             >
               {infoItems.map((it) => (
-                <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                <div key={it.id} className="redact-field" style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
                   <span style={{ display: 'inline-flex', color: '#666', flexShrink: 0 }}>
                     <InfoIcon id={it.icon as InfoIconId} size={15} />
                   </span>
@@ -238,21 +166,20 @@ export function ClassicTemplate(): React.JSX.Element {
         {basics.profile ? (
           <div style={{ marginTop: '12px' }} dangerouslySetInnerHTML={{ __html: richTextToHtml(basics.profile) }} />
         ) : null}
-        {/* 兜底：当 infoItems 缺失时显示联系方式一行（向后兼容） */}
         {infoItems.length === 0 && contactItems.length > 0 ? (
-          <div style={{ fontSize: '0.82em', opacity: 0.75, marginTop: '8px' }}>{contactItems.join(' · ')}</div>
+          <div className="redact-field" style={{ fontSize: '0.82em', opacity: 0.75, marginTop: '8px' }}>{contactItems.join(' · ')}</div>
         ) : null}
       </SectionBlock>
 
-      {/* 自我评价（PDF 顺序：放在工作/项目后，但为方便阅读放教育前；按 PDF 第二页位置仍合理） */}
+      {/* 自我评价 */}
       <SectionBlock path="summary" onClick={() => jump('summary')} style={{ fontFamily: fontFor('summary') }} hint={t('preview.locateHint')}>
-        <SecTitle size={headerSize}>{t('editor.section.summary')}</SecTitle>
+        {secTitle(t('editor.section.summary'), headerSize)}
         <div style={pStyle} dangerouslySetInnerHTML={{ __html: richTextToHtml(resume.summary?.content) }} />
       </SectionBlock>
 
       {/* 教育经历 */}
       <SectionBlock path="education" onClick={() => jump('education')} style={{ fontFamily: fontFor('education') }} hint={t('preview.locateHint')}>
-        <SecTitle size={headerSize}>{t('editor.section.education')}</SecTitle>
+        {secTitle(t('editor.section.education'), headerSize)}
         {resume.education.filter((e) => e.visible !== false).map((e) => (
           <div key={e.id} style={{ marginBottom: '10px' }}>
             {entryHead(e.school, [fmtDate(e.startDate), e.endDate ? fmtDate(e.endDate) : ''].filter(Boolean).join(' – '), {
@@ -270,7 +197,7 @@ export function ClassicTemplate(): React.JSX.Element {
 
       {/* 工作经验 */}
       <SectionBlock path="work" onClick={() => jump('work')} style={{ fontFamily: fontFor('work') }} hint={t('preview.locateHint')}>
-        <SecTitle size={headerSize}>{t('editor.section.work')}</SecTitle>
+        {secTitle(t('editor.section.work'), headerSize)}
         {resume.work.filter((w) => w.visible !== false).map((w) => (
           <div key={w.id} style={{ marginBottom: '12px' }}>
             {entryHead(w.company, [fmtDate(w.startDate), w.current ? t('editor.field.current') : w.endDate ? fmtDate(w.endDate) : ''].filter(Boolean).join(' – '), {
@@ -288,7 +215,7 @@ export function ClassicTemplate(): React.JSX.Element {
 
       {/* 项目经历 */}
       <SectionBlock path="projects" onClick={() => jump('projects')} style={{ fontFamily: fontFor('projects') }} hint={t('preview.locateHint')}>
-        <SecTitle size={headerSize}>{t('editor.section.projects')}</SecTitle>
+        {secTitle(t('editor.section.projects'), headerSize)}
         {resume.projects.filter((p) => p.visible !== false).map((p) => (
           <div key={p.id} style={{ marginBottom: '12px' }}>
             {entryHead(p.name, [fmtDate(p.startDate), p.endDate ? fmtDate(p.endDate) : ''].filter(Boolean).join(' – '), {
@@ -306,7 +233,7 @@ export function ClassicTemplate(): React.JSX.Element {
 
       {/* 专业技能 */}
       <SectionBlock path="skills" onClick={() => jump('skills')} style={{ fontFamily: fontFor('skills') }} hint={t('preview.locateHint')}>
-        <SecTitle size={headerSize}>{t('editor.section.skills')}</SecTitle>
+        {secTitle(t('editor.section.skills'), headerSize)}
         {resume.skills.length > 0 ? (
           <ul style={{ listStyle: 'disc', paddingLeft: '18px', marginTop: '2px' }}>
             {resume.skills.map((s) => (
@@ -324,7 +251,7 @@ export function ClassicTemplate(): React.JSX.Element {
 
       {/* 证书 */}
       <SectionBlock path="certificates" onClick={() => jump('certificates')} style={{ fontFamily: fontFor('certificates') }} hint={t('preview.locateHint')}>
-        <SecTitle size={headerSize}>{t('editor.section.certificates')}</SecTitle>
+        {secTitle(t('editor.section.certificates'), headerSize)}
         {resume.certificates.map((c) => (
           <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85em', marginBottom: '4px' }}>
             <span>{c.name}</span>
@@ -336,7 +263,7 @@ export function ClassicTemplate(): React.JSX.Element {
 
       {/* 语言 */}
       <SectionBlock path="languages" onClick={() => jump('languages')} style={{ fontFamily: fontFor('languages') }} hint={t('preview.locateHint')}>
-        <SecTitle size={headerSize}>{t('editor.section.languages')}</SecTitle>
+        {secTitle(t('editor.section.languages'), headerSize)}
         {resume.languages.map((l) => (
           <div key={l.id} style={{ fontSize: '0.85em', marginBottom: '2px' }}>
             {l.name}

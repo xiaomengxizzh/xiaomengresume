@@ -82,6 +82,13 @@ export const SettingsSchema = z.object({
     })
     .default(() => ({})),
 
+  /** M2 F5：导出记忆（#22：记忆用户上次导出目录） */
+  export: z
+    .object({
+      lastFolder: z.string().optional()
+    })
+    .default(() => ({})),
+
   /** T 批 #23 字体系统（T4） */
   uiFont: z.string().default('system'),
   resumeFont: z.string().default('system'),

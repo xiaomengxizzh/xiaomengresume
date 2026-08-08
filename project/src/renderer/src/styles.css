@@ -8,15 +8,16 @@
 /* 令牌 → Tailwind @theme 映射（D1 拍板：M1 引入 Tailwind v4，令牌迁移方案）
    inline 关键字使 utility 直接引用运行时 CSS 变量，四主题切换自动生效 */
 @theme inline {
-  --color-bg: var(--bg);
-  --color-surface: var(--surface);
+  --color-bg: var(--background);
+  --color-surface: var(--card);
   --color-foreground: var(--foreground);
   --color-border: var(--border);
 }
 
 :root {
-  --bg: #f5f5f5;
-  --surface: #ffffff;
+  --background: #f5f5f5;
+  --card: #ffffff;
+  --sidebar: #ffffff;
   --foreground: #424242;
   --border: #e5e5e7;
   --selected: #e5e5e7; /* 2026-08-07：派生选中令牌（F18 四色，与 --border 同值，hover 用 color-mix 派生浅色） */
@@ -27,8 +28,9 @@
 /* 2026-08-07：F18 四主题令牌骨架（切换逻辑随 M5，令牌先行）。
    护栏：每块自包含全部 6 令牌（含 --foreground）；dark 前景 #E0E0E0 非绿；green 用深色前景保证可读。 */
 [data-theme="dark"] {
-  --bg: #121212;
-  --surface: #202124;
+  --background: #121212;
+  --card: #202124;
+  --sidebar: #202124;
   --foreground: #e0e0e0;
   --border: #3c4043;
   --selected: #3c4043;
@@ -36,8 +38,9 @@
 }
 
 [data-theme="beige"] {
-  --bg: #fff3e0;
-  --surface: #fff9ee;
+  --background: #fff3e0;
+  --card: #fff9ee;
+  --sidebar: #fff9ee;
   --foreground: #424242;
   --border: #f0e3cb;
   --selected: #f0e3cb;
@@ -45,8 +48,9 @@
 }
 
 [data-theme="green"] {
-  --bg: #aed59c;
-  --surface: #f1f8e9;
+  --background: #aed59c;
+  --card: #f1f8e9;
+  --sidebar: #f1f8e9;
   --foreground: #424242;
   --border: #dce8ce;
   --selected: #dce8ce;
@@ -74,7 +78,7 @@ body {
     'PingFang SC',
     sans-serif;
   color: var(--foreground);
-  background: var(--bg);
+  background: var(--background);
   font-size: 15px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -103,7 +107,7 @@ body {
   padding: 0 20px;
   height: 56px;
   flex-shrink: 0;
-  background: var(--surface);
+  background: var(--card);
   border-bottom: 1px solid var(--border);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
 }
@@ -160,7 +164,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
-  background: var(--bg);
+  background: var(--background);
 }
 
 /* 编辑区滚动体：flex:1 占满剩余高度 + min-height:0 允许收缩，自身 overflow-y:auto 出滚动条 */
@@ -181,7 +185,7 @@ body {
      无需 sticky 也永远不会被滚走 */
 .layout-bar {
   flex-shrink: 0;
-  background: var(--bg);
+  background: var(--background);
   padding: 10px 20px;
   border-bottom: 1px solid var(--border);
   display: flex;
@@ -212,7 +216,7 @@ body {
   overflow-y: auto;
   overflow-x: auto;
   padding: 28px 32px 56px;
-  background: var(--bg);
+  background: var(--background);
 }
 
 /* 纸张缩放 wrapper（2026-08-07 修复：实际宽高由 JS 同步 = 794s × 纸高s，
@@ -249,7 +253,7 @@ body {
 
 /* ── 表单卡片（SectionCard）────────────────────────────────────────────── */
 .section-card {
-  background: var(--surface);
+  background: var(--card);
   border: none;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -278,7 +282,7 @@ body {
 
 /* 条目子卡（数组 section 的每条记录） */
 .entry-card {
-  background: var(--surface);
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: 10px;
   margin-bottom: 12px;
@@ -381,7 +385,7 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: 14px;
-  background: var(--surface);
+  background: var(--card);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 10px 18px;
@@ -431,7 +435,7 @@ body {
 
 .theme-swatch.active {
   border-color: var(--foreground);
-  box-shadow: 0 0 0 1px var(--surface);
+  box-shadow: 0 0 0 1px var(--card);
 }
 
 .theme-custom-input {
@@ -454,7 +458,7 @@ body {
 }
 
 .card {
-  background: var(--surface);
+  background: var(--card);
   border: none;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -467,7 +471,7 @@ body {
 .navbar-v2 {
   width: 168px;
   flex-shrink: 0;
-  background: var(--surface);
+  background: var(--sidebar);
   border-radius: 16px 0 0 16px;
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.05);
   display: flex;
@@ -517,7 +521,7 @@ body {
 }
 
 .nav-main-row:hover {
-  background-color: color-mix(in srgb, var(--selected) 40%, var(--surface));
+  background-color: color-mix(in srgb, var(--selected) 40%, var(--card));
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
 }
@@ -576,7 +580,7 @@ body {
   border: none;
   cursor: pointer;
   border-radius: 6px;
-  color: color-mix(in srgb, var(--foreground) 60%, var(--surface));
+  color: color-mix(in srgb, var(--foreground) 60%, var(--card));
   font-size: 13px;
   margin-right: 4px;
   flex-shrink: 0;
@@ -627,7 +631,7 @@ body {
 }
 
 .nav-sub:hover:not(.disabled) {
-  background-color: color-mix(in srgb, var(--selected) 40%, var(--surface));
+  background-color: color-mix(in srgb, var(--selected) 40%, var(--card));
   color: var(--foreground);
 }
 
@@ -672,13 +676,13 @@ body {
   transform: translateY(-50%);
   width: 28px;
   height: 56px;
-  background: var(--surface);
+  background: var(--card);
   border: 1px solid var(--border);
   border-left: none;
   border-radius: 0 8px 8px 0;
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.05);
   cursor: pointer;
-  color: color-mix(in srgb, var(--foreground) 60%, var(--surface));
+  color: color-mix(in srgb, var(--foreground) 60%, var(--card));
   z-index: 10;
   font-size: 14px;
 }
@@ -687,9 +691,9 @@ body {
   color: var(--foreground);
 }
 
-/* ── 主功能区（参考图 .main-content；右内容区背景 = 主题主背景色 var(--bg)，与侧栏白卡区分）── */
+/* ── 主功能区（参考图 .main-content；右内容区背景 = 主题主背景色 var(--background)，与侧栏白卡区分）── */
 .main-area {
-  background: var(--bg);
+  background: var(--background);
 }
 
 .home-view {
@@ -714,7 +718,7 @@ body {
 
 .home-subtitle {
   font-size: 14px;
-  color: color-mix(in srgb, var(--foreground) 60%, var(--surface));
+  color: color-mix(in srgb, var(--foreground) 60%, var(--card));
   margin-bottom: 8px;
 }
 
@@ -724,7 +728,7 @@ body {
   justify-content: center;
   min-height: 56px; /* 2026-08-07 P0-#4：定案高 ~56 */
   padding: 18px 24px;
-  background: var(--surface);
+  background: var(--card);
   border-radius: 12px;
   font-size: 17px;
   font-weight: 500;
@@ -741,7 +745,7 @@ body {
 
 .home-card:hover:not(.disabled) {
   transform: translateY(-3px);
-  background-color: color-mix(in srgb, var(--selected) 40%, var(--surface));
+  background-color: color-mix(in srgb, var(--selected) 40%, var(--card));
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
 }
 
@@ -769,7 +773,7 @@ body {
 
 /* ── Coming Soon 占位卡 ─────────────────────────────────────────────────── */
 .coming-soon-card {
-  background: var(--surface);
+  background: var(--card);
   border-radius: 12px;
   box-shadow: var(--shadow);
   padding: 24px;
@@ -801,7 +805,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 14px 20px;
-  background: var(--surface);
+  background: var(--card);
   border-radius: 12px;
   box-shadow: var(--shadow);
   cursor: pointer;
@@ -815,7 +819,7 @@ body {
 
 .resume-list-item:hover {
   transform: translateY(-2px);
-  background-color: color-mix(in srgb, var(--selected) 40%, var(--surface));
+  background-color: color-mix(in srgb, var(--selected) 40%, var(--card));
 }
 
 /* 2026-08-07 P0-#8：active 下沉态（对齐 home-card 交互语义） */
@@ -846,4 +850,64 @@ body {
 .tiptap-content .ProseMirror ol {
   padding-left: 1.4em;
   margin: 0 0 0.5em;
+}
+
+/* ── M2 F5 L3：@page 打印 CSS（2026-08-08；规格《项目规范.md》4.3 +《技术栈.md》§3.7）── */
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+  /* 条目/区块不跨页硬截（中文字段跨页不截断） */
+  .resume-section,
+  .resume-entry {
+    page-break-inside: avoid;
+  }
+  .resume-section + .resume-section {
+    page-break-before: auto;
+  }
+  /* 打印态隐藏 UI 壳（导出走同源应用打印窗口时，主区域外元素不打印） */
+  body {
+    background: #fff !important;
+  }
+  /* M2 D13「仅第一页」：打印窗口注入 overflow 截断，由导出管线动态加类 */
+  .print-first-page-only .preview-paper-body {
+    max-height: 267mm; /* A4 297mm - 上下边距 15mm×2 */
+    overflow: hidden;
+  }
+}
+
+/* ── M2 F16 隐私打码（2026-08-08；D6 全部基本信息；只改渲染层，Zod 数据不变）── */
+[data-redact='on'] .redact-field {
+  filter: blur(6px);
+  user-select: none;
+  position: relative;
+}
+[data-redact='on'] .redact-field::after {
+  content: '████';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  background: #f0f0f0;
+  border-radius: 2px;
+  filter: none;
+}
+/* 照片打码更重（blur 12px + 遮罩占位） */
+[data-redact='on'] img.redact-field {
+  filter: blur(12px);
+}
+[data-redact='on'] img.redact-field::after {
+  content: '照片';
+  font-size: 12px;
+}
+/* P-4 兜底：打印态若 filter 失效，强制隐藏原文只留占位（由导出管线注入类） */
+[data-redact='on'] .redact-field-print-solid {
+  filter: none !important;
+}
+[data-redact='on'] .redact-field-print-solid::after {
+  filter: none !important;
+  background: #fff;
 }

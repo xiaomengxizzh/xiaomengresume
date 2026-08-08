@@ -3,7 +3,10 @@ import {
   IPC,
   type AppInfo,
   type RecentResume,
-  type ResumeSummary
+  type ResumeSummary,
+  type ExportRunArgs,
+  type ExportRunResult,
+  type ExportProgress
 } from '@shared/ipc-channels'
 import type { Resume } from '@shared/schema/resume'
 
@@ -17,6 +20,17 @@ const electronAPI = {
   print: {
     pdf: (html: string): Promise<{ data: ArrayBuffer; mimeType: string }> =>
       ipcRenderer.invoke(IPC.Print.Pdf, html)
+  },
+  export: {
+    /** M2 F5：导出（textPdf/json v1.0；imagePdf/image v1.1）；进度经 onProgress 订阅 */
+    run: (args: ExportRunArgs): Promise<ExportRunResult> => ipcRenderer.invoke(IPC.Export.Run, args),
+    onProgress: (cb: (p: ExportProgress) => void): (() => void) => {
+      const listener = (_e: Electron.IpcRendererEvent, p: ExportProgress): void => cb(p)
+      ipcRenderer.on('export:progress', listener)
+      return () => {
+        ipcRenderer.removeListener('export:progress', listener)
+      }
+    }
   },
   ai: {
     streamTest: (): Promise<{ ok: boolean; full: string }> =>

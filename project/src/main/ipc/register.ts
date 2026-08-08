@@ -7,6 +7,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { IPC, type AppInfo, type RecentResume, type ResumeSummary } from '@shared/ipc-channels'
 import { printHtmlToPdf } from '../print/pdf'
+import { registerExportIpc } from '../export/run'
 import {
   saveResume,
   openResume,
@@ -42,6 +43,9 @@ export function registerIpc(): void {
     const { data, mimeType } = await printHtmlToPdf(html)
     return { data: data.buffer as ArrayBuffer, mimeType }
   })
+
+  // M2 F5：export:run（导出管线：textPdf / json；imagePdf / image v1.1）
+  registerExportIpc()
 
   // ai:stream:test —— AI 流式 IPC 链路验证（M0）
   ipcMain.handle(IPC.Ai.StreamTest, async (event) => {
