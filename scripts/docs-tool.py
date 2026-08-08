@@ -440,6 +440,8 @@ def _schema_keys(code: str, schema_name: str) -> set[str]:
 SETTINGS_KEYS_EXPECTED = {
     "appearance", "appearanceMode", "language", "temperature", "maxTokens",
     "providers", "aiPrompts", "storage", "uiFont", "resumeFont", "importedFonts",
+    # 2026-08-08 归档收口：M2 F5 导出记忆（export.lastFolder，SettingsSchema 已含）白名单同步
+    "export",
 }
 RESUME_KEYS_EXPECTED = {
     "schemaVersion", "basics", "summary", "education", "work", "projects",
