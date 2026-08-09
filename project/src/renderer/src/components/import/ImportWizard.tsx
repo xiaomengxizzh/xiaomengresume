@@ -304,9 +304,11 @@ export function ImportWizard({
             </span>
           </div>
           {/* 2026-08-09 统一预览：草稿经 BasicPreview 渲染（A4 纸张 + 模板 + ResumeBody），
-              与编辑器实时预览完全一致；原文文本折叠在「查看原文」 */}
+              与编辑器实时预览完全一致；原文文本折叠在「查看原文」。
+              容器必须 flex（.preview-pane 依赖 flex:1 撑高）——非 flex 下高度随内容自适应
+              会触发 ResizeObserver 缩放反馈死循环（无限缩小） */}
           <div className="rounded-lg border border-border/60 bg-surface">
-            <div className="h-[52vh] overflow-hidden rounded-lg">
+            <div className="flex h-[52vh] flex-col overflow-hidden rounded-lg">
               <BasicPreview preview={{ resume, templateId: resume.layout?.templateId ?? 'classic' }} />
             </div>
           </div>

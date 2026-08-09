@@ -44,10 +44,15 @@ export function BasicPreview({
       // 纸张固定 A4（794×1123）：宽高同时约束缩放，整页 A4 始终完整可见（封顶 100%）。
       const s = Math.min(availW / PAPER_WIDTH, availH / A4_HEIGHT, 1)
       const scale = s > 0 ? s : 1
+      const w = Math.round(PAPER_WIDTH * scale)
+      const h = Math.round(A4_HEIGHT * scale)
+      // 防循环（2026-08-09）：尺寸未变不重复写 DOM——wrap 宽高变化会反馈 ResizeObserver，
+      // 任何容器配置下（如导入向导非 flex 容器）避免缩放死循环（无限缩小）
+      if (wrap.style.width === `${w}px` && wrap.style.height === `${h}px`) return
       el.style.setProperty('--preview-scale', String(scale))
       // transform 不改变布局尺寸 → 手动同步 wrapper 实际宽高（避免滚动条/居中错误）
-      wrap.style.width = `${Math.round(PAPER_WIDTH * scale)}px`
-      wrap.style.height = `${Math.round(A4_HEIGHT * scale)}px`
+      wrap.style.width = `${w}px`
+      wrap.style.height = `${h}px`
     }
     update()
     const ro = new ResizeObserver(update)
