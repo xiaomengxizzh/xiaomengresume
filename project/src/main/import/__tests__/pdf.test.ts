@@ -9,12 +9,21 @@ import * as os from 'node:os'
 
 const getDocumentProxy = vi.fn()
 const extractText = vi.fn()
+const extractImages = vi.fn()
 vi.mock('unpdf', () => ({
   getDocumentProxy: (...a: unknown[]) => getDocumentProxy(...a),
-  extractText: (...a: unknown[]) => extractText(...a)
+  extractText: (...a: unknown[]) => extractText(...a),
+  extractImages: (...a: unknown[]) => extractImages(...a)
 }))
 
-import { cleanPdfText, extractPdfText, PDF_TEXT_MIN_CHARS, visionPlaceholderDraft } from '../pdf'
+import {
+  cleanPdfText,
+  extractPdfText,
+  extractPdfPhoto,
+  rgbaToPngDataUrl,
+  PDF_TEXT_MIN_CHARS,
+  visionPlaceholderDraft
+} from '../pdf'
 
 const TMP = path.resolve(os.tmpdir(), 'xm-import-pdf')
 
@@ -98,5 +107,57 @@ describe('visionPlaceholderDraft（M4b 占位）', () => {
     expect(d.needsVision).toBe(true)
     expect(d.resume.basics.name).toBe('')
     expect(d.warnings).toContain('w')
+  })
+})
+
+describe('rgbaToPngDataUrl（PNG 编码）', () => {
+  it('RGBA 像素 → data URL + PNG 魔数', () => {
+    // 2×1 像素：红、蓝
+    const px = new Uint8ClampedArray([255, 0, 0, 255, 0, 0, 255, 255])
+    const url = rgbaToPngDataUrl(px, 2, 1, 4)
+    expect(url.startsWith('data:image/png;base64,')).toBe(true)
+    const buf = Buffer.from(url.slice('data:image/png;base64,'.length), 'base64')
+    expect(buf.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a') // PNG 魔数
+    expect(buf.includes(Buffer.from('IHDR'))).toBe(true)
+  })
+
+  it('3 通道（RGB）→ 不透明 A=255', () => {
+    const px = new Uint8ClampedArray([10, 20, 30])
+    const url = rgbaToPngDataUrl(px, 1, 1, 3)
+    const buf = Buffer.from(url.slice(22), 'base64')
+    expect(buf.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a')
+  })
+})
+
+describe('extractPdfPhoto（头像提取）', () => {
+  it('取第一页面积最大图 → data URL + 尺寸', async () => {
+    getDocumentProxy.mockResolvedValue({})
+    extractImages.mockResolvedValue([
+      { data: new Uint8ClampedArray(4), width: 10, height: 10, channels: 4, key: 'small' },
+      { data: new Uint8ClampedArray(100 * 100 * 4), width: 100, height: 100, channels: 4, key: 'big' }
+    ])
+    const p = await writePdf([1, 2, 3])
+    const r = await extractPdfPhoto(p)
+    expect(r?.width).toBe(100)
+    expect(r?.height).toBe(100)
+    expect(r?.dataUrl.startsWith('data:image/png;base64,')).toBe(true)
+  })
+
+  it('超大图（>上限）→ null（跳过不阻断）', async () => {
+    getDocumentProxy.mockResolvedValue({})
+    extractImages.mockResolvedValue([
+      { data: new Uint8ClampedArray(3000 * 3000 * 4), width: 3000, height: 3000, channels: 4, key: 'huge' }
+    ])
+    const p = await writePdf([4, 5, 6])
+    expect(await extractPdfPhoto(p)).toBeNull()
+  })
+
+  it('无图 / 提取失败 → null（不阻断导入）', async () => {
+    getDocumentProxy.mockResolvedValue({})
+    extractImages.mockResolvedValue([])
+    const p = await writePdf([7, 8, 9])
+    expect(await extractPdfPhoto(p)).toBeNull()
+    extractImages.mockRejectedValue(new Error('no images'))
+    expect(await extractPdfPhoto(p)).toBeNull()
   })
 })

@@ -143,3 +143,22 @@ describe('内置示例简历（M1 补口 · 打开示例入口数据源）', () 
     expect(a.basics).not.toBe(b.basics)
   })
 })
+
+describe('模块排序与自定义模块（2026-08-09 增补）', () => {
+  it('LayoutSchema.sectionOrder 可选且校验字符串数组', () => {
+    expect(LayoutSchema.parse({ sectionOrder: ['work', 'skills'] }).sectionOrder).toEqual(['work', 'skills'])
+    expect(LayoutSchema.parse({}).sectionOrder).toBeUndefined()
+  })
+
+  it('ResumeSchema.customSections 可选，合法结构通过', () => {
+    const r = createEmptyResume()
+    r.customSections = [{ id: crypto.randomUUID(), title: '兴趣爱好', content: { type: 'doc', content: [] } }]
+    const parsed = ResumeSchema.parse(r)
+    expect(parsed.customSections?.[0].title).toBe('兴趣爱好')
+    // 非法（缺 id）拒绝
+    const bad = { ...r, customSections: [{ title: 'x' }] }
+    expect(ResumeSchema.safeParse(bad).success).toBe(false)
+    // 缺省 undefined（零迁移）
+    expect(ResumeSchema.parse(createEmptyResume()).customSections).toBeUndefined()
+  })
+})

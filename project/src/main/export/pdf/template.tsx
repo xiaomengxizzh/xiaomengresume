@@ -380,6 +380,131 @@ export function ResumePdfDocument({ resume, language, privacyMode, photoSrc }: R
     .map((it) => ({ id: it.id, icon: it.icon, value: redact(it.value) }))
     .filter((it) => it.value.length > 0)
 
+        const DEFAULT_SECTION_ORDER = ['education', 'work', 'projects', 'skills', 'certificates', 'languages']
+        const orderedIds = resume.layout?.sectionOrder?.length
+          ? resume.layout.sectionOrder.filter((id) => id !== 'basics' && id !== 'summary')
+          : DEFAULT_SECTION_ORDER
+        const renderCustom = (id: string): React.JSX.Element | null => {
+          const cs = resume.customSections?.find((c) => c.id === id)
+          if (!cs) return null
+          return (
+            <View style={styles.section}>
+              <SectionTitle title={cs.title || ''} styles={styles} />
+              {cs.content ? renderParagraphs(richTextToPdfParagraphs(cs.content), styles) : null}
+            </View>
+          )
+        }
+        const sectionRenderers: Record<string, () => React.JSX.Element> = {
+          education: () => (
+            <>
+          {resume.education.filter((e) => e.visible !== false).length > 0 ? (
+            <View style={styles.section}>
+              <SectionTitle title={titles.education} styles={styles} />
+              {resume.education
+                .filter((e) => e.visible !== false)
+                .map((e) => (
+                  <View key={e.id} style={styles.entry}>
+                    <EntryHead left={e.school || ''} right={[fmtDate(e.startDate), e.endDate ? fmtDate(e.endDate) : ''].filter(Boolean).join(' – ')} styles={styles} />
+                    {e.degree || e.major ? <EntrySub styles={styles}>{[e.degree, e.major].filter(Boolean).join(' · ')}</EntrySub> : null}
+                    {e.description ? renderParagraphs(richTextToPdfParagraphs(e.description), styles) : null}
+                  </View>
+                ))}
+            </View>
+          ) : null}
+
+          </>
+          ),
+          work: () => (
+            <>
+          {resume.work.filter((w) => w.visible !== false).length > 0 ? (
+            <View style={styles.section}>
+              <SectionTitle title={titles.work} styles={styles} />
+              {resume.work
+                .filter((w) => w.visible !== false)
+                .map((w) => (
+                  <View key={w.id} style={styles.entry}>
+                    <EntryHead
+                      left={w.company || ''}
+                      right={[fmtDate(w.startDate), w.current ? (language === 'zh-CN' ? '至今' : 'Present') : w.endDate ? fmtDate(w.endDate) : ''].filter(Boolean).join(' – ')}
+                      styles={styles}
+                    />
+                    {w.title ? <EntrySub styles={styles}>{w.title}</EntrySub> : null}
+                    {w.summary ? renderParagraphs(richTextToPdfParagraphs(w.summary), styles) : null}
+                  </View>
+                ))}
+            </View>
+          ) : null}
+
+          </>
+          ),
+          projects: () => (
+            <>
+          {resume.projects.filter((p) => p.visible !== false).length > 0 ? (
+            <View style={styles.section}>
+              <SectionTitle title={titles.projects} styles={styles} />
+              {resume.projects
+                .filter((p) => p.visible !== false)
+                .map((p) => (
+                  <View key={p.id} style={styles.entry}>
+                    <EntryHead left={p.name || ''} right={[fmtDate(p.startDate), p.endDate ? fmtDate(p.endDate) : ''].filter(Boolean).join(' – ')} styles={styles} />
+                    {p.role || p.organization ? <EntrySub styles={styles}>{[p.role, p.organization].filter(Boolean).join(' · ')}</EntrySub> : null}
+                    {p.description ? renderParagraphs(richTextToPdfParagraphs(p.description), styles) : null}
+                  </View>
+                ))}
+            </View>
+          ) : null}
+
+          </>
+          ),
+          skills: () => (
+            <>
+          {resume.skills.length > 0 ? (
+            <View style={styles.section}>
+              <SectionTitle title={titles.skills} styles={styles} />
+              {resume.skills.map((s) => (
+                <Text key={s.id} style={styles.skillItem}>
+                  • {s.name}
+                  {s.level ? `（${s.level}）` : ''}
+                  {s.category ? ` · ${s.category}` : ''}
+                </Text>
+              ))}
+            </View>
+          ) : null}
+
+          </>
+          ),
+          certificates: () => (
+            <>
+          {resume.certificates.length > 0 ? (
+            <View style={styles.section}>
+              <SectionTitle title={titles.certificates} styles={styles} />
+              {resume.certificates.map((c) => (
+                <View key={c.id} style={styles.certRow}>
+                  <Text style={[styles.certName, styles.flex1]}>{c.name}</Text>
+                  <Text style={styles.certDate}>{[c.issuer, fmtDate(c.date)].filter(Boolean).join(' · ')}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          </>
+          ),
+          languages: () => (
+            <>
+          {resume.languages.length > 0 ? (
+            <View style={styles.section}>
+              <SectionTitle title={titles.languages} styles={styles} />
+              {resume.languages.map((l) => (
+                <Text key={l.id} style={styles.langItem}>
+                  {l.name}
+                  {l.proficiency ? `（${l.proficiency}）` : ''}
+                </Text>
+              ))}
+            </View>
+          ) : null}
+          </>
+          )
+        }
   return (
     <Document title={displayName || 'Resume'} producer={DOC_PRODUCER} creator={DOC_PRODUCER}>
       <Page size="A4" style={styles.page}>
@@ -412,97 +537,7 @@ export function ResumePdfDocument({ resume, language, privacyMode, photoSrc }: R
           </View>
         ) : null}
 
-        {/* 教育经历 */}
-        {resume.education.filter((e) => e.visible !== false).length > 0 ? (
-          <View style={styles.section}>
-            <SectionTitle title={titles.education} styles={styles} />
-            {resume.education
-              .filter((e) => e.visible !== false)
-              .map((e) => (
-                <View key={e.id} style={styles.entry}>
-                  <EntryHead left={e.school || ''} right={[fmtDate(e.startDate), e.endDate ? fmtDate(e.endDate) : ''].filter(Boolean).join(' – ')} styles={styles} />
-                  {e.degree || e.major ? <EntrySub styles={styles}>{[e.degree, e.major].filter(Boolean).join(' · ')}</EntrySub> : null}
-                  {e.description ? renderParagraphs(richTextToPdfParagraphs(e.description), styles) : null}
-                </View>
-              ))}
-          </View>
-        ) : null}
-
-        {/* 工作经历 */}
-        {resume.work.filter((w) => w.visible !== false).length > 0 ? (
-          <View style={styles.section}>
-            <SectionTitle title={titles.work} styles={styles} />
-            {resume.work
-              .filter((w) => w.visible !== false)
-              .map((w) => (
-                <View key={w.id} style={styles.entry}>
-                  <EntryHead
-                    left={w.company || ''}
-                    right={[fmtDate(w.startDate), w.current ? (language === 'zh-CN' ? '至今' : 'Present') : w.endDate ? fmtDate(w.endDate) : ''].filter(Boolean).join(' – ')}
-                    styles={styles}
-                  />
-                  {w.title ? <EntrySub styles={styles}>{w.title}</EntrySub> : null}
-                  {w.summary ? renderParagraphs(richTextToPdfParagraphs(w.summary), styles) : null}
-                </View>
-              ))}
-          </View>
-        ) : null}
-
-        {/* 项目经历 */}
-        {resume.projects.filter((p) => p.visible !== false).length > 0 ? (
-          <View style={styles.section}>
-            <SectionTitle title={titles.projects} styles={styles} />
-            {resume.projects
-              .filter((p) => p.visible !== false)
-              .map((p) => (
-                <View key={p.id} style={styles.entry}>
-                  <EntryHead left={p.name || ''} right={[fmtDate(p.startDate), p.endDate ? fmtDate(p.endDate) : ''].filter(Boolean).join(' – ')} styles={styles} />
-                  {p.role || p.organization ? <EntrySub styles={styles}>{[p.role, p.organization].filter(Boolean).join(' · ')}</EntrySub> : null}
-                  {p.description ? renderParagraphs(richTextToPdfParagraphs(p.description), styles) : null}
-                </View>
-              ))}
-          </View>
-        ) : null}
-
-        {/* 专业技能 */}
-        {resume.skills.length > 0 ? (
-          <View style={styles.section}>
-            <SectionTitle title={titles.skills} styles={styles} />
-            {resume.skills.map((s) => (
-              <Text key={s.id} style={styles.skillItem}>
-                • {s.name}
-                {s.level ? `（${s.level}）` : ''}
-                {s.category ? ` · ${s.category}` : ''}
-              </Text>
-            ))}
-          </View>
-        ) : null}
-
-        {/* 证书 */}
-        {resume.certificates.length > 0 ? (
-          <View style={styles.section}>
-            <SectionTitle title={titles.certificates} styles={styles} />
-            {resume.certificates.map((c) => (
-              <View key={c.id} style={styles.certRow}>
-                <Text style={[styles.certName, styles.flex1]}>{c.name}</Text>
-                <Text style={styles.certDate}>{[c.issuer, fmtDate(c.date)].filter(Boolean).join(' · ')}</Text>
-              </View>
-            ))}
-          </View>
-        ) : null}
-
-        {/* 语言 */}
-        {resume.languages.length > 0 ? (
-          <View style={styles.section}>
-            <SectionTitle title={titles.languages} styles={styles} />
-            {resume.languages.map((l) => (
-              <Text key={l.id} style={styles.langItem}>
-                {l.name}
-                {l.proficiency ? `（${l.proficiency}）` : ''}
-              </Text>
-            ))}
-          </View>
-        ) : null}
+        {orderedIds.map((id) => sectionRenderers[id]?.() ?? renderCustom(id))}
       </Page>
     </Document>
   )

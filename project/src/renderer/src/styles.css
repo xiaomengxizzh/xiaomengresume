@@ -950,3 +950,16 @@ body {
   filter: none !important;
   background: #fff;
 }
+
+/* ── 模块化编辑（2026-08-09）：拖拽排序 + 新建模块 ────────────────── */
+.module-card { position: relative; }
+.module-drag-handle {
+  position: absolute; top: 6px; right: 40px; z-index: 5;
+  cursor: grab; user-select: none; color: var(--foreground, #333);
+  opacity: 0.45; font-size: 13px; letter-spacing: 1px; padding: 2px 6px;
+  border-radius: 4px;
+}
+.module-drag-handle:hover { opacity: 1; background: var(--border, rgba(0,0,0,0.06)); }
+.module-drag-handle:active { cursor: grabbing; }
+.module-card-dragover { outline: 2px dashed var(--selected, #6366f1); outline-offset: -2px; border-radius: 12px; }
+.module-add-row { padding: 14px 4px; display: flex; justify-content: center; }

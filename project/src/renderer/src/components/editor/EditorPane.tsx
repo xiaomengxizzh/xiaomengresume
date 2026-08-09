@@ -760,9 +760,82 @@ function LanguagesForm(): React.JSX.Element {
   )
 }
 
+/* ── 自定义模块 + 模块排序（2026-08-09 模块化编辑入口）────────────────────── */
+
+/** 内置可排序板块默认顺序（与模板 DEFAULT_SECTION_ORDER 一致；basics/summary 固定顶部） */
+export const DEFAULT_MODULE_ORDER = ['education', 'work', 'projects', 'skills', 'certificates', 'languages']
+
+/** 自定义模块表单（非基本信息；可编辑标题 + 富文本正文 + 删除） */
+function CustomSectionForm({ id }: { id: string }): React.JSX.Element {
+  const { t } = useTranslation()
+  const resume = useResumeStore((s) => s.resume)
+  const setField = useResumeStore((s) => s.setField)
+  const idx = (resume.customSections ?? []).findIndex((c) => c.id === id)
+  if (idx < 0) return <></>
+  const section = resume.customSections![idx]
+
+  return (
+    <SectionCard title={t('editor.section.custom')}>
+      <FieldRow label={t('editor.module.title')}>
+        <TextField value={section.title} onCommit={(v) => setField(`customSections[${idx}].title`, v)} />
+      </FieldRow>
+      <FieldRow label={t('editor.field.content')}>
+        <TiptapField
+          value={section.content as never}
+          onChange={(v) => setField(`customSections[${idx}].content`, v)}
+          onEditorReady={(ed) => registerFieldEditor(`customSections[${idx}].content`, ed)}
+        />
+      </FieldRow>
+      <div className="mt-1 flex justify-end">
+        <Button
+          size="sm"
+          variant="danger"
+          onClick={() => {
+            const next = (resume.customSections ?? []).filter((c) => c.id !== id)
+            setField('customSections', next)
+            // 同步从排序中移除
+            const order = (resume.layout?.sectionOrder ?? []).filter((m) => m !== id)
+            setField('layout.sectionOrder', order)
+          }}
+        >
+          {t('editor.module.remove')}
+        </Button>
+      </div>
+    </SectionCard>
+  )
+}
+
+/** 拖拽排序手柄（HTML5 DnD：仅手柄可拖，避免干扰表单输入） */
+function ModuleDragHandle({
+  id,
+  onDragStart,
+  onDragEnd
+}: {
+  id: string
+  onDragStart: (id: string) => void
+  onDragEnd: () => void
+}): React.JSX.Element {
+  return (
+    <span
+      draggable
+      title="⋮⋮"
+      className="module-drag-handle"
+      onDragStart={(e) => {
+        e.dataTransfer.setData('text/plain', id)
+        e.dataTransfer.effectAllowed = 'move'
+        onDragStart(id)
+      }}
+      onDragEnd={onDragEnd}
+    >
+      ⋮⋮
+    </span>
+  )
+}
+
 /* ── 主组件 ─────────────────────────────────────────────────────────────── */
 
 export function EditorPane(): React.JSX.Element {
+  const { t } = useTranslation()
   const activeSection = useResumeStore((s) => s.activeSection)
   const setActiveSection = useResumeStore((s) => s.setActiveSection)
   const activeFieldPath = useResumeStore((s) => s.activeFieldPath)
@@ -814,34 +887,87 @@ export function EditorPane(): React.JSX.Element {
     return () => cancelAnimationFrame(raf)
   }, [activeFieldPath, activeSection, setActiveSection])
 
-  const renderForm = (): React.JSX.Element => {
-    switch (activeSection) {
-      case 'basics':
-        return <BasicsForm />
-      case 'summary':
-        return <SummaryForm />
-      case 'education':
-        return <EducationForm />
-      case 'work':
-        return <WorkForm />
-      case 'projects':
-        return <ProjectsForm />
-      case 'skills':
-        return <SkillsForm />
-      case 'certificates':
-        return <CertificatesForm />
-      case 'languages':
-        return <LanguagesForm />
-      default:
-        return <BasicsForm />
-    }
+  /* ── 模块列表（2026-08-09 模块化编辑入口）───────────────────────────────
+     进入编辑器默认展示全部模块卡片（非单卡）；basics/summary 固定顶部；
+     可排序板块 + 自定义模块按 layout.sectionOrder 排列，拖拽手柄重排。 */
+  const resume = useResumeStore((s) => s.resume)
+  const setField = useResumeStore((s) => s.setField)
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [dropTarget, setDropTarget] = useState<string | null>(null)
+
+  const customIds = (resume.customSections ?? []).map((c) => c.id)
+  const order = resume.layout?.sectionOrder?.length ? resume.layout.sectionOrder : DEFAULT_MODULE_ORDER
+  const modules = order.filter((id) => DEFAULT_MODULE_ORDER.includes(id) || customIds.includes(id))
+  for (const cid of customIds) {
+    if (!modules.includes(cid)) modules.push(cid) // 未入序的自定义模块追加尾部
+  }
+
+  const BUILTIN_FORMS: Record<string, () => React.JSX.Element> = {
+    education: () => <EducationForm />,
+    work: () => <WorkForm />,
+    projects: () => <ProjectsForm />,
+    skills: () => <SkillsForm />,
+    certificates: () => <CertificatesForm />,
+    languages: () => <LanguagesForm />
+  }
+
+  const handleDrop = (targetId: string): void => {
+    setDropTarget(null)
+    if (!dragId || dragId === targetId) return
+    const list = modules.filter((id) => id !== dragId)
+    const idx = list.indexOf(targetId)
+    list.splice(idx < 0 ? list.length : idx, 0, dragId)
+    setField('layout.sectionOrder', list)
+    setDragId(null)
+  }
+
+  const addCustomModule = (): void => {
+    const title = window.prompt(t('editor.module.prompt')) ?? ''
+    if (!title.trim()) return
+    const id = crypto.randomUUID()
+    const next = [
+      ...(resume.customSections ?? []),
+      { id, title: title.trim(), content: { type: 'doc', content: [] } as never }
+    ]
+    setField('customSections', next)
+    setField('layout.sectionOrder', modules.concat([id]))
   }
 
   return (
     <div className="editor-pane" ref={containerRef}>
       <LayoutBar />
       <div className="editor-scroll-body">
-        <div data-section={activeSection}>{renderForm()}</div>
+        <div data-section="basics">
+          <BasicsForm />
+        </div>
+        <div data-section="summary">
+          <SummaryForm />
+        </div>
+        {modules.map((id) => (
+          <div
+            key={id}
+            data-section={id}
+            className={`module-card ${dropTarget === id ? 'module-card-dragover' : ''}`}
+            onDragOver={(e) => {
+              e.preventDefault()
+              e.dataTransfer.dropEffect = 'move'
+              setDropTarget(id)
+            }}
+            onDragLeave={() => setDropTarget((d) => (d === id ? null : d))}
+            onDrop={(e) => {
+              e.preventDefault()
+              handleDrop(id)
+            }}
+          >
+            <ModuleDragHandle id={id} onDragStart={setDragId} onDragEnd={() => setDragId(null)} />
+            {BUILTIN_FORMS[id]?.() ?? <CustomSectionForm id={id} />}
+          </div>
+        ))}
+        <div className="module-add-row">
+          <Button variant="outline" onClick={addCustomModule}>
+            ＋ {t('editor.module.add')}
+          </Button>
+        </div>
       </div>
       {assist ? (
         <AiAssistPanel

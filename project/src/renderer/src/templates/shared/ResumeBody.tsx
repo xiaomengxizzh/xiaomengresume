@@ -129,6 +129,139 @@ export function ResumeBody({ variant, resume: externalResume }: { variant: Templ
         { id: 'web', icon: 'globe', label: '', value: basics.website ?? '' }
       ].filter((it) => it.value.length > 0)
 
+  const DEFAULT_SECTION_ORDER = ['education', 'work', 'projects', 'skills', 'certificates', 'languages']
+  const orderedIds = resume.layout?.sectionOrder?.length
+    ? resume.layout.sectionOrder.filter((id) => id !== 'basics' && id !== 'summary')
+    : DEFAULT_SECTION_ORDER
+  const renderCustom = (id: string): React.JSX.Element | null => {
+    const cs = resume.customSections?.find((c) => c.id === id)
+    if (!cs) return null
+    return (
+      <SectionBlock path={cs.id} onClick={() => jump(cs.id)} style={{ fontFamily: fontFor(cs.id) }} hint={t('preview.locateHint')}>
+        {secTitle(cs.title || t('editor.section.custom'), headerSize)}
+        {cs.content ? <div style={pStyle} dangerouslySetInnerHTML={{ __html: richTextToHtml(cs.content) }} /> : null}
+      </SectionBlock>
+    )
+  }
+  const sectionRenderers: Record<string, () => React.JSX.Element> = {
+    education: () => (
+      <>
+        {/* 教育经历 */}
+        <SectionBlock path="education" onClick={() => jump('education')} style={{ fontFamily: fontFor('education') }} hint={t('preview.locateHint')}>
+          {secTitle(t('editor.section.education'), headerSize)}
+          {resume.education.filter((e) => e.visible !== false).map((e) => (
+            <div key={e.id} style={{ marginBottom: '10px' }}>
+              {entryHead(e.school, [fmtDate(e.startDate), e.endDate ? fmtDate(e.endDate) : ''].filter(Boolean).join(' – '), {
+                fontSize: '0.95em',
+                fontWeight: 700
+              })}
+              <div style={{ fontSize: '0.85em', opacity: 0.8 }}>{[e.degree, e.major].filter(Boolean).join(' · ')}</div>
+              {e.description ? (
+                <div style={{ ...pStyle, marginTop: '4px' }} dangerouslySetInnerHTML={{ __html: richTextToHtml(e.description) }} />
+              ) : null}
+            </div>
+          ))}
+          {resume.education.length === 0 ? <Placeholder label={t('editor.action.placeholder')} /> : null}
+        </SectionBlock>
+      </>
+    ),
+    work: () => (
+      <>
+        {/* 工作经验 */}
+        <SectionBlock path="work" onClick={() => jump('work')} style={{ fontFamily: fontFor('work') }} hint={t('preview.locateHint')}>
+          {secTitle(t('editor.section.work'), headerSize)}
+          {resume.work.filter((w) => w.visible !== false).map((w) => (
+            <div key={w.id} style={{ marginBottom: '12px' }}>
+              {entryHead(w.company, [fmtDate(w.startDate), w.current ? t('editor.field.current') : w.endDate ? fmtDate(w.endDate) : ''].filter(Boolean).join(' – '), {
+                fontSize: '0.95em',
+                fontWeight: 700
+              })}
+              <div style={{ fontSize: '0.85em', opacity: 0.8 }}>{w.title}</div>
+              {w.summary ? (
+                <div style={{ ...pStyle, marginTop: '4px' }} dangerouslySetInnerHTML={{ __html: richTextToHtml(w.summary) }} />
+              ) : null}
+            </div>
+          ))}
+          {resume.work.length === 0 ? <Placeholder label={t('editor.action.placeholder')} /> : null}
+        </SectionBlock>
+      </>
+    ),
+    projects: () => (
+      <>
+        {/* 项目经历 */}
+        <SectionBlock path="projects" onClick={() => jump('projects')} style={{ fontFamily: fontFor('projects') }} hint={t('preview.locateHint')}>
+          {secTitle(t('editor.section.projects'), headerSize)}
+          {resume.projects.filter((p) => p.visible !== false).map((p) => (
+            <div key={p.id} style={{ marginBottom: '12px' }}>
+              {entryHead(p.name, [fmtDate(p.startDate), p.endDate ? fmtDate(p.endDate) : ''].filter(Boolean).join(' – '), {
+                fontSize: '0.95em',
+                fontWeight: 700
+              })}
+              <div style={{ fontSize: '0.85em', opacity: 0.8 }}>{[p.role, p.organization].filter(Boolean).join(' · ')}</div>
+              {p.description ? (
+                <div style={{ ...pStyle, marginTop: '4px' }} dangerouslySetInnerHTML={{ __html: richTextToHtml(p.description) }} />
+              ) : null}
+            </div>
+          ))}
+          {resume.projects.length === 0 ? <Placeholder label={t('editor.action.placeholder')} /> : null}
+        </SectionBlock>
+
+      </>
+    ),
+    skills: () => (
+      <>
+        {/* 专业技能 */}
+        <SectionBlock path="skills" onClick={() => jump('skills')} style={{ fontFamily: fontFor('skills') }} hint={t('preview.locateHint')}>
+          {secTitle(t('editor.section.skills'), headerSize)}
+          {resume.skills.length > 0 ? (
+            <ul style={{ listStyle: 'disc', paddingLeft: '18px', marginTop: '2px' }}>
+              {resume.skills.map((s) => (
+                <li key={s.id} style={{ fontSize: '0.92em', lineHeight }}>
+                  {s.name}
+                  {s.level ? `（${t(`editor.skill.${s.level}`)}）` : ''}
+                  {s.category ? ` · ${s.category}` : ''}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <Placeholder label={t('editor.action.placeholder')} />
+          )}
+        </SectionBlock>
+
+      </>
+    ),
+    certificates: () => (
+      <>
+        {/* 证书 */}
+        <SectionBlock path="certificates" onClick={() => jump('certificates')} style={{ fontFamily: fontFor('certificates') }} hint={t('preview.locateHint')}>
+          {secTitle(t('editor.section.certificates'), headerSize)}
+          {resume.certificates.map((c) => (
+            <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85em', marginBottom: '4px' }}>
+              <span>{c.name}</span>
+              <span style={{ opacity: 0.7 }}>{[c.issuer, fmtDate(c.date)].filter(Boolean).join(' · ')}</span>
+            </div>
+          ))}
+          {resume.certificates.length === 0 ? <Placeholder label={t('editor.action.placeholder')} /> : null}
+        </SectionBlock>
+
+      </>
+    ),
+    languages: () => (
+      <>
+        {/* 语言 */}
+        <SectionBlock path="languages" onClick={() => jump('languages')} style={{ fontFamily: fontFor('languages') }} hint={t('preview.locateHint')}>
+          {secTitle(t('editor.section.languages'), headerSize)}
+          {resume.languages.map((l) => (
+            <div key={l.id} style={{ fontSize: '0.85em', marginBottom: '2px' }}>
+              {l.name}
+              {l.proficiency ? `（${t(`editor.lang.${l.proficiency}`)}）` : ''}
+            </div>
+          ))}
+          {resume.languages.length === 0 ? <Placeholder label={t('editor.action.placeholder')} /> : null}
+        </SectionBlock>
+      </>
+    )
+  }
   return (
     <div className="preview-paper-body" data-redact={privacyMode ? 'on' : 'off'} style={rootStyle}>
       {/* basics：左头像 | 中名字+职位 | 右基本信息（classic 三列；modern/compact 简化两列） */}
@@ -190,101 +323,9 @@ export function ResumeBody({ variant, resume: externalResume }: { variant: Templ
         <div style={pStyle} dangerouslySetInnerHTML={{ __html: richTextToHtml(resume.summary?.content) }} />
       </SectionBlock>
 
-      {/* 教育经历 */}
-      <SectionBlock path="education" onClick={() => jump('education')} style={{ fontFamily: fontFor('education') }} hint={t('preview.locateHint')}>
-        {secTitle(t('editor.section.education'), headerSize)}
-        {resume.education.filter((e) => e.visible !== false).map((e) => (
-          <div key={e.id} style={{ marginBottom: '10px' }}>
-            {entryHead(e.school, [fmtDate(e.startDate), e.endDate ? fmtDate(e.endDate) : ''].filter(Boolean).join(' – '), {
-              fontSize: '0.95em',
-              fontWeight: 700
-            })}
-            <div style={{ fontSize: '0.85em', opacity: 0.8 }}>{[e.degree, e.major].filter(Boolean).join(' · ')}</div>
-            {e.description ? (
-              <div style={{ ...pStyle, marginTop: '4px' }} dangerouslySetInnerHTML={{ __html: richTextToHtml(e.description) }} />
-            ) : null}
-          </div>
-        ))}
-        {resume.education.length === 0 ? <Placeholder label={t('editor.action.placeholder')} /> : null}
-      </SectionBlock>
-
-      {/* 工作经验 */}
-      <SectionBlock path="work" onClick={() => jump('work')} style={{ fontFamily: fontFor('work') }} hint={t('preview.locateHint')}>
-        {secTitle(t('editor.section.work'), headerSize)}
-        {resume.work.filter((w) => w.visible !== false).map((w) => (
-          <div key={w.id} style={{ marginBottom: '12px' }}>
-            {entryHead(w.company, [fmtDate(w.startDate), w.current ? t('editor.field.current') : w.endDate ? fmtDate(w.endDate) : ''].filter(Boolean).join(' – '), {
-              fontSize: '0.95em',
-              fontWeight: 700
-            })}
-            <div style={{ fontSize: '0.85em', opacity: 0.8 }}>{w.title}</div>
-            {w.summary ? (
-              <div style={{ ...pStyle, marginTop: '4px' }} dangerouslySetInnerHTML={{ __html: richTextToHtml(w.summary) }} />
-            ) : null}
-          </div>
-        ))}
-        {resume.work.length === 0 ? <Placeholder label={t('editor.action.placeholder')} /> : null}
-      </SectionBlock>
-
-      {/* 项目经历 */}
-      <SectionBlock path="projects" onClick={() => jump('projects')} style={{ fontFamily: fontFor('projects') }} hint={t('preview.locateHint')}>
-        {secTitle(t('editor.section.projects'), headerSize)}
-        {resume.projects.filter((p) => p.visible !== false).map((p) => (
-          <div key={p.id} style={{ marginBottom: '12px' }}>
-            {entryHead(p.name, [fmtDate(p.startDate), p.endDate ? fmtDate(p.endDate) : ''].filter(Boolean).join(' – '), {
-              fontSize: '0.95em',
-              fontWeight: 700
-            })}
-            <div style={{ fontSize: '0.85em', opacity: 0.8 }}>{[p.role, p.organization].filter(Boolean).join(' · ')}</div>
-            {p.description ? (
-              <div style={{ ...pStyle, marginTop: '4px' }} dangerouslySetInnerHTML={{ __html: richTextToHtml(p.description) }} />
-            ) : null}
-          </div>
-        ))}
-        {resume.projects.length === 0 ? <Placeholder label={t('editor.action.placeholder')} /> : null}
-      </SectionBlock>
-
-      {/* 专业技能 */}
-      <SectionBlock path="skills" onClick={() => jump('skills')} style={{ fontFamily: fontFor('skills') }} hint={t('preview.locateHint')}>
-        {secTitle(t('editor.section.skills'), headerSize)}
-        {resume.skills.length > 0 ? (
-          <ul style={{ listStyle: 'disc', paddingLeft: '18px', marginTop: '2px' }}>
-            {resume.skills.map((s) => (
-              <li key={s.id} style={{ fontSize: '0.92em', lineHeight }}>
-                {s.name}
-                {s.level ? `（${t(`editor.skill.${s.level}`)}）` : ''}
-                {s.category ? ` · ${s.category}` : ''}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <Placeholder label={t('editor.action.placeholder')} />
-        )}
-      </SectionBlock>
-
-      {/* 证书 */}
-      <SectionBlock path="certificates" onClick={() => jump('certificates')} style={{ fontFamily: fontFor('certificates') }} hint={t('preview.locateHint')}>
-        {secTitle(t('editor.section.certificates'), headerSize)}
-        {resume.certificates.map((c) => (
-          <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85em', marginBottom: '4px' }}>
-            <span>{c.name}</span>
-            <span style={{ opacity: 0.7 }}>{[c.issuer, fmtDate(c.date)].filter(Boolean).join(' · ')}</span>
-          </div>
-        ))}
-        {resume.certificates.length === 0 ? <Placeholder label={t('editor.action.placeholder')} /> : null}
-      </SectionBlock>
-
-      {/* 语言 */}
-      <SectionBlock path="languages" onClick={() => jump('languages')} style={{ fontFamily: fontFor('languages') }} hint={t('preview.locateHint')}>
-        {secTitle(t('editor.section.languages'), headerSize)}
-        {resume.languages.map((l) => (
-          <div key={l.id} style={{ fontSize: '0.85em', marginBottom: '2px' }}>
-            {l.name}
-            {l.proficiency ? `（${t(`editor.lang.${l.proficiency}`)}）` : ''}
-          </div>
-        ))}
-        {resume.languages.length === 0 ? <Placeholder label={t('editor.action.placeholder')} /> : null}
-      </SectionBlock>
+  /* 2026-08-09 模块排序：板块按 layout.sectionOrder 渲染（basics/summary 固定顶部）；
+     自定义模块（customSections）插入排序位；缺省 = 模板默认顺序 */
+      {orderedIds.map((id) => sectionRenderers[id]?.() ?? renderCustom(id))}
     </div>
   )
 }

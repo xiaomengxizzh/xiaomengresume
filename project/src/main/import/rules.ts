@@ -26,6 +26,8 @@ export interface ParsedSection {
   rawText: string
   /** bullet 项（行首符号/序号剥离后的内容） */
   items: string[]
+  /** 2026-08-09 增补：有序行（bullet/文本原始顺序，供条目流式构建——标题行先于其要点） */
+  lines: string[]
 }
 
 /** 中英双语 section 锚点表（定案 §3.19 A 关键词表） */
@@ -104,7 +106,7 @@ export function splitBySectionAnchors(text: string): ParsedSection[] {
   let lastId: LocalSection | 'unclassified' | null = null
   const ensure = (id: LocalSection | 'unclassified'): ParsedSection => {
     if (lastId !== id) {
-      current = { id, rawText: '', items: [] }
+      current = { id, rawText: '', items: [], lines: [] }
       sections.push(current)
       lastId = id
     }
@@ -121,8 +123,13 @@ export function splitBySectionAnchors(text: string): ParsedSection[] {
     }
     const sec = ensure(lastId ?? 'unclassified')
     const bullet = matchBullet(line)
-    if (bullet !== null) sec.items.push(bullet)
-    else sec.rawText += (sec.rawText ? '\n' : '') + line
+    if (bullet !== null) {
+      sec.items.push(bullet)
+      sec.lines.push(bullet)
+    } else {
+      sec.rawText += (sec.rawText ? '\n' : '') + line
+      sec.lines.push(line)
+    }
   }
   return sections
 }
@@ -162,7 +169,40 @@ function splitTokens(rest: string): string[] {
     .filter(Boolean)
 }
 
-const TITLE_HINTS = ['工程师', '经理', '总监', '主管', '专员', '开发', '设计', '运营', '产品', '架构', '顾问', '助理', '实习生']
+const TITLE_HINTS = ['工程师', '经理', '总监', '主管', '专员', '开发', '设计', '运营', '产品', '架构', '顾问', '助理', '实习生', '负责人']
+
+/**
+ * 流式构建数组条目（2026-08-09 修复：对照「项目导出简历示例」暴露的拆碎问题）：
+ * 含日期行 = 新条目标题行（parseHead 提取字段）；无日期行（要点 li）= 并入当前条目
+ * （appendText 以 '• ' 前缀追加，textToRichText 转 bulletList）——防"每条要点变一个条目"。
+ */
+function buildEntries(
+  lines: string[],
+  parseHead: (tokens: string[], start?: string, end?: string) => Record<string, unknown> | null,
+  appendText: (entry: Record<string, unknown>, text: string) => void
+): Array<Record<string, unknown>> {
+  const arr: Array<Record<string, unknown>> = []
+  let cur: Record<string, unknown> | null = null
+  for (const item of lines) {
+    const { start, end, rest } = parseDateSpan(item)
+    if (start || end) {
+      const entry = parseHead(splitTokens(rest), start, end)
+      if (entry) {
+        cur = entry
+        arr.push(cur)
+      }
+    } else if (cur) {
+      appendText(cur, item)
+    }
+  }
+  return arr
+}
+
+/** 要点并入描述字段（'• ' 前缀，textToRichText 全 bullet → bulletList） */
+function appendBullet(entry: Record<string, unknown>, key: string, text: string): void {
+  const prev = typeof entry[key] === 'string' ? (entry[key] as string) : ''
+  entry[key] = prev ? `${prev}\n• ${text}` : `• ${text}`
+}
 
 /** B 档分段 → ImportMap（粗糙映射；姓名/联系方式正则，条目日期+主体拆分） */
 export function rulesToImportMap(sections: ParsedSection[]): ImportMap {
@@ -197,70 +237,80 @@ export function rulesToImportMap(sections: ParsedSection[]): ImportMap {
     map.summary = [summary.rawText, ...summary.items].filter(Boolean).join('\n')
   }
 
-  // education：日期 + 首 token school，剩余 description
+  // education：日期行 = 新条目（school + 日期 + 剩余进 description）；要点行并入 description
   const education = pick('education')
   if (education) {
-    const arr: NonNullable<ImportMap['education']> = []
-    for (const item of [...education.items, ...education.rawText.split('\n').filter(Boolean)]) {
-      const { start, end, rest } = parseDateSpan(item)
-      const tokens = splitTokens(rest)
-      const school = tokens.shift()
-      if (!school) continue
-      arr.push({
-        school,
-        startDate: start,
-        endDate: end,
-        description: tokens.length ? tokens.join('，') : undefined
-      })
-    }
-    if (arr.length) map.education = arr
+    const lines = education.lines.length ? education.lines : [...education.items, ...education.rawText.split('\n').filter(Boolean)]
+    const arr = buildEntries(
+      lines,
+      (tokens, start, end) => {
+        const school = tokens.shift()
+        if (!school) return null
+        const desc = tokens.length ? tokens.join('，') : undefined
+        return { school, startDate: start, endDate: end, description: desc }
+      },
+      (e, text) => appendBullet(e, 'description', text)
+    )
+    if (arr.length) map.education = arr as never
   }
 
-  // work：日期 + 首 token company，职位关键词命中 → title，剩余 summary
+  // work：日期行 = 新条目（company + 职位关键词 title + 日期）；要点行并入 summary
   const work = pick('work')
   if (work) {
-    const arr: NonNullable<ImportMap['work']> = []
-    for (const item of [...work.items, ...work.rawText.split('\n').filter(Boolean)]) {
-      const { start, end, rest } = parseDateSpan(item)
-      const tokens = splitTokens(rest)
-      const company = tokens.shift()
-      if (!company) continue
-      const titleIdx = tokens.findIndex((t) => TITLE_HINTS.some((h) => t.includes(h)))
-      const title = titleIdx >= 0 ? tokens.splice(titleIdx, 1)[0] : undefined
-      arr.push({
-        company,
-        title,
-        startDate: start,
-        endDate: end,
-        summary: tokens.length ? tokens.join('，') : undefined
-      })
-    }
-    if (arr.length) map.work = arr
+    const lines = work.lines.length ? work.lines : [...work.items, ...work.rawText.split('\n').filter(Boolean)]
+    const arr = buildEntries(
+      lines,
+      (tokens, start, end) => {
+        const company = tokens.shift()
+        if (!company) return null
+        const titleIdx = tokens.findIndex((t) => TITLE_HINTS.some((h) => t.includes(h)))
+        const title = titleIdx >= 0 ? tokens.splice(titleIdx, 1)[0] : undefined
+        const summary = tokens.length ? tokens.join('，') : undefined
+        return { company, title, startDate: start, endDate: end, summary }
+      },
+      (e, text) => appendBullet(e, 'summary', text)
+    )
+    if (arr.length) map.work = arr as never
   }
 
-  // projects：首 token name，剩余 description
+  // projects：日期行 = 新条目（name + 角色关键词 role + 日期）；要点行并入 description
   const projects = pick('projects')
   if (projects) {
-    const arr: NonNullable<ImportMap['projects']> = []
-    for (const item of [...projects.items, ...projects.rawText.split('\n').filter(Boolean)]) {
-      const { rest } = parseDateSpan(item)
-      const tokens = splitTokens(rest)
-      const name = tokens.shift()
-      if (!name) continue
-      arr.push({ name, description: tokens.length ? tokens.join('，') : undefined })
-    }
-    if (arr.length) map.projects = arr
+    const lines = projects.lines.length ? projects.lines : [...projects.items, ...projects.rawText.split('\n').filter(Boolean)]
+    const arr = buildEntries(
+      lines,
+      (tokens, start, end) => {
+        const name = tokens.shift()
+        if (!name) return null
+        const roleIdx = tokens.findIndex((t) => TITLE_HINTS.some((h) => t.includes(h)))
+        const role = roleIdx >= 0 ? tokens.splice(roleIdx, 1)[0] : undefined
+        const description = tokens.length ? tokens.join('，') : undefined
+        return { name, role, startDate: start, endDate: end, description }
+      },
+      (e, text) => appendBullet(e, 'description', text)
+    )
+    if (arr.length) map.projects = arr as never
   }
 
-  // skills：顿号/逗号/分号/空格切分（定案 A.3：skills 段额外做分隔符切分）
+  // skills：每条整行保留（2026-08-09 修复：原按空格/逗号拆碎"分类：内容"成单词条；
+  // 冒号前 = category，冒号后 = name——对齐示例"分类：内容"形态）
   const skills = pick('skills')
   if (skills) {
-    const names = [skills.rawText, ...skills.items]
+    const rows = [skills.rawText, ...skills.items]
       .join('\n')
-      .split(/[,，、;；\s]+/)
+      .split('\n')
       .map((t) => t.trim())
       .filter((t) => t.length >= 2 && !SECTION_ANCHORS_KEYS.some((k) => hasIndependentKeyword(t, k)))
-    if (names.length) map.skills = names.map((name) => ({ name }))
+    const arr: NonNullable<ImportMap['skills']> = []
+    for (const row of rows) {
+      const idx = row.indexOf('：')
+      if (idx > 0) {
+        arr.push({ category: row.slice(0, idx).trim(), name: row.slice(idx + 1).trim() })
+      } else {
+        arr.push({ name: row })
+      }
+    }
+    if (arr.length) map.skills = arr
   }
 
   // certificates / languages：条目行 → name（含日期提取）

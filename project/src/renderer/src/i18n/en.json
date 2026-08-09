@@ -61,7 +61,8 @@
       "projects": "Projects",
       "skills": "Skills",
       "certificates": "Certificates",
-      "languages": "Languages"
+      "languages": "Languages",
+      "custom": "Custom section"
     },
     "field": {
       "name": "Name",
@@ -160,7 +161,13 @@
       "calendar": "Birthday"
     },
     "privacyOn": "Enable privacy mode (Ctrl+Shift+P)",
-    "privacyOff": "Disable privacy mode (Ctrl+Shift+P)"
+    "privacyOff": "Disable privacy mode (Ctrl+Shift+P)",
+    "module": {
+      "add": "New module",
+      "remove": "Remove module",
+      "title": "Section title",
+      "prompt": "Enter section title (e.g. Interests)"
+    }
   },
   "themeColor": {
     "preset": {

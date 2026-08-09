@@ -19,7 +19,7 @@ import {
 import { AiServiceError } from '../ai/config'
 import { ImportError } from './errors'
 import { importJson } from './json'
-import { extractPdfText, visionPlaceholderDraft } from './pdf'
+import { extractPdfText, extractPdfPhoto, visionPlaceholderDraft, type PdfPhotoResult } from './pdf'
 import { extractDocxText } from './docx'
 import { mapTextToDraft } from './map'
 import { cleanText, splitBySectionAnchors, detectDirtyLayout, rulesToImportMap } from './rules'
@@ -129,6 +129,7 @@ export async function runImport(
   // pdf / docx：抽取（含扫描件分流）
   let text: string
   let warnings: string[]
+  let pdfPhoto: PdfPhotoResult | null = null
   if (format === 'pdf') {
     emitProgress(sender, 'parse', 0.3)
     const r = await extractPdfText(filePath)
@@ -138,6 +139,8 @@ export async function runImport(
     }
     text = r.text
     warnings = r.warnings
+    // 2026-08-09：提取 PDF 头像（文本型 PDF；扫描件走 M4b vision 不在此处理）
+    pdfPhoto = await extractPdfPhoto(filePath)
   } else {
     emitProgress(sender, 'parse', 0.3)
     const r = await extractDocxText(filePath)
@@ -147,16 +150,24 @@ export async function runImport(
 
   // A 档 AI 映射（M4a.1：失败自动降级 B 档本地规则——无 AI/网络失败也能导入）
   emitProgress(sender, 'map', 0.7)
+  const applyPhoto = (draft: ImportDraft): ImportDraft => {
+    if (pdfPhoto && !draft.resume.basics.photo) {
+      draft.resume.basics.photo = pdfPhoto.dataUrl
+      draft.resume.basics.photoWidth = pdfPhoto.width
+      draft.resume.basics.photoHeight = pdfPhoto.height
+    }
+    return draft
+  }
   try {
     const draft = await mapTextToDraft(text, fileName, format, warnings)
     emitProgress(sender, 'done', 1)
-    return draft
+    return applyPhoto(draft)
   } catch (err) {
     // B 档兜底：任何 A 档失败（NO_PROVIDER/网络/脏输出）都降级本地规则，不阻断导入
     console.warn(`[import] A 档映射失败，降级 B 档本地规则（${format}）:`, err)
     const draft = await rulesDraft(text, fileName, format, warnings)
     emitProgress(sender, 'done', 1)
-    return draft
+    return applyPhoto(draft)
   }
 }
 

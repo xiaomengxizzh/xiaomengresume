@@ -206,9 +206,22 @@ export const LayoutSchema = z.object({
   headerSize: z.number().min(12).max(36).optional(),
   resumeFont: z.string().optional(), // 字体白名单 id / 字体名，缺省「系统默认」fallback 链
   /** 2026-08-07 UI 重构增补（仅增不改）：单元级字体覆盖，key = section 名（basics/summary/work…） */
-  sectionFonts: z.record(z.string(), z.string()).optional()
+  sectionFonts: z.record(z.string(), z.string()).optional(),
+  /** 2026-08-09 增补（仅增不改）：模块显示顺序（education/work/projects/skills/certificates/languages
+   *  + customSections.id；basics/summary 固定顶部不参与）。缺省 = 模板默认顺序。 */
+  sectionOrder: z.array(z.string()).optional()
 })
 export type Layout = z.infer<typeof LayoutSchema>
+
+/** 自定义模块（2026-08-09 增补，仅增不改）：用户新建的非基本信息模块（兴趣爱好/获奖等）。
+ *  基本信息为固定模块不可新建；自定义模块可增删，显示顺序由 layout.sectionOrder 编排。 */
+export const CustomSectionSchema = z.object({
+  id: Uuid,
+  title: z.string().default(''),
+  /** 富文本正文（Tiptap doc / 降级 HTML） */
+  content: RichTextSchema.optional()
+})
+export type CustomSection = z.infer<typeof CustomSectionSchema>
 
 /** F11 WP-T1：meta 元数据（主进程写入的活动时间戳，仅增不改） */
 export const ResumeMetaSchema = z
@@ -240,7 +253,9 @@ export const ResumeSchema = z.object({
   /** F11 WP-T1（仅增不改）：主进程写入的活动时间戳 */
   meta: ResumeMetaSchema,
   /** F19 WP-T2（仅增不改，数据层 M1 顺带落码）：绑定岗位 id 列表（JobSchema.id[]） */
-  boundJobIds: z.array(Uuid).default([]).describe('bound job id list; empty = no binding')
+  boundJobIds: z.array(Uuid).default([]).describe('bound job id list; empty = no binding'),
+  /** 2026-08-09 增补（仅增不改）：自定义模块（非基本信息，用户新建；顺序见 layout.sectionOrder） */
+  customSections: z.array(CustomSectionSchema).optional()
 })
 export type Resume = z.infer<typeof ResumeSchema>
 

@@ -12,6 +12,7 @@ const m = vi.hoisted(() => ({
   fromWebContents: vi.fn(),
   importJson: vi.fn(),
   extractPdfText: vi.fn(),
+  extractPdfPhoto: vi.fn(),
   visionPlaceholderDraft: vi.fn(),
   extractDocxText: vi.fn(),
   mapTextToDraft: vi.fn()
@@ -28,6 +29,7 @@ vi.mock('../../ai/config', () => ({ AiServiceError: class AiServiceError extends
 vi.mock('../json', () => ({ importJson: (...a: unknown[]) => m.importJson(...a) }))
 vi.mock('../pdf', () => ({
   extractPdfText: (...a: unknown[]) => m.extractPdfText(...a),
+  extractPdfPhoto: (...a: unknown[]) => m.extractPdfPhoto(...a),
   visionPlaceholderDraft: (...a: unknown[]) => m.visionPlaceholderDraft(...a)
 }))
 vi.mock('../docx', () => ({ extractDocxText: (...a: unknown[]) => m.extractDocxText(...a) }))
@@ -51,6 +53,7 @@ beforeEach(() => {
   m.visionPlaceholderDraft.mockReturnValue({ ...fakeDraft('image'), needsVision: true })
   m.extractPdfText.mockResolvedValue({ text: 't', effectiveChars: 200, warnings: [], needsVision: false })
   m.extractDocxText.mockResolvedValue({ text: 't', warnings: [] })
+  m.extractPdfPhoto.mockResolvedValue({ dataUrl: 'data:image/png;base64,AAA', width: 90, height: 120 })
 })
 
 function getHandler(): (e: unknown, args: ImportRunArgs) => Promise<{
@@ -59,7 +62,11 @@ function getHandler(): (e: unknown, args: ImportRunArgs) => Promise<{
     needsVision?: boolean
     format?: string
     warnings?: string[]
-    resume?: { basics: { name: string }; education: Array<{ school: string }>; work: Array<{ company: string }> }
+    resume?: {
+      basics: { name: string; photo?: string; photoWidth?: number; photoHeight?: number }
+      education: Array<{ school: string }>
+      work: Array<{ company: string }>
+    }
   }
   error?: { code: string }
 }> {
@@ -89,6 +96,26 @@ describe('registerImportIpc（入口分发）', () => {
     expect(r.ok).toBe(true)
     expect(m.extractPdfText).toHaveBeenCalled()
     expect(m.mapTextToDraft).toHaveBeenCalled()
+  })
+
+  it('2026-08-09：pdf 导入提取头像 → 草稿 basics.photo 填充（预览/导出显示）', async () => {
+    m.dialog.showOpenDialog.mockResolvedValue({ canceled: false, filePaths: ['/tmp/a.pdf'] })
+    const h = getHandler()
+    const r = await h({ sender }, { format: 'pdf' } as ImportRunArgs)
+    expect(r.ok).toBe(true)
+    expect(m.extractPdfPhoto).toHaveBeenCalled()
+    expect(r.data?.resume?.basics?.photo).toBe('data:image/png;base64,AAA')
+    expect(r.data?.resume?.basics?.photoWidth).toBe(90)
+    expect(r.data?.resume?.basics?.photoHeight).toBe(120)
+  })
+
+  it('pdf 无图 → photo 保持空（不阻断）', async () => {
+    m.extractPdfPhoto.mockResolvedValue(null)
+    m.dialog.showOpenDialog.mockResolvedValue({ canceled: false, filePaths: ['/tmp/a.pdf'] })
+    const h = getHandler()
+    const r = await h({ sender }, { format: 'pdf' } as ImportRunArgs)
+    expect(r.ok).toBe(true)
+    expect(r.data?.resume?.basics?.photo ?? '').toBe('')
   })
 
   it('pdf 扫描件（needsVision）→ 占位草稿，不调 AI', async () => {

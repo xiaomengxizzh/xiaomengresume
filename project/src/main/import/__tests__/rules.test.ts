@@ -145,9 +145,48 @@ describe('rulesToImportMap（组装 ImportMap → importMapToResume 收口）', 
     expect(resume.work[0].company).toBe('字节跳动')
     expect(resume.work[0].title).toBe('前端工程师')
     expect(resume.work[0].startDate).toBe('2017-07')
-    expect(resume.skills.map((s) => s.name)).toEqual(['TypeScript', 'React', 'Node.js'])
+    // 2026-08-09 修复：技能整行保留（不按空格/逗号拆碎）
+    expect(resume.skills.map((s) => s.name)).toEqual(['TypeScript、React、Node.js'])
     expect(resume.certificates[0].name).toBe('CET-6')
     expect(resume.languages[0].name).toBe('英语')
+  })
+
+  it('拆碎回归（对照「项目导出简历示例」）：项目/工作要点行并入条目，不拆成独立条目', () => {
+    const text = cleanText([
+      '项目经验',
+      '抖音创作者中台 前端负责人 2022.06-2023.12',
+      '- 基于 React 开发的创作者平台',
+      '- 实施代码分割和懒加载',
+      '前端监控平台 技术负责人 2021.09-2022.03',
+      '- 接入 APM 监控',
+      '工作经历',
+      '字节跳动 高级前端工程师 2021.07-2024.12',
+      '- 负责抖音创作者平台的开发',
+      '- 优化工程化配置'
+    ].join('\n'))
+    const sections = splitBySectionAnchors(text)
+    const map = rulesToImportMap(sections)
+    const resume = importMapToResume(map)
+    // 2 个项目（原实现会把 5 条要点拆成 5+1 个条目）
+    expect(resume.projects.length).toBe(2)
+    expect(resume.projects[0].name).toBe('抖音创作者中台')
+    expect(resume.projects[0].role).toBe('前端负责人')
+    // 要点并入 description（bulletList 化）
+    const desc = resume.projects[0].description as { content: Array<{ type: string }> }
+    expect(JSON.stringify(desc)).toContain('bulletList')
+    expect(JSON.stringify(desc)).toContain('基于 React 开发的创作者平台')
+    // 工作 1 条 + 要点并入 summary
+    expect(resume.work.length).toBe(1)
+    expect(JSON.stringify(resume.work[0].summary)).toContain('负责抖音创作者平台的开发')
+  })
+
+  it('技能"分类：内容"→ category + name（对齐示例形态）', () => {
+    const text = cleanText('专业技能\n前端框架：熟悉 React、Vue.js\n开发语言：TypeScript')
+    const sections = splitBySectionAnchors(text)
+    const map = rulesToImportMap(sections)
+    const resume = importMapToResume(map)
+    expect(resume.skills[0]).toMatchObject({ category: '前端框架', name: '熟悉 React、Vue.js' })
+    expect(resume.skills[1]).toMatchObject({ category: '开发语言', name: 'TypeScript' })
   })
 
   it('无锚点文本 → 全部 unclassified → 空 ImportMap（dirtyLayout 提示切 A 档）', () => {

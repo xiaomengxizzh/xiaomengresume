@@ -61,7 +61,8 @@
       "projects": "项目经历",
       "skills": "专业技能",
       "certificates": "证书",
-      "languages": "语言"
+      "languages": "语言",
+      "custom": "自定义模块"
     },
     "field": {
       "name": "姓名",
@@ -160,7 +161,13 @@
       "calendar": "生日"
     },
     "privacyOn": "开启隐私模式（Ctrl+Shift+P）",
-    "privacyOff": "关闭隐私模式（Ctrl+Shift+P）"
+    "privacyOff": "关闭隐私模式（Ctrl+Shift+P）",
+    "module": {
+      "add": "新建模块",
+      "remove": "删除模块",
+      "title": "模块标题",
+      "prompt": "请输入模块标题（如：兴趣爱好）"
+    }
   },
   "themeColor": {
     "preset": {

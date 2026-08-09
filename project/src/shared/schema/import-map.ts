@@ -133,13 +133,23 @@ function normalizeDate(s: unknown): string {
   return month ? `${m[1]}-${month}` : m[1]
 }
 
-/** 纯文本 → RichText 单段落（每次新建对象，防共享常量别名污染） */
+/** 纯文本 → RichText（2026-08-09 增强：多行 → 多段落；全 bullet 行（•/-/* 前缀）→ bulletList。
+ *  每次新建对象，防共享常量别名污染） */
 function textToRichText(text: unknown): RichText {
   const t = clean(text)
   if (!t) return { type: 'doc', content: [] }
+  const lines = t.split('\n').map((l) => l.trim()).filter(Boolean)
+  if (lines.length === 0) return { type: 'doc', content: [] }
+  if (lines.every((l) => /^[•\-*]\s/.test(l))) {
+    // 全部为要点行 → 单个 bulletList（对齐示例要点样式）
+    return {
+      type: 'doc',
+      content: [bulletListOf(lines.map((l) => l.replace(/^[•\-*]\s/, '')))]
+    }
+  }
   return {
     type: 'doc',
-    content: [{ type: 'paragraph', content: [{ type: 'text', text: t }] }]
+    content: lines.map((l) => ({ type: 'paragraph', content: [{ type: 'text', text: l }] }))
   }
 }
 
