@@ -5,9 +5,51 @@ import {
   parseFieldIndex,
   getByPath,
   setByPath,
+  immutableSetByPath,
   type FieldPath
 } from '../paths'
 import { createEmptyResume, type Resume } from '../schema/resume'
+
+function sample(): Resume {
+    const r = createEmptyResume()
+    r.basics.name = '宋哈娜'
+    r.basics.customFields = [
+      { id: 'f0a1b2c3-0000-4000-8000-000000000001', label: '个人网站', value: 'https://x.dev' }
+    ]
+    r.education = [
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        school: '北京大学',
+        degree: '本科',
+        major: '计算机科学',
+        startDate: '2013-09',
+        endDate: '2017-06',
+        location: '北京',
+        gpa: '',
+        description: undefined,
+        visible: true
+      }
+    ]
+    r.work = [
+      {
+        id: '22222222-2222-4222-8222-222222222222',
+        company: '字节跳动',
+        title: '前端工程师',
+        location: '',
+        startDate: '2017-07',
+        endDate: '2021-06',
+        current: false,
+        summary: undefined,
+        highlights: [
+          { type: 'doc', content: [{ type: 'paragraph' }] },
+          { type: 'doc', content: [] }
+        ],
+        visible: true
+      }
+    ]
+    r.layout = { templateId: 'classic' }
+    return r
+}
 
 describe('parsePath / buildPath', () => {
   it('单对象字段：basics.name', () => {
@@ -60,47 +102,6 @@ describe('parseFieldIndex', () => {
 })
 
 describe('getByPath / setByPath', () => {
-  function sample(): Resume {
-    const r = createEmptyResume()
-    r.basics.name = '宋哈娜'
-    r.basics.customFields = [
-      { id: 'f0a1b2c3-0000-4000-8000-000000000001', label: '个人网站', value: 'https://x.dev' }
-    ]
-    r.education = [
-      {
-        id: '11111111-1111-4111-8111-111111111111',
-        school: '北京大学',
-        degree: '本科',
-        major: '计算机科学',
-        startDate: '2013-09',
-        endDate: '2017-06',
-        location: '北京',
-        gpa: '',
-        description: undefined,
-        visible: true
-      }
-    ]
-    r.work = [
-      {
-        id: '22222222-2222-4222-8222-222222222222',
-        company: '字节跳动',
-        title: '前端工程师',
-        location: '',
-        startDate: '2017-07',
-        endDate: '2021-06',
-        current: false,
-        summary: undefined,
-        highlights: [
-          { type: 'doc', content: [{ type: 'paragraph' }] },
-          { type: 'doc', content: [] }
-        ],
-        visible: true
-      }
-    ]
-    r.layout = { templateId: 'classic' }
-    return r
-  }
-
   it('读取：单对象 / 数组条目 / 两层数组 / layout', () => {
     const r = sample()
     expect(getByPath(r, 'basics.name')).toBe('宋哈娜')
@@ -171,5 +172,54 @@ describe('getByPath / setByPath', () => {
   it('FieldPath 为字符串类型（宽松起步）', () => {
     const p: FieldPath = 'basics.name'
     expect(typeof p).toBe('string')
+  })
+})
+
+describe('immutableSetByPath（打字卡顿优化）', () => {
+  it('返回新对象，原对象不被修改（历史栈快照安全）', () => {
+    const r = sample()
+    const before = JSON.stringify(r)
+    const next = immutableSetByPath(r, 'basics.name', '新名字')
+    expect(r.basics.name).toBe('宋哈娜') // 原对象不变
+    expect(next.basics.name).toBe('新名字')
+    expect(next).not.toBe(r)
+    expect(JSON.stringify(r)).toBe(before)
+  })
+
+  it('未触达分支引用共享（photo 大字符串不复制）', () => {
+    const r = sample()
+    r.basics.photo = 'data:image/png;base64,AAA'
+    const next = immutableSetByPath(r, 'basics.name', 'x')
+    expect(next.basics.photo).toBe(r.basics.photo) // 引用共享
+    expect(next.summary.content).toBe(r.summary.content)
+    expect(next.basics).not.toBe(r.basics) // 触达 section 复制
+    expect(next.work).toBe(r.work) // 未触达 section 共享（数组整体不复制）
+    expect(next.work[0]).toBe(r.work[0]) // 未触达条目共享
+  })
+
+  it('数组条目路径 work[0].company / 两级 customFields[0].label', () => {
+    const r = sample()
+    const next = immutableSetByPath(r, 'work[0].company', '新公司')
+    expect(next.work[0].company).toBe('新公司')
+    expect(r.work[0].company).toBe('字节跳动')
+    const n2 = immutableSetByPath(r, 'basics.customFields[0].label', '博客')
+    expect(n2.basics.customFields[0].label).toBe('博客')
+  })
+
+  it('末段数组索引 basics.infoItems[0].value', () => {
+    const r = sample()
+    r.basics.infoItems = [{ id: 'mail', icon: 'mail', label: '邮箱', value: 'a@b.c' }]
+    const next = immutableSetByPath(r, 'basics.infoItems[0].value', 'x.dev')
+    expect(next.basics.infoItems?.[0].value).toBe('x.dev')
+    expect(r.basics.infoItems[0].value).toBe('a@b.c')
+  })
+
+  it('错误语义与 setByPath 一致（越界/缺段/缺 field）', () => {
+    const r = sample()
+    expect(() => immutableSetByPath(r, 'work[9].company', 'x')).toThrow(/out of range/)
+    expect(() => immutableSetByPath(r, 'ghost.x', 'x')).toThrow(/not found/)
+    expect(() => immutableSetByPath(r, 'work[0]', 'x')).toThrow(/missing field/)
+    expect(() => immutableSetByPath(r, 'basics.customFields[9].label', 'x')).toThrow(/out of range/)
+    expect(() => immutableSetByPath(r, 'basics.name.sub', 'x')).toThrow(/not an object/)
   })
 })

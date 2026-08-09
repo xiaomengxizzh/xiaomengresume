@@ -158,3 +158,87 @@ export function setByPath(target: Resume, path: FieldPath, value: unknown): void
     obj[last.name] = value
   }
 }
+
+/**
+ * 不可变写入（打字卡顿优化 2026-08-09）：沿路径逐层浅拷贝返回新对象，原对象不被修改。
+ * 语义与 setByPath 一致（中间缺失/越界/缺 field 抛错）。
+ * 历史栈快照引用旧对象安全（immutable 不污染），替代 setField 的全量 structuredClone——
+ * 大简历（导入后）每键克隆成本从 O(全量) 降到 O(路径深度)；未触达分支（含 photo）引用共享。
+ */
+export function immutableSetByPath(target: Resume, path: FieldPath, value: unknown): Resume {
+  const { section, index, field } = parsePath(path)
+  if (!field) {
+    throw new Error(`write failed: missing field segment ${path}`)
+  }
+  const root = { ...(target as unknown as UnknownRecord) } as UnknownRecord
+  if (!(section in root)) {
+    throw new Error(`write failed: section not found ${section}`)
+  }
+
+  const clone = <T>(v: T): T => {
+    if (Array.isArray(v)) return v.slice() as T
+    if (v && typeof v === 'object') return { ...(v as object) } as T
+    return v
+  }
+
+  // section 分支（单对象 or 数组条目）复制
+  let cur: unknown
+  if (index !== undefined) {
+    const arr = root[section] as unknown[] | undefined
+    if (!Array.isArray(arr) || index >= arr.length) {
+      throw new Error(`write failed: array index out of range ${path}`)
+    }
+    const arrCopy = arr.slice()
+    arrCopy[index] = clone(arrCopy[index])
+    root[section] = arrCopy
+    cur = arrCopy[index]
+  } else {
+    cur = clone(root[section])
+    root[section] = cur
+  }
+
+  // 中间段导航（复制链；缺失/越界抛错，与 setByPath 语义一致）
+  const segments = parseFieldSegments(field)
+  const last = segments[segments.length - 1]
+  for (let i = 0; i < segments.length - 1; i++) {
+    const { name, index: fIndex } = segments[i]
+    if (!cur || typeof cur !== 'object') {
+      throw new Error(`write failed: intermediate node is not an object ${path}`)
+    }
+    const obj = cur as UnknownRecord
+    if (!(name in obj)) {
+      throw new Error(`write failed: intermediate field missing ${path}`)
+    }
+    let child = clone(obj[name])
+    obj[name] = child
+    if (fIndex !== undefined) {
+      if (!Array.isArray(child) || fIndex >= child.length) {
+        throw new Error(`write failed: array index out of range ${path}`)
+      }
+      const childArr = child.slice()
+      childArr[fIndex] = clone(childArr[fIndex])
+      obj[name] = childArr
+      child = childArr[fIndex]
+    }
+    cur = child
+  }
+
+  // 末段写入
+  if (!cur || typeof cur !== 'object') {
+    throw new Error(`write failed: intermediate node is not an object ${path}`)
+  }
+  const obj = cur as UnknownRecord
+  if (last.index !== undefined) {
+    const arr = obj[last.name] as unknown[] | undefined
+    if (!Array.isArray(arr) || last.index >= arr.length) {
+      throw new Error(`write failed: array index out of range ${path}`)
+    }
+    const arrCopy = arr.slice()
+    arrCopy[last.index] = value
+    obj[last.name] = arrCopy
+  } else {
+    obj[last.name] = value
+  }
+
+  return root as Resume
+}

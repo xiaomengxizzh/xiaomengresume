@@ -9,7 +9,7 @@
 import { create } from 'zustand'
 import type { Resume } from '@shared/schema/resume'
 import { createEmptyResume } from '@shared/schema/resume'
-import { setByPath, type FieldPath } from '@shared/paths'
+import { immutableSetByPath, type FieldPath } from '@shared/paths'
 import { createHistoryManager } from './history'
 
 /** 模块级历史栈单例（F3；Tiptap 内部 undo 隔离，Ctrl+Z 聚焦时交回 Tiptap） */
@@ -121,13 +121,15 @@ export const useResumeStore = create<ResumeState>()((set, get) => ({
   aiContext: { resumeId: null, jobId: null },
 
   setField: (path, value) => {
-    const next = cloneResume(get().resume)
-    history.record(get().resume)
+    // 打字卡顿优化（2026-08-09）：不可变路径更新（O(路径深度)），替代全量 structuredClone——
+    // 大简历（导入后）每键 setField 只复制受影响分支；历史栈快照引用旧对象（immutable 不污染），
+    // 无需 cloneResume（photo 未触达分支引用共享，天然保留 P2 内存优化）。
+    const prev = get().resume
     // layout 首次写入前初始化（createEmptyResume 省略 layout = 回落模板预设）
-    if (path.startsWith('layout.') && next.layout === undefined) {
-      next.layout = {}
-    }
-    setByPath(next, path, value)
+    const base =
+      path.startsWith('layout.') && prev.layout === undefined ? { ...prev, layout: {} } : prev
+    const next = immutableSetByPath(base, path, value)
+    history.record(prev)
     // P2 修复：编辑提交只写 lastEditedPath（纯记录），不再污染 activeFieldPath——
     // 原每次按键都置位 activeFieldPath，EditorPane 反查 effect 随每次提交触发
     // 滚动 + rm-flash 闪烁（打字时整卡高亮抖动）

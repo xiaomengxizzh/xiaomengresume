@@ -2,18 +2,29 @@ import { app, shell, BrowserWindow } from 'electron'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import Store from 'electron-store'
 import { registerIpc } from './ipc/register'
 import { runM0Smoke } from './smoke'
 import { runUiSmoke } from './ui-smoke'
 import { runUiShot } from './ui-shot'
 import { runExportVerify } from './verify-export'
+import type { Settings } from '../shared/schema/settings'
 import icon from '../../resources/icon.png?asset'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
+const store = new Store<Settings>()
+
 // dev 调试辅助：允许外部 CDP 连接（配合 --remote-debugging-port 使用；生产无端口即无效）
 // 必须在 app ready 前调用（Chromium switch 在启动早期生效）
 app.commandLine.appendSwitch('remote-allow-origins', '*')
+
+/** F18 首帧注入（M4a 前置 2026-08-09）：读取当前外观 → 经 additionalArguments 传 preload
+ *  → preload 同步写 <html data-theme>，防首帧 FOUC（令牌 CSS 骨架已就绪，仅差注入） */
+function themeArg(): string {
+  const theme = store.get('appearance') ?? 'light'
+  return `--xm-theme=${theme}`
+}
 
 function createMainWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -32,7 +43,9 @@ function createMainWindow(): BrowserWindow {
       preload: join(__dirname, '../preload/index.mjs'),
       sandbox: false,
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      // F18 首帧注入：外观经 additionalArguments 同步传给 preload（防 FOUC）
+      additionalArguments: [themeArg()]
     }
   })
 
