@@ -123,4 +123,14 @@ describe('ImportHome（入口）', () => {
     fireEvent.click(screen.getByText('import.cardPdf'))
     expect(await screen.findByText('import.error.NO_PROVIDER')).toBeTruthy()
   })
+
+  it('异常 reject（handler 缺失/未重启）→ 显示 UNKNOWN 错误，不静默', async () => {
+    const run = vi.fn().mockRejectedValue(new Error('No handler registered for import:run'))
+    ;(window as unknown as { electronAPI: { import: { run: unknown } } }).electronAPI = {
+      import: { run }
+    }
+    render(<ImportHome />)
+    fireEvent.click(screen.getByText('import.cardPdf'))
+    expect(await screen.findByText('import.error.UNKNOWN')).toBeTruthy()
+  })
 })

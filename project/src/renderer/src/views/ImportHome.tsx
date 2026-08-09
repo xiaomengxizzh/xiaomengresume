@@ -48,6 +48,11 @@ export function ImportHome(): React.JSX.Element {
         return
       }
       setDraft(res.data)
+    } catch (err) {
+      // 2026-08-09 修复：任何异常（IPC handler 缺失/主进程未重启/时序）都不得静默——
+      // 原无 catch，import.run reject 时 finally 清 busy 后无任何提示（用户端"无反馈"）。
+      console.error('[import] run failed:', err)
+      setErrorCode('UNKNOWN')
     } finally {
       setBusy(null)
     }
