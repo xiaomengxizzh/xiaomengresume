@@ -480,6 +480,7 @@
     "warning.vision": "图片/扫描件导入需视觉识别（M4b）",
     "warning.docx": "文档部分内容可能未完整解析",
     "warning.localRules": "已使用本地规则解析（未用 AI），字段归属请在核对中确认",
-    "warning.dirtyLayout": "检测到复杂排版，建议配置 AI 服务商后重试精准映射"
+    "warning.dirtyLayout": "检测到复杂排版，建议配置 AI 服务商后重试精准映射",
+    "previewRaw": "查看原文（提取文本）"
   }
 }

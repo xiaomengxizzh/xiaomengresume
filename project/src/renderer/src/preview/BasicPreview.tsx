@@ -8,6 +8,7 @@
 import { useEffect, useRef } from 'react'
 import { useResumeStore } from '../store/useResumeStore'
 import { getTemplate } from '../templates/registry'
+import type { Resume } from '@shared/schema/resume'
 
 /** 纸张基准（A4 @96dpi：210mm×297mm = 794×1123） */
 const PAPER_WIDTH = 794
@@ -16,16 +17,21 @@ const A4_HEIGHT = 1123
 const PAD_X = 80
 const PAD_Y = 104
 
-export function BasicPreview(): React.JSX.Element {
+export function BasicPreview({
+  preview
+}: {
+  /** 外部简历预览（导入向导草稿等）：传入则用外部数据渲染对应模板；省略 = store 实时预览 */
+  preview?: { resume: Resume; templateId?: string }
+}): React.JSX.Element {
   const ref = useRef<HTMLDivElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const paperRef = useRef<HTMLDivElement>(null)
-  const templateId = useResumeStore((s) => s.resume.layout?.templateId)
+  const storeTemplateId = useResumeStore((s) => s.resume.layout?.templateId)
 
   // L1 修复：按 templateId 取组件（缺省回落 classic）
-  // 注：resume 内容订阅在 ResumeBody 内部（useThrottledResume，P2 rAF 合并），
-  // 本壳不再额外订阅 resume——避免每键多一层重渲。
-  const Template = getTemplate(templateId).component
+  // 注：store 模式 resume 内容订阅在 ResumeBody 内部（useThrottledResume，P2 rAF 合并），
+  // 本壳不再额外订阅 resume——避免每键多一层重渲；preview 模式直接传外部 resume。
+  const Template = preview ? getTemplate(preview.templateId).component : getTemplate(storeTemplateId).component
 
   useEffect(() => {
     const el = ref.current
@@ -57,7 +63,7 @@ export function BasicPreview(): React.JSX.Element {
     <div className="preview-pane" ref={ref}>
       <div className="preview-scale-wrapper" ref={wrapRef}>
         <div ref={paperRef} className="preview-paper">
-          <Template />
+          {preview ? <Template resume={preview.resume} /> : <Template />}
         </div>
       </div>
     </div>

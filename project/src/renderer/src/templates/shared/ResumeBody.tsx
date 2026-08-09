@@ -12,6 +12,7 @@ import avatarUrl from '../../assets/avatar.png'
 import { richTextToHtml } from '../../preview/richtext-html'
 import { getTemplate, type TemplateId } from '../registry'
 import { lv, resolveFontFamily, type TemplatePreset } from './preset'
+import type { Resume } from '@shared/schema/resume'
 import { SectionBlock, Placeholder, entryHead, fmtDate, useJump } from './primitives'
 import { useThrottledResume } from '../../hooks/useThrottledResume'
 
@@ -52,10 +53,12 @@ const TITLE_STYLES: Record<TitleVariant, CSSProperties> = {
   }
 }
 
-export function ResumeBody({ variant }: { variant: TemplateId }): React.JSX.Element {
+export function ResumeBody({ variant, resume: externalResume }: { variant: TemplateId; resume?: Resume }): React.JSX.Element {
   const { t } = useTranslation()
-  // P2（用户拍板 C）：resume 经 rAF 合并节流订阅——同帧多次 setField 只渲染一次
-  const resume = useThrottledResume()
+  // P2（用户拍板 C）：resume 经 rAF 合并节流订阅——同帧多次 setField 只渲染一次。
+  // 2026-08-09 统一预览：外部 resume（导入向导草稿预览）优先，否则 store 订阅（实时预览）
+  const storeResume = useThrottledResume()
+  const resume = externalResume ?? storeResume
   const privacyMode = useResumeStore((s) => s.privacyMode)
   const layout = resume.layout
   const jump = useJump()

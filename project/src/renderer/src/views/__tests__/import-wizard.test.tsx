@@ -10,6 +10,14 @@ import { createEmptyResume, type Resume } from '@shared/schema/resume'
 
 afterEach(cleanup)
 
+// jsdom 无 ResizeObserver（BasicPreview ①预览用）→ 空实现 polyfill
+class MockResizeObserver {
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+}
+;(globalThis as Record<string, unknown>).ResizeObserver = MockResizeObserver
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string): string => k }),
   initReactI18next: { type: '3rdParty' as const, init: (): void => {} }
@@ -51,10 +59,11 @@ beforeEach(() => {
 })
 
 describe('ImportWizard（三步核对）', () => {
-  it('① 解析预览：显示源信息 + 文本预览', () => {
+  it('① 解析预览：显示源信息 + 模板渲染（姓名出现在预览中）', () => {
     render(<ImportWizard draft={makeDraft()} onCancel={vi.fn()} />)
     expect(screen.getByText(/resume\.pdf/)).toBeTruthy()
-    expect(screen.getByText(/AI 映射的张三/)).toBeTruthy()
+    // 模板渲染生效：姓名在预览模板中（可多处：姓名 + 折叠原文）
+    expect(screen.getAllByText(/AI 映射的张三/).length).toBeGreaterThan(0)
     expect(screen.getByText('import.next')).toBeTruthy()
   })
 

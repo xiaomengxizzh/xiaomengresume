@@ -6,6 +6,7 @@
  */
 import type { ComponentType } from 'react'
 import type { TemplatePreset } from './shared/preset'
+import type { Resume } from '@shared/schema/resume'
 import { ClassicTemplate } from './classic/ClassicTemplate'
 import { ModernTemplate } from './modern/ModernTemplate'
 import { CompactTemplate } from './compact/CompactTemplate'
@@ -25,7 +26,7 @@ export const PRESETS: Record<TemplateId, TemplatePreset> = {
 export interface TemplateMeta {
   id: TemplateId
   nameKey: string // i18n key，禁硬编码中文
-  component: ComponentType // store 驱动（D11），无 props
+  component: ComponentType<{ resume?: Resume }> // store 驱动（D11）；resume 可选（导入向导草稿预览）
   thumbnail: ComponentType // CSS 缩略图组件（thumb.tsx）
   preset: TemplatePreset // 排版预设（layout 覆盖链的缺省值）
 }

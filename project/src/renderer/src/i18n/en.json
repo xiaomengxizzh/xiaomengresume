@@ -480,6 +480,7 @@
     "warning.vision": "Image/scan import needs vision support (M4b)",
     "warning.docx": "Some document content may not be fully parsed",
     "warning.localRules": "Parsed with local rules (no AI); review field assignment",
-    "warning.dirtyLayout": "Complex layout detected; enable an AI provider for precise mapping"
+    "warning.dirtyLayout": "Complex layout detected; enable an AI provider for precise mapping",
+    "previewRaw": "Raw extracted text"
   }
 }

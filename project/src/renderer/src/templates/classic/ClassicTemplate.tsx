@@ -4,7 +4,8 @@
  * 2026-08-08 D11：store 驱动；F16 redact-field 已由 ResumeBody 统一挂载。
  */
 import { ResumeBody } from '../shared/ResumeBody'
+import type { Resume } from '@shared/schema/resume'
 
-export function ClassicTemplate(): React.JSX.Element {
-  return <ResumeBody variant="classic" />
+export function ClassicTemplate({ resume }: { resume?: Resume }): React.JSX.Element {
+  return <ResumeBody variant="classic" resume={resume} />
 }

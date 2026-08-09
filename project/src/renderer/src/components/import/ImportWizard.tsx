@@ -12,6 +12,7 @@ import type { ImportDraft } from '@shared/ipc-channels'
 import type { Resume, RichText } from '@shared/schema/resume'
 import { useResumeStore } from '../../store/useResumeStore'
 import { Button, Input, Textarea } from '../ui'
+import { BasicPreview } from '../../preview/BasicPreview'
 
 /** RichText → 纯文本（Tiptap doc 递归 / 降级 HTML 剥标签） */
 function richTextToPlain(rt: RichText | undefined): string {
@@ -293,7 +294,7 @@ export function ImportWizard({
         ))}
       </div>
 
-      {/* ① 解析预览 */}
+      {/* ① 解析预览：模板渲染（与编辑器实时预览同一套 BasicPreview + 模板），非纯文本 */}
       {step === 1 ? (
         <div className="import-field-card">
           <div className="mb-3 flex items-baseline justify-between">
@@ -302,13 +303,21 @@ export function ImportWizard({
               {t('import.sourceInfo')}：{draft.fileName}（{draft.format}）
             </span>
           </div>
-          {draft.sourcePreview.trim() ? (
-            <pre className="max-h-[46vh] overflow-auto whitespace-pre-wrap rounded-lg border border-border/60 bg-surface p-3 text-[13px] leading-relaxed text-foreground/85">
-              {draft.sourcePreview}
+          {/* 2026-08-09 统一预览：草稿经 BasicPreview 渲染（A4 纸张 + 模板 + ResumeBody），
+              与编辑器实时预览完全一致；原文文本折叠在「查看原文」 */}
+          <div className="rounded-lg border border-border/60 bg-surface">
+            <div className="h-[52vh] overflow-hidden rounded-lg">
+              <BasicPreview preview={{ resume, templateId: resume.layout?.templateId ?? 'classic' }} />
+            </div>
+          </div>
+          <details className="mt-2">
+            <summary className="cursor-pointer select-none text-xs text-foreground/50 hover:text-foreground/80">
+              {t('import.previewRaw')}
+            </summary>
+            <pre className="mt-2 max-h-[30vh] overflow-auto whitespace-pre-wrap rounded-lg border border-border/60 bg-surface p-3 text-[13px] leading-relaxed text-foreground/85">
+              {draft.sourcePreview || t('import.noContent')}
             </pre>
-          ) : (
-            <p className="text-sm text-foreground/50">{t('import.noContent')}</p>
-          )}
+          </details>
           {draft.warnings.length > 0 ? (
             <div className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-[13px] text-amber-700">
               <span className="font-medium">{t('import.warnings')}：</span>

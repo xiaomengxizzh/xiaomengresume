@@ -143,6 +143,35 @@ function textToRichText(text: unknown): RichText {
   }
 }
 
+/** bulletList 构建（Tiptap listItem 结构，与 sample-resume「亮点合并为一框」定案一致） */
+function bulletListOf(items: string[]): { type: 'bulletList'; content: unknown[] } {
+  return {
+    type: 'bulletList',
+    content: items.map((t) => ({
+      type: 'listItem',
+      content: [{ type: 'paragraph', content: [{ type: 'text', text: t }] }]
+    }))
+  }
+}
+
+/**
+ * 要点合并（2026-08-09 排版修复）：highlights 并入 summary/description 的 bulletList。
+ * 根因：模板（ResumeBody）只渲染 summary/description，不渲染 work/projects 的 highlights[]——
+ * 原实现把 AI 要点塞 highlights[] 导致导入后要点全部丢失（排版错乱）。
+ * 对齐 sample-resume 形态：概述 paragraph + 要点 bulletList（08-08「亮点合并为一框」定案）。
+ */
+function mergeHighlights(rt: RichText | undefined, highlights: string[]): RichText | undefined {
+  const items = highlights.map((s) => clean(s)).filter(Boolean)
+  if (items.length === 0) return rt
+  const list = bulletListOf(items)
+  // 降级 HTML（string 分支）：保留原样不合并（旧数据迁移场景，AI 导入输出为 doc 结构）
+  if (typeof rt === 'string') return rt
+  if (!rt || rt.type !== 'doc' || !rt.content || rt.content.length === 0) {
+    return { type: 'doc', content: [list] }
+  }
+  return { type: 'doc', content: [...rt.content, list] }
+}
+
 const SKILL_LEVEL_SET = new Set<string>(SKILL_LEVELS)
 function matchSkillLevel(s: unknown): SkillLevel | undefined {
   const t = clean(s)
@@ -218,35 +247,41 @@ export function importMapToResume(map: ImportMap): Resume {
       description: e.description !== undefined ? textToRichText(e.description) : undefined
     }))
 
-  // work
+  // work：highlights 并入 summary（模板只渲染 summary，防要点丢失）
   r.work = (map.work ?? [])
     .filter((w) => hasContent(w as unknown as Record<string, unknown>))
-    .map((w) => ({
-      id: crypto.randomUUID(),
-      company: clean(w.company),
-      title: clean(w.title) || undefined,
-      location: clean(w.location) || undefined,
-      startDate: normalizeDate(w.startDate),
-      endDate: w.current ? '' : normalizeDate(w.endDate),
-      current: w.current === true,
-      summary: w.summary !== undefined ? textToRichText(w.summary) : undefined,
-      highlights: (w.highlights ?? []).map(textToRichText)
-    }))
+    .map((w) => {
+      const summary = w.summary !== undefined ? textToRichText(w.summary) : undefined
+      return {
+        id: crypto.randomUUID(),
+        company: clean(w.company),
+        title: clean(w.title) || undefined,
+        location: clean(w.location) || undefined,
+        startDate: normalizeDate(w.startDate),
+        endDate: w.current ? '' : normalizeDate(w.endDate),
+        current: w.current === true,
+        summary: mergeHighlights(summary, w.highlights ?? []),
+        highlights: []
+      }
+    })
 
-  // projects
+  // projects：highlights 并入 description（同 work）
   r.projects = (map.projects ?? [])
     .filter((p) => hasContent(p as unknown as Record<string, unknown>))
-    .map((p) => ({
-      id: crypto.randomUUID(),
-      name: clean(p.name),
-      role: clean(p.role) || undefined,
-      organization: clean(p.organization) || undefined,
-      startDate: normalizeDate(p.startDate),
-      endDate: normalizeDate(p.endDate),
-      url: clean(p.url) || undefined,
-      description: p.description !== undefined ? textToRichText(p.description) : undefined,
-      highlights: (p.highlights ?? []).map(textToRichText)
-    }))
+    .map((p) => {
+      const description = p.description !== undefined ? textToRichText(p.description) : undefined
+      return {
+        id: crypto.randomUUID(),
+        name: clean(p.name),
+        role: clean(p.role) || undefined,
+        organization: clean(p.organization) || undefined,
+        startDate: normalizeDate(p.startDate),
+        endDate: normalizeDate(p.endDate),
+        url: clean(p.url) || undefined,
+        description: mergeHighlights(description, p.highlights ?? []),
+        highlights: []
+      }
+    })
 
   // skills（level 精确匹配枚举）
   r.skills = (map.skills ?? [])

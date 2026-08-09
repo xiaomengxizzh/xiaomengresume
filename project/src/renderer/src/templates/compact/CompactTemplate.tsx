@@ -4,7 +4,8 @@
  * 单栏铁律：ATS 默认兼容（设计保证）。
  */
 import { ResumeBody } from '../shared/ResumeBody'
+import type { Resume } from '@shared/schema/resume'
 
-export function CompactTemplate(): React.JSX.Element {
-  return <ResumeBody variant="compact" />
+export function CompactTemplate({ resume }: { resume?: Resume }): React.JSX.Element {
+  return <ResumeBody variant="compact" resume={resume} />
 }

@@ -4,7 +4,8 @@
  * 单栏铁律：ATS 默认兼容（设计保证，见《技术栈.md》§3.7）。
  */
 import { ResumeBody } from '../shared/ResumeBody'
+import type { Resume } from '@shared/schema/resume'
 
-export function ModernTemplate(): React.JSX.Element {
-  return <ResumeBody variant="modern" />
+export function ModernTemplate({ resume }: { resume?: Resume }): React.JSX.Element {
+  return <ResumeBody variant="modern" resume={resume} />
 }

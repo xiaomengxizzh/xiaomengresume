@@ -86,17 +86,27 @@ describe('importMapToResume', () => {
     expect(() => migrate(r)).not.toThrow()
   })
 
-  it('highlights → RichText 数组', () => {
+  it('highlights 并入 summary bulletList（模板只渲染 summary，防要点丢失）', () => {
     const r = importMapToResume({
-      work: [{ company: 'A', highlights: ['第一点', '第二点'] }]
+      work: [{ company: 'A', summary: '概述', highlights: ['第一点', '第二点'] }]
     })
-    const texts = r.work[0].highlights.map(
-      (h) =>
-        (
-          h as unknown as { content: { content: { text: string }[] }[] }
-        ).content[0].content[0].text
-    )
-    expect(texts).toEqual(['第一点', '第二点'])
+    // highlights[] 清空（模板不渲染该字段）
+    expect(r.work[0].highlights).toEqual([])
+    // 要点以 bulletList 并入 summary（对齐 sample「亮点合并为一框」）
+    const content = r.work[0].summary as unknown as { content: Array<{ type: string }> }
+    expect(content.content.length).toBe(2) // paragraph + bulletList
+    const list = content.content[1]
+    expect(list.type).toBe('bulletList')
+    const json = JSON.stringify(list)
+    expect(json).toContain('第一点')
+    expect(json).toContain('第二点')
+    expect(json).toContain('listItem')
+  })
+
+  it('无 summary 仅有 highlights → 纯 bulletList 作为 summary', () => {
+    const r = importMapToResume({ work: [{ company: 'A', highlights: ['要点'] }] })
+    const content = r.work[0].summary as unknown as { content: Array<{ type: string }> }
+    expect(content.content[0]).toMatchObject({ type: 'bulletList' })
   })
 
   it('枚举常量与 F1 定案一致', () => {
