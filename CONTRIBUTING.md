@@ -60,7 +60,7 @@ xiaomengresume/
 │       └── renderer/   # React SPA（编辑器 / 预览 / 设置 / 导入向导）
 ├── file/               # 项目文档（6 主文档 + detail/ 子文档层）
 ├── .github/            # Issue/PR 模板、CI、Release workflows
-├── scripts/            # 文档工具脚本（docs-tool / split_docs / git_docs_commit）
+├── scripts/            # 文档工具脚本（docs-tool；split_docs 历史一次性拆分、已完成）
 ├── LICENSE
 └── package.json
 ```

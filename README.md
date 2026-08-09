@@ -138,7 +138,7 @@ xiaomengresume/
 │   ├── 项目规范.md      # 唯一规范总集（路由/纪律/架构铁律）
 │   ├── 技术栈.md        # 技术选型与架构
 │   └── detail/         # 路由化子文档（functions/ logs/ api/）
-├── scripts/            # Tooling scripts (docs-tool / split_docs / git_docs_commit)
+├── scripts/            # Tooling scripts (docs-tool; split_docs = one-off doc splitter, already done)
 ├── .github/            # Issue/PR templates, CI, Release workflows
 ├── material/           # Sample resumes & reference assets
 ├── LICENSE
