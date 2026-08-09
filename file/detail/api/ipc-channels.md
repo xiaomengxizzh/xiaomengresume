@@ -7,6 +7,7 @@ IPC 通道契约（M0 冻结 · M1 扩展 · M2 F5 扩展 export:*）
 命名空间：app:* 应用信息 / print:* 打印导出 / export:* 导出（M2 F5）/ ai:* AI 通道
          / resume:* 简历生命周期 / resumes:* 简历聚合（最近/列表）
          / backup:* 备份导出导入 / storage:* 存储位置（F21）/ jobs:* 岗位目录（F19）
+         / import:* 导入（M4a：PDF/Word/JSON，M4b 扩展图片）
 
 ## 通道总览
 
@@ -44,6 +45,7 @@ IPC 通道契约（M0 冻结 · M1 扩展 · M2 F5 扩展 export:*）
 | Jobs | `jobs:get` | — |
 | Jobs | `jobs:save` | — |
 | Jobs | `jobs:delete` | — |
+| Import | `import:run` | 导入简历：主进程开文件对话框 → 解析+映射 → 返回草稿（渲染层不传路径，防路径穿越） |
 
 ## 分命名空间明细
 
@@ -118,6 +120,12 @@ AI 通道（M0 流式验证；M3 扩展四分区 + 服务商配置。流式增�
 - `Get` → `jobs:get`
 - `Save` → `jobs:save`
 - `Delete` → `jobs:delete`
+
+### Import
+
+导入（M4a 文本批冻结；M4b 扩展图片能力）
+
+- `Run` → `import:run`：导入简历：主进程开文件对话框 → 解析+映射 → 返回草稿（渲染层不传路径，防路径穿越）
 
 ## 返回类型
 
@@ -270,5 +278,35 @@ temperature: number
 maxTokens: number
 /** aiPrompts 当前值；null = 未自定义（回退内置默认） */
 prompts: AiPrompts | null
+```
+
+### `ImportRunArgs`
+
+```ts
+format: ImportFormat
+/** 目标简历（覆盖模式）；省略 = 新建模式 */
+resumeId?: string
+```
+
+### `ImportDraft`
+
+```ts
+format: ImportFormat
+fileName: string
+/** 提取文本预览（≤2000 字符，向导①解析预览用） */
+sourcePreview: string
+/** 已映射草稿（AI 映射后转正式结构；image 占位时为空简历） */
+resume: Resume
+/** 如：字段缺失、疑似乱码已剔除、B 档提示 */
+warnings: string[]
+/** 扫描件/图片（M4b 占位）：非错误，前端据此提示需视觉识别 */
+needsVision?: true
+```
+
+### `ImportProgress`
+
+```ts
+phase: 'parse' | 'map' | 'done'
+ratio: number
 ```
 

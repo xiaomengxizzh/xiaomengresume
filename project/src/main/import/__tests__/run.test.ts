@@ -1,0 +1,161 @@
+/**
+ * run.test.ts —— M4a import:run 入口单测（mock electron dialog + 各解析模块）
+ * 覆盖：格式分发（json 零 AI / pdf+docx AI 映射 / image 占位）/ 取消 → CANCELLED /
+ * 非法格式 → UNSUPPORTED / 解析失败 → PARSE_FAILED / 超时 → TIMEOUT。
+ */
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+// ── mocks（vi.mock 提升到 import 前；工厂引用必须经 vi.hoisted）────────────
+const m = vi.hoisted(() => ({
+  ipcMain: { handle: vi.fn() },
+  dialog: { showOpenDialog: vi.fn() },
+  fromWebContents: vi.fn(),
+  importJson: vi.fn(),
+  extractPdfText: vi.fn(),
+  visionPlaceholderDraft: vi.fn(),
+  extractDocxText: vi.fn(),
+  mapTextToDraft: vi.fn()
+}))
+
+vi.mock('electron', () => ({
+  ipcMain: m.ipcMain,
+  dialog: m.dialog,
+  BrowserWindow: { fromWebContents: (...a: unknown[]) => m.fromWebContents(...a) }
+}))
+
+vi.mock('../../ai/config', () => ({ AiServiceError: class AiServiceError extends Error {} }))
+
+vi.mock('../json', () => ({ importJson: (...a: unknown[]) => m.importJson(...a) }))
+vi.mock('../pdf', () => ({
+  extractPdfText: (...a: unknown[]) => m.extractPdfText(...a),
+  visionPlaceholderDraft: (...a: unknown[]) => m.visionPlaceholderDraft(...a)
+}))
+vi.mock('../docx', () => ({ extractDocxText: (...a: unknown[]) => m.extractDocxText(...a) }))
+vi.mock('../map', () => ({ mapTextToDraft: (...a: unknown[]) => m.mapTextToDraft(...a) }))
+
+import { IPC, type ImportRunArgs } from '../../../shared/ipc-channels'
+import { registerImportIpc, withTimeout, toImportAiError, IMPORT_TIMEOUT_MS } from '../run'
+import { ImportError } from '../errors'
+
+const sender = { isDestroyed: () => false, send: vi.fn() } as never
+
+function fakeDraft(format: string): object {
+  return { format, fileName: 'x', sourcePreview: '', resume: {}, warnings: [] }
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  m.fromWebContents.mockReturnValue({})
+  m.importJson.mockResolvedValue(fakeDraft('json'))
+  m.mapTextToDraft.mockResolvedValue(fakeDraft('pdf'))
+  m.visionPlaceholderDraft.mockReturnValue({ ...fakeDraft('image'), needsVision: true })
+  m.extractPdfText.mockResolvedValue({ text: 't', effectiveChars: 200, warnings: [], needsVision: false })
+  m.extractDocxText.mockResolvedValue({ text: 't', warnings: [] })
+})
+
+function getHandler(): (e: unknown, args: ImportRunArgs) => Promise<{
+  ok: boolean
+  data?: { needsVision?: boolean; format?: string }
+  error?: { code: string }
+}> {
+  registerImportIpc()
+  return m.ipcMain.handle.mock.calls.find((c: unknown[]) => c[0] === IPC.Import.Run)?.[1] as never
+}
+
+describe('registerImportIpc（入口分发）', () => {
+  it('注册 import:run 通道', () => {
+    registerImportIpc()
+    expect(m.ipcMain.handle).toHaveBeenCalledWith(IPC.Import.Run, expect.any(Function))
+  })
+
+  it('json → 零 AI 直通（mapTextToDraft 不被调用）', async () => {
+    m.dialog.showOpenDialog.mockResolvedValue({ canceled: false, filePaths: ['/tmp/a.json'] })
+    const h = getHandler()
+    const r = await h({ sender }, { format: 'json' } as ImportRunArgs)
+    expect(r.ok).toBe(true)
+    expect(m.importJson).toHaveBeenCalled()
+    expect(m.mapTextToDraft).not.toHaveBeenCalled()
+  })
+
+  it('pdf（文本充足）→ 抽取 + AI 映射', async () => {
+    m.dialog.showOpenDialog.mockResolvedValue({ canceled: false, filePaths: ['/tmp/a.pdf'] })
+    const h = getHandler()
+    const r = await h({ sender }, { format: 'pdf' } as ImportRunArgs)
+    expect(r.ok).toBe(true)
+    expect(m.extractPdfText).toHaveBeenCalled()
+    expect(m.mapTextToDraft).toHaveBeenCalled()
+  })
+
+  it('pdf 扫描件（needsVision）→ 占位草稿，不调 AI', async () => {
+    m.extractPdfText.mockResolvedValue({ text: '小', effectiveChars: 5, warnings: ['w'], needsVision: true })
+    m.dialog.showOpenDialog.mockResolvedValue({ canceled: false, filePaths: ['/tmp/scan.pdf'] })
+    const h = getHandler()
+    const r = await h({ sender }, { format: 'pdf' } as ImportRunArgs)
+    expect(r.ok).toBe(true)
+    expect(r.data?.needsVision).toBe(true)
+    expect(m.mapTextToDraft).not.toHaveBeenCalled()
+  })
+
+  it('docx → 抽取 + AI 映射', async () => {
+    m.dialog.showOpenDialog.mockResolvedValue({ canceled: false, filePaths: ['/tmp/a.docx'] })
+    const h = getHandler()
+    const r = await h({ sender }, { format: 'docx' } as ImportRunArgs)
+    expect(r.ok).toBe(true)
+    expect(m.extractDocxText).toHaveBeenCalled()
+  })
+
+  it('image → M4b 占位（needsVision）', async () => {
+    m.dialog.showOpenDialog.mockResolvedValue({ canceled: false, filePaths: ['/tmp/a.png'] })
+    const h = getHandler()
+    const r = await h({ sender }, { format: 'image' } as ImportRunArgs)
+    expect(r.ok).toBe(true)
+    expect(m.visionPlaceholderDraft).toHaveBeenCalledWith('image', 'a.png', '', expect.any(Array))
+  })
+
+  it('取消选择 → CANCELLED', async () => {
+    m.dialog.showOpenDialog.mockResolvedValue({ canceled: true, filePaths: [] })
+    const h = getHandler()
+    const r = await h({ sender }, { format: 'pdf' } as ImportRunArgs)
+    expect(r).toEqual({ ok: false, error: { code: 'CANCELLED' } })
+  })
+
+  it('非法格式 → UNSUPPORTED（不开对话框）', async () => {
+    const h = getHandler()
+    const r = await h({ sender }, { format: 'txt' } as unknown as ImportRunArgs)
+    expect(r).toEqual({ ok: false, error: { code: 'UNSUPPORTED' } })
+    expect(m.dialog.showOpenDialog).not.toHaveBeenCalled()
+  })
+
+  it('解析失败（ImportError PARSE_FAILED）→ 结构化错误码', async () => {
+    m.importJson.mockRejectedValue(new ImportError('PARSE_FAILED', 'bad'))
+    m.dialog.showOpenDialog.mockResolvedValue({ canceled: false, filePaths: ['/tmp/a.json'] })
+    const h = getHandler()
+    const r = await h({ sender }, { format: 'json' } as ImportRunArgs)
+    expect(r).toEqual({ ok: false, error: { code: 'PARSE_FAILED', message: 'bad' } })
+  })
+})
+
+describe('withTimeout（超时兜底）', () => {
+  it('超时 → TIMEOUT 错误', async () => {
+    await expect(withTimeout(new Promise(() => {}), 5)).rejects.toMatchObject({ code: 'TIMEOUT' })
+  })
+
+  it('提前完成 → 返回值透传', async () => {
+    await expect(withTimeout(Promise.resolve(42), 5000)).resolves.toBe(42)
+  })
+
+  it('import 全局超时常量 = 30s', () => {
+    expect(IMPORT_TIMEOUT_MS).toBe(30_000)
+  })
+})
+
+describe('toImportAiError', () => {
+  it('UNKNOWN 兜底', () => {
+    expect(toImportAiError(new Error('x'))).toEqual({ code: 'UNKNOWN', message: 'x' })
+  })
+  it('AbortError → CANCELLED', () => {
+    const e = new Error('aborted')
+    e.name = 'AbortError'
+    expect(toImportAiError(e)).toEqual({ code: 'CANCELLED' })
+  })
+})

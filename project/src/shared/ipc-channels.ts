@@ -4,7 +4,9 @@
  * 命名空间：app:* 应用信息 / print:* 打印导出 / export:* 导出（M2 F5）/ ai:* AI 通道
  *          / resume:* 简历生命周期 / resumes:* 简历聚合（最近/列表）
  *          / backup:* 备份导出导入 / storage:* 存储位置（F21）/ jobs:* 岗位目录（F19）
+ *          / import:* 导入（M4a：PDF/Word/JSON，M4b 扩展图片）
  */
+import type { Resume } from './schema/resume'
 
 export const IPC = {
   /** 应用信息（M0 验证 IPC 通信） */
@@ -87,6 +89,11 @@ export const IPC = {
     Get: 'jobs:get',
     Save: 'jobs:save',
     Delete: 'jobs:delete'
+  },
+  /** 导入（M4a 文本批冻结；M4b 扩展图片能力） */
+  Import: {
+    /** 导入简历：主进程开文件对话框 → 解析+映射 → 返回草稿（渲染层不传路径，防路径穿越） */
+    Run: 'import:run'
   }
 } as const
 
@@ -171,6 +178,8 @@ export type AiErrorCode =
   | 'RATE_LIMIT' // 限流
   | 'INVALID_RESPONSE' // 模型返回无法解析
   | 'CANCELLED' // 用户中断
+  | 'PARSE_FAILED' // M4a 导入解析失败（非法 JSON / 加密或不可解析 PDF 等）
+  | 'UNSUPPORTED' // M4a 导入格式暂不支持（非 schema 拒绝类）
   | 'UNKNOWN'
 
 export interface AiError {
@@ -253,4 +262,36 @@ type AiPrompts = {
   intro: string
   polish: string
   match: string
+}
+
+// ── M4a 导入契约（2026-08-09 冻结）──────────────────────────────────────────
+
+/** 导入格式：M4a 实现 pdf/docx/json；image = M4b 占位（选择后提示 VISION_REQUIRED，不崩溃） */
+export type ImportFormat = 'pdf' | 'docx' | 'json' | 'image'
+
+/** import:run 入参（主进程经 Zod 校验；文件由主进程对话框选择，渲染层不传路径） */
+export interface ImportRunArgs {
+  format: ImportFormat
+  /** 目标简历（覆盖模式）；省略 = 新建模式 */
+  resumeId?: string
+}
+
+/** 导入草稿（import:run 返回） */
+export interface ImportDraft {
+  format: ImportFormat
+  fileName: string
+  /** 提取文本预览（≤2000 字符，向导①解析预览用） */
+  sourcePreview: string
+  /** 已映射草稿（AI 映射后转正式结构；image 占位时为空简历） */
+  resume: Resume
+  /** 如：字段缺失、疑似乱码已剔除、B 档提示 */
+  warnings: string[]
+  /** 扫描件/图片（M4b 占位）：非错误，前端据此提示需视觉识别 */
+  needsVision?: true
+}
+
+/** 导入进度事件（webContents.send('import:progress')） */
+export interface ImportProgress {
+  phase: 'parse' | 'map' | 'done'
+  ratio: number
 }

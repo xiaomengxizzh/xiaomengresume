@@ -22,7 +22,7 @@ const SUBS: Record<MainKey, SubItem[]> = {
   resume: [
     { key: 'newBlank', titleKey: 'navSub.newBlank', view: 'editor' },
     { key: 'openRecent', titleKey: 'navSub.openRecent', view: 'resumes-recent' },
-    { key: 'import', titleKey: 'navSub.import', view: 'coming:import', disabled: true },
+    { key: 'import', titleKey: 'navSub.import', view: 'import-home' },
     { key: 'manage', titleKey: 'navSub.manage', view: 'resumes-list' },
     { key: 'jobs', titleKey: 'navSub.jobs', view: 'jobs-home' }
   ],

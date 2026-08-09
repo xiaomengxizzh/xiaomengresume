@@ -14,7 +14,10 @@ import {
   type AiGrammarArgs,
   type AiIntroArgs,
   type AiPolishArgs,
-  type AiMatchArgs
+  type AiMatchArgs,
+  type ImportRunArgs,
+  type ImportDraft,
+  type ImportProgress
 } from '@shared/ipc-channels'
 import type { Resume } from '@shared/schema/resume'
 import type { Job } from '@shared/schema/job'
@@ -116,6 +119,12 @@ const electronAPI = {
   backup: {
     exportZip: (): Promise<string | null> => ipcRenderer.invoke(IPC.Backup.Export),
     importZip: (): Promise<number> => ipcRenderer.invoke(IPC.Backup.Import)
+  },
+  import: {
+    /** M4a：导入简历（主进程开对话框选文件；返回草稿进三步核对向导）；进度经 onProgress */
+    run: (args: ImportRunArgs): Promise<AiResult<ImportDraft>> =>
+      ipcRenderer.invoke(IPC.Import.Run, args),
+    onProgress: (cb: (p: ImportProgress) => void): (() => void) => subscribe('import:progress', cb)
   }
 }
 

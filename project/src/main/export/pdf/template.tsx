@@ -384,8 +384,9 @@ export function ResumePdfDocument({ resume, language, privacyMode, photoSrc }: R
     <Document title={displayName || 'Resume'} producer={DOC_PRODUCER} creator={DOC_PRODUCER}>
       <Page size="A4" style={styles.page}>
         {/* 头部：左头像+名字+职位 | 右联系信息两列（ResumeBody L120-172） */}
+        {/* M4a 缺口修复：F16 privacyMode 下不渲染头像（与预览端 blur 对齐；@react-pdf 无滤镜能力） */}
         <View style={styles.header}>
-          {photoSrc ? <Image src={photoSrc} style={[styles.photo, { width: photoW, height: photoH }]} /> : null}
+          {photoSrc && !privacyMode ? <Image src={photoSrc} style={[styles.photo, { width: photoW, height: photoH }]} /> : null}
           <View style={styles.headerMain}>
             {displayName ? <Text style={styles.name}>{displayName}</Text> : null}
             {b.headline ? <Text style={styles.headline}>{redact(b.headline)}</Text> : null}

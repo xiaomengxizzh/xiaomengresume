@@ -9,7 +9,9 @@ import { readFileSync, existsSync } from 'node:fs'
 import * as path from 'node:path'
 import * as zlib from 'node:zlib'
 import { PDFDocument } from 'pdf-lib'
+import { Image } from '@react-pdf/renderer'
 import { buildTextPdf, resolvePdfPhotoSrc } from '../build'
+import { ResumePdfDocument } from '../template'
 import { richTextToPdfParagraphs, paragraphsToPlainText } from '../richtext'
 import { _resetFontRegistryForTest } from '../fonts'
 import { migrate, type Resume } from '@shared/schema/resume'
@@ -164,6 +166,29 @@ describe('pdf/build (文字版 PDF 纯代码生成)', () => {
     }
     // 字节层面：打码后内容必然变化
     expect(priv.buffer.length).not.toBe(normal.buffer.length)
+  })
+
+  it('M4a 回归：privacyMode 下 PDF 模板不渲染头像 <Image>（F16 打码对齐预览 blur）', () => {
+    const sample = loadSample()
+    // 注：node 测试环境 @react-pdf 4.6.0 图片不落 PDF（MINI-IMG 实测 0），故走元素树级断言
+    //（ResumePdfDocument 为无 hooks 纯函数，直接调用拿 JSX 元素树）
+    const countImages = (el: unknown): number => {
+      if (!el || typeof el !== 'object') return 0
+      const e = el as { type?: unknown; props?: { children?: unknown } }
+      let n = e.type === Image ? 1 : 0
+      const children = e.props?.children
+      if (Array.isArray(children)) {
+        for (const c of children) n += countImages(c)
+      } else {
+        n += countImages(children)
+      }
+      return n
+    }
+    const photoSrc = 'data:image/png;base64,REQL' // 任意非空 src（仅元素树检查，不真实渲染）
+    const normal = ResumePdfDocument({ resume: sample, language: 'zh-CN', privacyMode: false, photoSrc })
+    const priv = ResumePdfDocument({ resume: sample, language: 'zh-CN', privacyMode: true, photoSrc })
+    expect(countImages(normal)).toBe(1)
+    expect(countImages(priv)).toBe(0)
   })
 })
 

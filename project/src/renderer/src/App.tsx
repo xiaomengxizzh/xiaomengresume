@@ -15,6 +15,7 @@ import { AiPolish } from './views/AiPolish'
 import { AiMatch } from './views/AiMatch'
 import { JobsHome } from './views/JobsHome'
 import { SettingsAi } from './views/SettingsAi'
+import { ImportHome } from './views/ImportHome'
 import { useResumeStore } from './store/useResumeStore'
 import { getTemplate } from './templates/registry'
 
@@ -82,6 +83,7 @@ export default function App(): React.JSX.Element {
     if (currentView === 'resumes-list') return <ResumesList />
     if (currentView === 'resumes-recent') return <ResumesList mode="recent" />
     if (currentView === 'jobs-home') return <JobsHome />
+    if (currentView === 'import-home') return <ImportHome />
     if (currentView === 'ai-home') return <AiHome />
     // M3 AI 四分区（导航子项直达；共享 store.aiContext 与「当前简历」）
     if (currentView === 'ai:grammar') return <AiGrammar />
@@ -91,10 +93,9 @@ export default function App(): React.JSX.Element {
     if (currentView === 'settings-home') return <SettingsHome />
     if (currentView === 'settings-ai') return <SettingsAi />
     if (currentView.startsWith('coming:')) {
-      // 子页占位（M3 后剩余：import / appearance / storage）
+      // 子页占位（M3 后剩余：appearance / storage；import 已于 M4a 启用）
       const sub = currentView.slice('coming:'.length)
       const titleMap: Record<string, { title: string; desc?: string }> = {
-        import: { title: t('homeCard.import'), desc: t('homeCard.importDesc') },
         appearance: { title: t('navSub.appearance'), desc: t('homeDesc.appearance') },
         storage: { title: t('navSub.storage'), desc: t('homeDesc.storage') }
       }

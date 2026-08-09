@@ -10,6 +10,7 @@ import { IPC, type AppInfo, type RecentResume, type ResumeSummary } from '@share
 import { printHtmlToPdf } from '../print/pdf'
 import { registerExportIpc } from '../export/run'
 import { registerAiIpc } from '../ai/register-ai'
+import { registerImportIpc } from '../import/run'
 import {
   saveResume,
   openResume,
@@ -149,4 +150,7 @@ export function registerIpc(): void {
 
   // ── M3 AI：四分区 + 服务商配置（registerAiIpc 内部注册 ai:* 全部通道）──────
   registerAiIpc()
+
+  // ── M4a 导入：import:run（PDF/Word/JSON + 图片 M4b 占位）────────────────
+  registerImportIpc()
 }

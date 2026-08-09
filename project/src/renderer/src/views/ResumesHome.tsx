@@ -35,10 +35,7 @@ export function ResumesHome(): React.JSX.Element {
       key: 'import',
       titleKey: 'homeCard.import',
       descKey: 'homeCard.importDesc',
-      disabled: true,
-      onClick: () => {
-        // 导入向导随 M4（2026-08-08 清理：移除空操作占位 void t / void loadResume）
-      }
+      onClick: () => setCurrentView('import-home')
     },
     {
       key: 'manage',

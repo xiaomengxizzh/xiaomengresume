@@ -64,6 +64,13 @@ interface ResumeState {
   loadResumeIntoEditor(resumeId: string, resume: Resume): void
   /** 新建空白简历（生成新 uuid，自动保存即落盘 <id>.json） */
   newResume(): void
+  /**
+   * M4a 导入写入（#5 拍板：一次撤销可回滚导入）：
+   * history.record(prev) + 整体替换（不走逐字段 setField，防 50 步栈爆炸）+ 进编辑器。
+   * 新建（resumeId=null）→ 新 uuid；覆盖（resumeId 有值）→ 保留 id 整体替换，undo 一次回滚导入前。
+   * 自动保存经 useAutoSave 500ms 防抖落盘（与编辑器同机制，无需手动 save）。
+   */
+  applyImport(resume: Resume): void
   undo(): void
   redo(): void
   canUndo(): boolean
@@ -214,6 +221,22 @@ export const useResumeStore = create<ResumeState>()((set, get) => ({
     if (prev !== undefined) {
       set({ resume: prev, historyTick: get().historyTick + 1 })
     }
+  },
+
+  applyImport: (resume) => {
+    // 导入覆盖可一次撤销：记录导入前快照（新建模式记录空简历，undo 一次回空白）
+    history.record(get().resume)
+    const resumeId = get().resumeId ?? crypto.randomUUID()
+    set({
+      resumeId,
+      resume: structuredClone(resume),
+      activeSection: 'basics',
+      activeFieldPath: null,
+      lastEditedPath: null,
+      historyTick: get().historyTick + 1
+    })
+    // 进编辑器（自动保存 500ms 防抖落盘）
+    useResumeStore.getState().setCurrentView('editor')
   },
 
   redo: () => {
