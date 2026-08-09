@@ -22,6 +22,8 @@ import { importJson } from './json'
 import { extractPdfText, visionPlaceholderDraft } from './pdf'
 import { extractDocxText } from './docx'
 import { mapTextToDraft } from './map'
+import { cleanText, splitBySectionAnchors, detectDirtyLayout, rulesToImportMap } from './rules'
+import { importMapToResume } from '../../shared/schema/import-map'
 
 /** 导入全流程超时兜底（R4 大文件/网络慢兜底；仿 export/run） */
 export const IMPORT_TIMEOUT_MS = 30_000
@@ -78,7 +80,34 @@ export function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   })
 }
 
-/** 分派解析：json 零 AI；pdf/docx 抽取后 AI 映射；image 直接 M4b 占位 */
+/**
+ * B 档本地规则兜底（M4a.1，定案 §3.19 A）：A 档（AI）失败/不可用时纯本地解析。
+ * 只负责"先分段"，字段归属由三步核对向导兜底；dirtyLayout 提示切 A 档。
+ * warnings 走 i18n key（CH4）。
+ */
+export async function rulesDraft(
+  text: string,
+  fileName: string,
+  format: 'pdf' | 'docx',
+  warnings: string[]
+): Promise<ImportDraft> {
+  const clean = cleanText(text)
+  const sections = splitBySectionAnchors(clean)
+  const hints = detectDirtyLayout(clean, sections)
+  const map = rulesToImportMap(sections)
+  const resume = importMapToResume(map)
+  const ws = [...warnings, 'import.warning.localRules']
+  if (hints.length > 0) ws.push('import.warning.dirtyLayout')
+  return {
+    format,
+    fileName,
+    sourcePreview: clean.slice(0, 2000),
+    resume,
+    warnings: ws
+  }
+}
+
+/** 分派解析：json 零 AI；pdf/docx 抽取后 AI 映射（A 档失败自动降级 B 档本地规则）；image 直接 M4b 占位 */
 export async function runImport(
   format: ImportFormat,
   filePath: string,
@@ -116,11 +145,19 @@ export async function runImport(
     warnings = r.warnings
   }
 
-  // A 档 AI 映射（B 档兜底归 M4a.1）
+  // A 档 AI 映射（M4a.1：失败自动降级 B 档本地规则——无 AI/网络失败也能导入）
   emitProgress(sender, 'map', 0.7)
-  const draft = await mapTextToDraft(text, fileName, format, warnings)
-  emitProgress(sender, 'done', 1)
-  return draft
+  try {
+    const draft = await mapTextToDraft(text, fileName, format, warnings)
+    emitProgress(sender, 'done', 1)
+    return draft
+  } catch (err) {
+    // B 档兜底：任何 A 档失败（NO_PROVIDER/网络/脏输出）都降级本地规则，不阻断导入
+    console.warn(`[import] A 档映射失败，降级 B 档本地规则（${format}）:`, err)
+    const draft = await rulesDraft(text, fileName, format, warnings)
+    emitProgress(sender, 'done', 1)
+    return draft
+  }
 }
 
 /** import:run 注册入口（register.ts 调用） */

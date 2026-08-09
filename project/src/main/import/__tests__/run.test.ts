@@ -55,7 +55,12 @@ beforeEach(() => {
 
 function getHandler(): (e: unknown, args: ImportRunArgs) => Promise<{
   ok: boolean
-  data?: { needsVision?: boolean; format?: string }
+  data?: {
+    needsVision?: boolean
+    format?: string
+    warnings?: string[]
+    resume?: { basics: { name: string }; education: Array<{ school: string }>; work: Array<{ company: string }> }
+  }
   error?: { code: string }
 }> {
   registerImportIpc()
@@ -102,6 +107,39 @@ describe('registerImportIpc（入口分发）', () => {
     const r = await h({ sender }, { format: 'docx' } as ImportRunArgs)
     expect(r.ok).toBe(true)
     expect(m.extractDocxText).toHaveBeenCalled()
+  })
+
+  it('M4a.1：A 档映射失败（无 AI/网络）→ 自动降级 B 档本地规则，不阻断导入', async () => {
+    m.mapTextToDraft.mockRejectedValue(new Error('NO_PROVIDER'))
+    m.extractPdfText.mockResolvedValue({
+      text: '张三\n13800138000\n教育经历\n北京大学 本科 2013-2017\n工作经历\n- 某科技 工程师 2020-2023',
+      effectiveChars: 200,
+      warnings: [],
+      needsVision: false
+    })
+    m.dialog.showOpenDialog.mockResolvedValue({ canceled: false, filePaths: ['/tmp/a.pdf'] })
+    const h = getHandler()
+    const r = await h({ sender }, { format: 'pdf' } as ImportRunArgs)
+    expect(r.ok).toBe(true)
+    expect(r.data?.warnings).toContain('import.warning.localRules')
+    expect(r.data?.resume?.basics.name).toBe('张三')
+    expect(r.data?.resume?.education[0].school).toBe('北京大学')
+    expect(r.data?.resume?.work[0].company).toBe('某科技')
+  })
+
+  it('M4a.1：B 档检测到脏排版 → dirtyLayout 警告提示切 A 档', async () => {
+    m.mapTextToDraft.mockRejectedValue(new Error('NETWORK'))
+    m.extractPdfText.mockResolvedValue({
+      text: '一段无法归类的自由文本\n没有锚点',
+      effectiveChars: 50,
+      warnings: [],
+      needsVision: false
+    })
+    m.dialog.showOpenDialog.mockResolvedValue({ canceled: false, filePaths: ['/tmp/scan.pdf'] })
+    const h = getHandler()
+    const r = await h({ sender }, { format: 'pdf' } as ImportRunArgs)
+    expect(r.ok).toBe(true)
+    expect(r.data?.warnings).toContain('import.warning.dirtyLayout')
   })
 
   it('image → M4b 占位（needsVision）', async () => {

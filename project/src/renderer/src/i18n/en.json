@@ -478,6 +478,8 @@
     "warning.garbled": "Garbled lines were removed",
     "warning.scanned": "Too little text; possibly a scanned document",
     "warning.vision": "Image/scan import needs vision support (M4b)",
-    "warning.docx": "Some document content may not be fully parsed"
+    "warning.docx": "Some document content may not be fully parsed",
+    "warning.localRules": "Parsed with local rules (no AI); review field assignment",
+    "warning.dirtyLayout": "Complex layout detected; enable an AI provider for precise mapping"
   }
 }
