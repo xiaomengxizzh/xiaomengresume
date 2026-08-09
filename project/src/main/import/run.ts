@@ -40,12 +40,24 @@ function emitProgress(sender: Electron.WebContents, phase: ImportProgress['phase
   }
 }
 
-/** 统一错误 → AiResult 错误码（ImportError + AiServiceError 保留结构化码） */
+/**
+ * 统一错误 → AiResult 错误码（ImportError + AiServiceError 保留结构化码；
+ * AI SDK 错误码映射与 register-ai 的 toAiError 对齐——2026-08-09 修复：
+ * 原未映射 APICallError（网络/限流/超时）全落 UNKNOWN，用户只见"请重试"无法定位）。
+ */
 export function toImportAiError(err: unknown): AiError {
   if (err instanceof ImportError) return { code: err.code, message: err.message }
   if (err instanceof AiServiceError) return { code: err.code, message: err.message }
-  const e = err as { name?: string; code?: string; message?: string }
+  const e = err as { name?: string; statusCode?: number; code?: string; message?: string }
   if (e.name === 'AbortError' || e.code === 'aborted') return { code: 'CANCELLED' }
+  if (e.statusCode === 429 || e.code === 'rate_limit') return { code: 'RATE_LIMIT' }
+  if (e.statusCode !== undefined && e.statusCode >= 500) return { code: 'NETWORK' }
+  if (e.code === 'timeout' || /timeout|timed out/i.test(e.message ?? '')) return { code: 'TIMEOUT' }
+  if (e.code === 'INVALID_RESPONSE' || /parse|schema|json/i.test(e.message ?? '')) {
+    return { code: 'INVALID_RESPONSE', message: e.message }
+  }
+  // 未知错误：打印真实错误辅助定位（dev 终端可见），前端按 UNKNOWN 提示
+  console.error('[import] unhandled error:', err)
   return { code: 'UNKNOWN', message: e.message }
 }
 
@@ -118,22 +130,33 @@ export function registerImportIpc(): void {
     async (event, args: ImportRunArgs): Promise<AiResult<ImportDraft>> => {
       const sender = event.sender
       const win = BrowserWindow.fromWebContents(sender)
-      if (!win) return { ok: false, error: { code: 'UNKNOWN' } }
+      if (!win) {
+        // 诊断日志：sender 非窗口 webContents（异常时序），返回 UNKNOWN 前记录
+        console.warn('[import] BrowserWindow.fromWebContents 返回 null，sender 非窗口上下文')
+        return { ok: false, error: { code: 'UNKNOWN' } }
+      }
 
       const format: ImportFormat | undefined = args?.format
       if (!format || !(format in FILTERS)) {
         return { ok: false, error: { code: 'UNSUPPORTED' } }
       }
 
-      const { canceled, filePaths } = await dialog.showOpenDialog(win, {
-        title: 'Import resume',
-        filters: FILTERS[format],
-        properties: ['openFile']
-      })
-      if (canceled || filePaths.length === 0) {
-        return { ok: false, error: { code: 'CANCELLED' } }
+      let filePath: string | undefined
+      try {
+        const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+          title: 'Import resume',
+          filters: FILTERS[format],
+          properties: ['openFile']
+        })
+        if (canceled || filePaths.length === 0) {
+          return { ok: false, error: { code: 'CANCELLED' } }
+        }
+        filePath = filePaths[0]
+      } catch (err) {
+        // 对话框异常（平台差异/时序）——记录并转结构化错误，不让 handler 裸 reject
+        console.error('[import] showOpenDialog 异常:', err)
+        return { ok: false, error: toImportAiError(err) }
       }
-      const filePath = filePaths[0]
       const fileName = path.basename(filePath)
 
       try {

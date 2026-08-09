@@ -7,7 +7,7 @@
  */
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ImportDraft, ImportFormat, AiErrorCode } from '@shared/ipc-channels'
+import type { ImportDraft, ImportFormat, AiError } from '@shared/ipc-channels'
 import { ImportWizard } from '../components/import/ImportWizard'
 import { Button } from '../components/ui'
 
@@ -31,16 +31,16 @@ export function ImportHome(): React.JSX.Element {
   const [busy, setBusy] = useState<'parsing' | 'mapping' | null>(null)
   const [draft, setDraft] = useState<ImportDraft | null>(null)
   const [vision, setVision] = useState<ImportDraft | null>(null)
-  const [errorCode, setErrorCode] = useState<AiErrorCode | null>(null)
+  const [error, setError] = useState<AiError | null>(null)
 
   const startImport = async (format: ImportFormat): Promise<void> => {
     setBusy(format === 'json' ? 'parsing' : 'mapping')
-    setErrorCode(null)
+    setError(null)
     setVision(null)
     try {
       const res = await window.electronAPI.import.run({ format })
       if (!res.ok) {
-        setErrorCode(res.error.code)
+        setError(res.error)
         return
       }
       if (res.data.needsVision) {
@@ -52,7 +52,7 @@ export function ImportHome(): React.JSX.Element {
       // 2026-08-09 修复：任何异常（IPC handler 缺失/主进程未重启/时序）都不得静默——
       // 原无 catch，import.run reject 时 finally 清 busy 后无任何提示（用户端"无反馈"）。
       console.error('[import] run failed:', err)
-      setErrorCode('UNKNOWN')
+      setError({ code: 'UNKNOWN', message: err instanceof Error ? err.message : String(err) })
     } finally {
       setBusy(null)
     }
@@ -61,7 +61,7 @@ export function ImportHome(): React.JSX.Element {
   const reset = (): void => {
     setDraft(null)
     setVision(null)
-    setErrorCode(null)
+    setError(null)
   }
 
   // 向导渲染（draft 就绪后替换卡片区）
@@ -90,13 +90,16 @@ export function ImportHome(): React.JSX.Element {
         </div>
       ) : null}
 
-      {errorCode ? (
+      {error ? (
         <div className="mb-4 rounded-lg border border-danger/40 bg-danger/10 p-3 text-[13px] text-danger">
-          {t(`import.error.${errorCode}`)}
-          {errorCode === 'NO_PROVIDER' ? (
+          {t(`import.error.${error.code}`)}
+          {error.code === 'NO_PROVIDER' ? (
             <span className="block text-xs opacity-80">（JSON 导入无需 AI，可直接使用）</span>
           ) : null}
-          <Button variant="ghost" size="sm" className="mt-1" onClick={() => setErrorCode(null)}>
+          {error.code === 'UNKNOWN' && error.message ? (
+            <span className="mt-1 block break-all text-xs opacity-70">{error.message}</span>
+          ) : null}
+          <Button variant="ghost" size="sm" className="mt-1" onClick={() => setError(null)}>
             ✕
           </Button>
         </div>
