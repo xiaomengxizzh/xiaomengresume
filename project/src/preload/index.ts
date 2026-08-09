@@ -35,14 +35,25 @@ function subscribe<T>(channel: string, cb: (payload: T) => void): () => void {
 }
 
 // F18 首帧注入（M4a 前置）：主进程经 additionalArguments 传 --xm-theme=<appearance>，
-// 同步写 <html data-theme> 防首帧 FOUC（在 CSS 生效前已置位，令牌骨架见 styles.css）。
-// sandbox:false 下 preload 有完整 node 环境，process.argv 可用（渲染页面本身无 node 访问）。
-{
-  const themeArg = process.argv.find((a) => a.startsWith('--xm-theme='))
-  const theme = themeArg?.slice('--xm-theme='.length)
-  if (theme) {
-    document.documentElement.setAttribute('data-theme', theme)
+// 写 <html data-theme> 防首帧 FOUC（令牌骨架见 styles.css）。
+// 2026-08-09 修复：preload 早期 document.documentElement 可能为 null，原裸访问抛 TypeError
+// → 中断整个 preload → contextBridge.exposeInMainWorld 未执行 → window.electronAPI 全 undefined
+// （用户端表现为"无法读取 import"、所有 IPC 功能失效）。现 try/catch + 可选链 + DOMContentLoaded 兜底，
+// 任何异常都不阻塞 electronAPI 暴露。
+function injectTheme(): void {
+  try {
+    const themeArg = process.argv.find((a) => a.startsWith('--xm-theme='))
+    const theme = themeArg?.slice('--xm-theme='.length)
+    if (!theme) return
+    document.documentElement?.setAttribute('data-theme', theme)
+  } catch (err) {
+    console.warn('[preload] theme inject failed:', err)
   }
+}
+injectTheme()
+// 兜底：documentElement 首帧未就绪时，DOMContentLoaded 后再补一次
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', injectTheme, { once: true })
 }
 
 /** preload 暴露的 API（类型见 index.d.ts 全局增强） */
