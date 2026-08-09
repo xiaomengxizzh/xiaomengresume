@@ -402,8 +402,13 @@ PAGE = PAGE.replace("@@SCREENS@@", SCREENS)
 PAGE = PAGE.replace("@@LABELS@@", json.dumps(LABEL, ensure_ascii=False))
 PAGE = PAGE.replace("@@STATIONS@@", json.dumps(STATIONS, ensure_ascii=False))
 
-with open(OUT, "w", encoding="utf-8") as f:
-    f.write(PAGE)
+from pathlib import Path
+
+# 路径穿越防御（Mimosa CWE-22）：写入目标必须解析在 file/ 目录内
+_OUT_FILE = (Path(BASE) / "file" / "导航交互原型.html").resolve()
+if not _OUT_FILE.is_relative_to((Path(BASE) / "file").resolve()):
+    raise SystemExit(f"拒绝写入 file/ 目录之外: {_OUT_FILE}")
+_OUT_FILE.write_text(PAGE, encoding="utf-8")
 
 print("OK ->", OUT)
 print("screens:", len(STATIONS), "| embedded svgs:", len(SCREEN_SVG))

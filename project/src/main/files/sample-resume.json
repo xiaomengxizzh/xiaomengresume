@@ -71,8 +71,8 @@
         "order": 6
       }
     ],
-    "photoWidth": 90,
-    "photoHeight": 120,
+    "photoWidth": 110,
+    "photoHeight": 110,
     "infoItems": [
       {
         "id": "emp",
@@ -184,53 +184,57 @@
                 "text": "负责抖音创作者平台的开发与维护，主导多个核心功能的技术方案设计。"
               }
             ]
+          },
+          {
+            "type": "bulletList",
+            "content": [
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "优化项目工程化配置，将构建时间从 8 分钟优化至 2 分钟"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "设计并实现组件库，提升代码复用率达 70%"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "主导性能优化项目，使平台首屏加载时间减少 50%"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
-      "highlights": [
-        {
-          "type": "doc",
-          "content": [
-            {
-              "type": "paragraph",
-              "content": [
-                {
-                  "type": "text",
-                  "text": "优化项目工程化配置，将构建时间从 8 分钟优化至 2 分钟"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "doc",
-          "content": [
-            {
-              "type": "paragraph",
-              "content": [
-                {
-                  "type": "text",
-                  "text": "设计并实现组件库，提升代码复用率达 70%"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "doc",
-          "content": [
-            {
-              "type": "paragraph",
-              "content": [
-                {
-                  "type": "text",
-                  "text": "主导性能优化项目，使平台首屏加载时间减少 50%"
-                }
-              ]
-            }
-          ]
-        }
-      ],
+      "highlights": [],
       "visible": true
     },
     {
@@ -252,11 +256,44 @@
                 "text": "参与微信小程序开发者工具的研发，支持多平台开发。"
               }
             ]
+          },
+          {
+            "type": "bulletList",
+            "content": [
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "独立负责小程序 IDE 核心编译模块的迭代，支撑日均百万级构建请求"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "牵头跨端调试协议联调，推动多端渲染结果一致性达 99%"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
       "highlights": [],
-      "visible": false
+      "visible": true
     }
   ],
   "projects": [
@@ -279,25 +316,29 @@
                 "text": "基于 React 开发的创作者数据分析和内容管理平台，服务百万级创作者群体。"
               }
             ]
+          },
+          {
+            "type": "bulletList",
+            "content": [
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "采用 Redux 进行状态管理，实现复杂数据流的高效处理"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
-      "highlights": [
-        {
-          "type": "doc",
-          "content": [
-            {
-              "type": "paragraph",
-              "content": [
-                {
-                  "type": "text",
-                  "text": "采用 Redux 进行状态管理，实现复杂数据流的高效处理"
-                }
-              ]
-            }
-          ]
-        }
-      ],
+      "highlights": [],
       "visible": true
     },
     {
@@ -317,6 +358,39 @@
               {
                 "type": "text",
                 "text": "一个完整的前端监控解决方案，包含错误监控、性能监控、用户行为分析等功能。"
+              }
+            ]
+          },
+          {
+            "type": "bulletList",
+            "content": [
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "设计基于采样上报的轻量监控 SDK，页面 JS 错误捕获率提升至 95%"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "沉淀性能指标大盘与告警规则，线上问题定位时间缩短 60%"
+                      }
+                    ]
+                  }
+                ]
               }
             ]
           }
@@ -349,6 +423,24 @@
       "id": "99999999-9999-4999-8999-999999999999",
       "name": "Webpack",
       "category": "工程化工具",
+      "level": "熟练"
+    },
+    {
+      "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "name": "Node.js",
+      "category": "服务端",
+      "level": "熟练"
+    },
+    {
+      "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      "name": "Git",
+      "category": "工程化工具",
+      "level": "熟练"
+    },
+    {
+      "id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      "name": "Jest",
+      "category": "测试工具",
       "level": "熟练"
     }
   ],

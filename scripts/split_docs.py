@@ -15,6 +15,7 @@ split_docs.py —— 巨型主文档路由化拆分（2026-08-08 定案，见《
 import re
 import os
 import shutil
+from pathlib import Path
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FILE_DIR = os.path.join(ROOT, 'file')
@@ -35,9 +36,13 @@ def read_lines(path):
 
 
 def write(path, text):
-    with open(path, 'w', encoding='utf-8', newline='\n') as f:
-        f.write(text)
-    print(f'  [写] {os.path.relpath(path, ROOT)} ({len(text)} 字符)')
+    ap = Path(path).resolve()
+    # 路径穿越防御（Mimosa CWE-22）：写入目标必须解析在 file/ 目录内
+    file_dir = Path(FILE_DIR).resolve()
+    if not ap.is_relative_to(file_dir):
+        raise ValueError(f'拒绝写入 file/ 目录之外: {ap}')
+    ap.write_text(text, encoding='utf-8', newline='\n')
+    print(f'  [写] {os.path.relpath(ap, ROOT)} ({len(text)} 字符)')
 
 
 def slugify(title):

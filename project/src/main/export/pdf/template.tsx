@@ -20,7 +20,7 @@
  *   border 部分支持；text-transform: uppercase 对中文无效但保留不破坏版式）。
  */
 import React from 'react'
-import { Document, Page, StyleSheet, Text, View, Image } from '@react-pdf/renderer'
+import { Document, Page, StyleSheet, Text, View, Image, Svg, Path, Circle, Rect } from '@react-pdf/renderer'
 import type { Resume, Layout } from '@shared/schema/resume'
 import type { Language } from '@shared/schema/settings'
 import type { Style } from '@react-pdf/types'
@@ -41,7 +41,7 @@ interface TemplatePreset {
 
 /** 三套模板预设（1:1 复制 renderer/src/templates/registry.ts PRESETS，变更须同步） */
 const PRESETS: Record<string, TemplatePreset> = {
-  classic: { baseFontSize: 16, lineHeight: 1.5, pagePadding: 32, paragraphSpacing: 12, sectionSpacing: 16, headerSize: 18 },
+  classic: { baseFontSize: 16, lineHeight: 1.8, pagePadding: 32, paragraphSpacing: 12, sectionSpacing: 16, headerSize: 18 },
   modern: { baseFontSize: 16, lineHeight: 1.6, pagePadding: 36, paragraphSpacing: 14, sectionSpacing: 20, headerSize: 17 },
   compact: { baseFontSize: 15, lineHeight: 1.4, pagePadding: 26, paragraphSpacing: 10, sectionSpacing: 12, headerSize: 15 }
 }
@@ -95,7 +95,7 @@ function makeStyles(preset: TemplatePreset, accent: string, variant: TitleVarian
       ? { ...sectionTitleBase, letterSpacing: 0.5, color: '#333', borderLeftWidth: 3, borderLeftColor: accent, borderLeftStyle: 'solid', paddingLeft: 6, paddingBottom: 1.5, marginBottom: pt(10), textTransform: 'none' }
       : variant === 'compact'
         ? { ...sectionTitleBase, fontWeight: 700, letterSpacing: 0.3, color: '#333', paddingBottom: 1.5, marginBottom: pt(6), textTransform: 'none' }
-        : { ...sectionTitleBase, letterSpacing: 1, borderBottomWidth: 2, borderBottomColor: '#e8e8e8', borderBottomStyle: 'solid', paddingBottom: pt(4), marginBottom: pt(10), textTransform: 'uppercase' }
+        : { ...sectionTitleBase, letterSpacing: 1, color: accent, borderBottomWidth: 2, borderBottomColor: accent, borderBottomStyle: 'solid', paddingBottom: pt(4), marginBottom: pt(10), textTransform: 'uppercase' }
 
   return StyleSheet.create({
     page: {
@@ -118,15 +118,14 @@ function makeStyles(preset: TemplatePreset, accent: string, variant: TitleVarian
       flexShrink: 0
     },
     photo: {
-      borderRadius: 3,
       objectFit: 'cover',
       flexShrink: 0,
       marginRight: pt(24)
     },
     name: {
       fontSize: pt(30), // ResumeBody classic name 30px
-      fontWeight: 600,
-      color: accent,
+      fontWeight: 700,
+      color: '#111827',
       lineHeight: 1.2,
       marginBottom: pt(2)
     },
@@ -145,9 +144,14 @@ function makeStyles(preset: TemplatePreset, accent: string, variant: TitleVarian
       columnGap: pt(20)
     },
     contactItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      width: '44%' // P1 修复：2 列规整换行（对齐预览端 grid auto auto 两列）
+    },
+    contactText: {
       fontSize: pt(12), // 略小于 web 的 16（PDF 渲染密度高；视觉对齐）
       color: '#444',
-      width: '44%' // P1 修复：2 列规整换行（对齐预览端 grid auto auto 两列）
+      marginLeft: pt(5)
     },
     profile: {
       marginTop: pt(12)
@@ -170,7 +174,7 @@ function makeStyles(preset: TemplatePreset, accent: string, variant: TitleVarian
     },
     entryTitle: {
       fontSize: pt(15.2), // 0.95em × 16 ≈ 15.2
-      fontWeight: 500,
+      fontWeight: 700,
       color: '#222'
     },
     entryDate: {
@@ -262,6 +266,58 @@ const EntrySub = ({ children, styles }: { children: string; styles: PdfStyles })
   <Text style={styles.entrySub}>{children}</Text>
 )
 
+/** 联系信息线性图标（v2.3：对齐预览 InfoIcons lucide 风格，path 与 renderer InfoIcons.tsx 同源）
+ *  v2.4：@react-pdf 4.6.0 修复组件封装 Svg 多实例渲染丢失（4.5.1 需内联三元规避），
+ *  恢复组件封装 + accent 动态色（消除偏差 ⑰：图标随自定义 themeColor）。 */
+const PdfIcon = ({ id, color }: { id: string; color: string }): React.JSX.Element | null => {
+  const s = { stroke: color, strokeWidth: 1.6, fill: 'none' }
+  switch (id) {
+    case 'mail':
+      return (
+        <Svg width={9} height={9} viewBox="0 0 24 24">
+          <Rect x={3} y={5} width={18} height={14} rx={2} {...s} />
+          <Path d="m3 7 9 6 9-6" {...s} />
+        </Svg>
+      )
+    case 'phone':
+      return (
+        <Svg width={9} height={9} viewBox="0 0 24 24">
+          <Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" {...s} />
+        </Svg>
+      )
+    case 'pin':
+      return (
+        <Svg width={9} height={9} viewBox="0 0 24 24">
+          <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" {...s} />
+          <Circle cx={12} cy={10} r={3} {...s} />
+        </Svg>
+      )
+    case 'globe':
+      return (
+        <Svg width={9} height={9} viewBox="0 0 24 24">
+          <Circle cx={12} cy={12} r={10} {...s} />
+          <Path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20" {...s} />
+        </Svg>
+      )
+    case 'briefcase':
+      return (
+        <Svg width={9} height={9} viewBox="0 0 24 24">
+          <Rect x={2} y={7} width={20} height={14} rx={2} {...s} />
+          <Path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" {...s} />
+        </Svg>
+      )
+    case 'calendar':
+      return (
+        <Svg width={9} height={9} viewBox="0 0 24 24">
+          <Rect x={3} y={4} width={18} height={18} rx={2} {...s} />
+          <Path d="M16 2v4M8 2v4M3 10h18" {...s} />
+        </Svg>
+      )
+    default:
+      return null
+  }
+}
+
 export interface ResumePdfProps {
   resume: Resume
   language: Language
@@ -305,21 +361,23 @@ export function ResumePdfDocument({ resume, language, privacyMode, photoSrc }: R
   // P1 修复：fallback 字段集与顺序对齐预览（原只有 phone/email/location/website 4 项且顺序错乱，
   // 缺 employmentStatus/birthDate → 导出比预览少字段）；去重基于原始值（红码后全是 ████
   // 对打码值去重会误删占位条目）。customFields 不进头部区（预览 infoItems 区亦不含，防两处不一致）。
+  // v2.3 修复：infoItems 分支保留 icon 字段（预览端 InfoIcon 用 it.icon；原丢 icon 致 PDF 图标缺失）。
+  const FIELD_ICON: Record<string, string> = { emp: 'briefcase', birth: 'calendar', mail: 'mail', phone: 'phone', loc: 'pin', web: 'globe' }
   const contactItems = (
     b.infoItems && b.infoItems.length > 0
-      ? b.infoItems.map((it) => ({ id: it.id, value: it.value }))
+      ? b.infoItems.map((it) => ({ id: it.id, icon: it.icon ?? FIELD_ICON[it.id] ?? '', value: it.value }))
       : [
-          { id: 'emp', value: b.employmentStatus },
-          { id: 'birth', value: b.birthDate },
-          { id: 'mail', value: b.email },
-          { id: 'phone', value: b.phone },
-          { id: 'loc', value: b.location },
-          { id: 'web', value: b.website }
+          { id: 'emp', icon: FIELD_ICON.emp, value: b.employmentStatus },
+          { id: 'birth', icon: FIELD_ICON.birth, value: b.birthDate },
+          { id: 'mail', icon: FIELD_ICON.mail, value: b.email },
+          { id: 'phone', icon: FIELD_ICON.phone, value: b.phone },
+          { id: 'loc', icon: FIELD_ICON.loc, value: b.location },
+          { id: 'web', icon: FIELD_ICON.web, value: b.website }
         ]
   )
     .filter((it) => it.value && it.value.trim().length > 0)
     .filter((it, i, arr) => arr.findIndex((x) => x.value === it.value) === i)
-    .map((it) => ({ id: it.id, value: redact(it.value) }))
+    .map((it) => ({ id: it.id, icon: it.icon, value: redact(it.value) }))
     .filter((it) => it.value.length > 0)
 
   return (
@@ -335,7 +393,10 @@ export function ResumePdfDocument({ resume, language, privacyMode, photoSrc }: R
           {contactItems.length > 0 ? (
             <View style={styles.contactGrid}>
               {contactItems.map((it) => (
-                <Text key={it.id} style={styles.contactItem}>{it.value}</Text>
+                <View key={it.id} style={styles.contactItem}>
+                  <PdfIcon id={it.icon} color={accent} />
+                  <Text style={styles.contactText}>{it.value}</Text>
+                </View>
               ))}
             </View>
           ) : null}

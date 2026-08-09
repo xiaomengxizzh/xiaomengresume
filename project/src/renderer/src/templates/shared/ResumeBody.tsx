@@ -15,17 +15,17 @@ import { lv, resolveFontFamily, type TemplatePreset } from './preset'
 import { SectionBlock, Placeholder, entryHead, fmtDate, useJump } from './primitives'
 import { useThrottledResume } from '../../hooks/useThrottledResume'
 
-const CLASSIC_PHOTO = { width: 90, height: 120 }
+const CLASSIC_PHOTO = { width: 110, height: 110 }
 
 export type TitleVariant = 'underline' | 'accent-bar' | 'compact'
 
 const TITLE_STYLES: Record<TitleVariant, CSSProperties> = {
-  // classic：全大写下划线（对齐 PDF）
+  // classic：全大写下划线（v2.3 线色随主题主色，对标简历示例1；原 #e8e8e8 浅灰）
   underline: {
     fontWeight: 600,
     letterSpacing: '1px',
-    color: '#444',
-    borderBottom: '2px solid #e8e8e8',
+    color: 'var(--rm-accent)',
+    borderBottom: '2px solid var(--rm-accent)',
     paddingBottom: '4px',
     marginBottom: '10px',
     textTransform: 'uppercase'
@@ -139,12 +139,12 @@ export function ResumeBody({ variant }: { variant: TemplateId }): React.JSX.Elem
               height={photoH}
               className="redact-field"
               onError={() => setPhotoBroken(true)}
-              style={{ width: photoW, height: photoH, borderRadius: '4px', objectFit: 'cover', flexShrink: 0 }}
+              style={{ width: photoW, height: photoH, objectFit: 'cover', flexShrink: 0 }}
             />
           ) : null}
           <div style={{ minWidth: 0, paddingTop: '2px' }}>
             {basics.name ? (
-              <h1 className="redact-field" style={{ fontSize: variant === 'compact' ? '24px' : '30px', fontWeight: 600, lineHeight: 1.2, marginBottom: '2px', color: 'var(--rm-accent)' }}>{basics.name}</h1>
+              <h1 className="redact-field" style={{ fontSize: variant === 'compact' ? '24px' : '30px', fontWeight: 700, lineHeight: 1.2, marginBottom: '2px', color: '#111827' }}>{basics.name}</h1>
             ) : null}
             {basics.headline ? (
               <div className="redact-field" style={{ fontSize: variant === 'compact' ? '15px' : '18px', opacity: 0.75, lineHeight: 1.4 }}>{basics.headline}</div>
@@ -164,7 +164,7 @@ export function ResumeBody({ variant }: { variant: TemplateId }): React.JSX.Elem
             >
               {infoItems.map((it) => (
                 <div key={it.id} className="redact-field" style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
-                  <span style={{ display: 'inline-flex', color: '#666', flexShrink: 0 }}>
+                  <span style={{ display: 'inline-flex', color: 'var(--rm-accent)', flexShrink: 0 }}>
                     <InfoIcon id={it.icon as InfoIconId} size={15} />
                   </span>
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '150px' }}>{it.value}</span>
@@ -194,7 +194,7 @@ export function ResumeBody({ variant }: { variant: TemplateId }): React.JSX.Elem
           <div key={e.id} style={{ marginBottom: '10px' }}>
             {entryHead(e.school, [fmtDate(e.startDate), e.endDate ? fmtDate(e.endDate) : ''].filter(Boolean).join(' – '), {
               fontSize: '0.95em',
-              fontWeight: 500
+              fontWeight: 700
             })}
             <div style={{ fontSize: '0.85em', opacity: 0.8 }}>{[e.degree, e.major].filter(Boolean).join(' · ')}</div>
             {e.description ? (
@@ -212,7 +212,7 @@ export function ResumeBody({ variant }: { variant: TemplateId }): React.JSX.Elem
           <div key={w.id} style={{ marginBottom: '12px' }}>
             {entryHead(w.company, [fmtDate(w.startDate), w.current ? t('editor.field.current') : w.endDate ? fmtDate(w.endDate) : ''].filter(Boolean).join(' – '), {
               fontSize: '0.95em',
-              fontWeight: 500
+              fontWeight: 700
             })}
             <div style={{ fontSize: '0.85em', opacity: 0.8 }}>{w.title}</div>
             {w.summary ? (
@@ -230,7 +230,7 @@ export function ResumeBody({ variant }: { variant: TemplateId }): React.JSX.Elem
           <div key={p.id} style={{ marginBottom: '12px' }}>
             {entryHead(p.name, [fmtDate(p.startDate), p.endDate ? fmtDate(p.endDate) : ''].filter(Boolean).join(' – '), {
               fontSize: '0.95em',
-              fontWeight: 500
+              fontWeight: 700
             })}
             <div style={{ fontSize: '0.85em', opacity: 0.8 }}>{[p.role, p.organization].filter(Boolean).join(' · ')}</div>
             {p.description ? (

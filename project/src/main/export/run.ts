@@ -35,11 +35,11 @@ function emitProgress(sender: Electron.WebContents | null, phase: ExportProgress
 
 /** 解析目标目录：folderPath > export.lastFolder > storage.folderPath > 下载目录 */
 export function resolveExportDir(folderPath?: string): string {
-  if (typeof folderPath === 'string' && folderPath.length > 0) return folderPath
+  if (typeof folderPath === 'string' && folderPath.length > 0) return path.resolve(folderPath)
   const last = store.get('export.lastFolder')
-  if (typeof last === 'string' && last.length > 0) return last
+  if (typeof last === 'string' && last.length > 0) return path.resolve(last)
   const storage = store.get('storage.folderPath')
-  if (typeof storage === 'string' && storage.length > 0) return storage
+  if (typeof storage === 'string' && storage.length > 0) return path.resolve(storage)
   return app.getPath('downloads')
 }
 
@@ -80,7 +80,7 @@ export function registerExportIpc(): void {
 
         if (format === 'json') {
           emitProgress(sender, 'write', 0.9)
-          const dir = resolveExportDir(folderPath)
+          const dir = path.resolve(resolveExportDir(folderPath))
           await fs.mkdir(dir, { recursive: true })
           // 渲染进程传 resumeId
           const resumeId = args.resumeId
@@ -88,7 +88,9 @@ export function registerExportIpc(): void {
           const raw = await readResumeOrThrow(resumeId)
           const parsed = ResumeSchema.parse(raw)
           const fileName = `${safeFileName(parsed.basics.name || 'resume')}.json`
-          const filePath = path.join(dir, fileName)
+          const filePath = path.resolve(dir, fileName)
+          // 路径穿越纵深防御：最终路径必须仍在目标目录内（目录参数/文件名注入兜底）
+          if (path.relative(dir, filePath).startsWith('..')) return { canceled: false, error: 'export: invalid output path' }
           await fs.writeFile(
             filePath,
             JSON.stringify({ ...parsed, schemaVersion: parsed.schemaVersion }, null, 2),
@@ -140,10 +142,12 @@ export function registerExportIpc(): void {
           for (const w of warnings) console.warn(`[Export] ${w}`)
           emitProgress(sender, 'write', 0.9)
 
-          const dir = resolveExportDir(folderPath)
+          const dir = path.resolve(resolveExportDir(folderPath))
           await fs.mkdir(dir, { recursive: true })
           const fileName = `${safeFileName(parsed.basics.name || 'resume')}.pdf`
-          const filePath = path.join(dir, fileName)
+          const filePath = path.resolve(dir, fileName)
+          // 路径穿越纵深防御（同 JSON 导出）
+          if (path.relative(dir, filePath).startsWith('..')) return { canceled: false, error: 'export: invalid output path' }
           await fs.writeFile(filePath, pdfData)
           rememberLastFolder(dir)
           emitProgress(sender, 'write', 1)
