@@ -167,12 +167,14 @@ export function setByPath(target: Resume, path: FieldPath, value: unknown): void
  */
 export function immutableSetByPath(target: Resume, path: FieldPath, value: unknown): Resume {
   const { section, index, field } = parsePath(path)
-  if (!field) {
-    throw new Error(`write failed: missing field segment ${path}`)
-  }
   const root = { ...(target as unknown as UnknownRecord) } as UnknownRecord
   if (!(section in root)) {
     throw new Error(`write failed: section not found ${section}`)
+  }
+  // 2026-08-09 T3：顶层字段（title / meta / boundJobIds / customSections 等）——单段路径直接写
+  if (!field) {
+    root[section] = value
+    return root as Resume
   }
 
   const clone = <T>(v: T): T => {

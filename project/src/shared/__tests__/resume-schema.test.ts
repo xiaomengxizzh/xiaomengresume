@@ -161,4 +161,16 @@ describe('模块排序与自定义模块（2026-08-09 增补）', () => {
     // 缺省 undefined（零迁移）
     expect(ResumeSchema.parse(createEmptyResume()).customSections).toBeUndefined()
   })
+
+  it('LayoutSchema.basicsOrder 可选且仅接受三块枚举（2026-08-09 R6 回归）', () => {
+    expect(LayoutSchema.parse({ basicsOrder: ['tags', 'identity', 'photo'] }).basicsOrder).toEqual(['tags', 'identity', 'photo'])
+    expect(LayoutSchema.parse({}).basicsOrder).toBeUndefined()
+    // 非法块名拒绝
+    expect(LayoutSchema.safeParse({ basicsOrder: ['photo', 'avatar'] }).success).toBe(false)
+    // 旧简历（无 basicsOrder）经 ResumeSchema parse 兼容
+    const r = createEmptyResume()
+    r.layout = { templateId: 'classic' }
+    const parsed = ResumeSchema.parse(r)
+    expect(parsed.layout?.basicsOrder).toBeUndefined()
+  })
 })

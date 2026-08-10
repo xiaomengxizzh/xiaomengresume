@@ -209,7 +209,11 @@ export const LayoutSchema = z.object({
   sectionFonts: z.record(z.string(), z.string()).optional(),
   /** 2026-08-09 增补（仅增不改）：模块显示顺序（education/work/projects/skills/certificates/languages
    *  + customSections.id；basics/summary 固定顶部不参与）。缺省 = 模板默认顺序。 */
-  sectionOrder: z.array(z.string()).optional()
+  sectionOrder: z.array(z.string()).optional(),
+  /** 2026-08-09 R6 增补（仅增不改）：基本信息三透明模块（图片/姓名与职业/标签信息）编辑区排序，
+   *  同时驱动预览/PDF 头部三块横向排列顺序（photo=图片、identity=姓名与职业、tags=标签信息）。
+   *  缺省 = ['photo','identity','tags']（经典模板布局）。 */
+  basicsOrder: z.array(z.enum(['photo', 'identity', 'tags'])).optional()
 })
 export type Layout = z.infer<typeof LayoutSchema>
 
@@ -246,6 +250,9 @@ export const ResumeSchema = z.object({
   skills: z.array(SkillsSchema),
   certificates: z.array(CertificatesSchema),
   languages: z.array(LanguagesSchema),
+  /** 2026-08-09 增补（仅增不改，T3）：简历文件标题/显示名——与 basics.name（姓名）独立；
+   *  列表/导出文件名优先用它，空则回落 basics.name；修改任一方不影响另一方。 */
+  title: z.string().optional(),
   /** F9 扩展预留（可选，仅增不改）：岗位 JD，供匹配度打分 */
   targetJobDescription: RichTextSchema.optional(),
   /** 2026-08-07 增补（仅增不改）：per-resume 排版覆盖（F4 修订） */
@@ -266,6 +273,7 @@ export function createEmptyResume(): Resume {
   const emptyDoc = (): RichText => ({ type: 'doc', content: [] })
   return {
     schemaVersion: 1,
+    title: '', // T3：简历文件标题（独立于 basics.name 姓名）
     basics: {
       name: '',
       englishName: '',

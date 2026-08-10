@@ -218,7 +218,8 @@ describe('immutableSetByPath（打字卡顿优化）', () => {
     const r = sample()
     expect(() => immutableSetByPath(r, 'work[9].company', 'x')).toThrow(/out of range/)
     expect(() => immutableSetByPath(r, 'ghost.x', 'x')).toThrow(/not found/)
-    expect(() => immutableSetByPath(r, 'work[0]', 'x')).toThrow(/missing field/)
+    // 2026-08-09 T3：单段路径 = 顶层字段写入（title 等），不再抛 missing field
+    expect(immutableSetByPath(r, 'title', '我的简历').title).toBe('我的简历')
     expect(() => immutableSetByPath(r, 'basics.customFields[9].label', 'x')).toThrow(/out of range/)
     expect(() => immutableSetByPath(r, 'basics.name.sub', 'x')).toThrow(/not an object/)
   })
