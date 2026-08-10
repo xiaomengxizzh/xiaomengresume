@@ -193,7 +193,7 @@ async function verifyExportViaUi(win: BrowserWindow, dir: string, name: string):
   )
   if (!runClicked) throw new Error('phase1: export run button not found in dialog')
 
-  // 4) 等 textPdf 落盘（主进程 @react-pdf/renderer 纯代码生成，无 GPU 依赖；90s 兜底）
+  // 4) 等 textPdf 落盘（B 档 2026-08-10：主进程 export 模式真实模板 → printToPDF 单引擎；90s 兜底）
   const deadline = Date.now() + 90_000
   let pdfOk = false
   while (Date.now() < deadline) {

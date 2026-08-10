@@ -63,7 +63,7 @@ export async function runExportVerify(): Promise<void> {
     const resumeId = sample?.id
     if (!resumeId) throw new Error('createSample returned no id')
 
-    // 2) 走真实 export:run 链路（textPdf → 纯代码 @react-pdf 生成 → 落盘）
+    // 2) 走真实 export:run 链路（textPdf → printToPDF 单引擎 → 落盘，2026-08-10 B 档）
     //    注意：主进程 export:run 内已有 30s 构建超时（见 run.ts textPdf 分支）；
     //    此处外层 45s 再兜一层。此前的 printToPDF 路线已退役（GPU 依赖）。
     const result = await callRenderer<{ canceled: boolean; filePath?: string; error?: string }>(

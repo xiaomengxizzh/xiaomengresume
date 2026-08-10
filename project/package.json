@@ -25,7 +25,6 @@
     "@ai-sdk/google": "^4.0.37",
     "@ai-sdk/openai": "^4.0.34",
     "@electron-toolkit/utils": "^4.0.0",
-    "@react-pdf/renderer": "4.6.0",
     "@tiptap/extension-link": "^3.29.2",
     "@tiptap/pm": "^3.29.2",
     "@tiptap/react": "^3.29.2",
@@ -44,7 +43,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
-    "@react-pdf/types": "2.11.1",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
