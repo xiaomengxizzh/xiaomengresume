@@ -239,10 +239,10 @@ export async function openResume(id: string): Promise<Resume> {
   }
 }
 
-/** 重命名：仅改 basics.name，文件不变（原子写回，走三件套） */
+/** 重命名（T3）：仅改简历文件标题 resume.title，文件不变（原子写回，走三件套）；basics.name（姓名）不受影响 */
 export async function renameResume(id: string, name: string): Promise<Resume> {
   const resume = await openResume(id)
-  const updated = { ...resume, basics: { ...resume.basics, name } }
+  const updated = { ...resume, title: name }
   await atomicWrite(id, updated, { backup: true })
   return updated
 }
@@ -335,7 +335,7 @@ export async function listResumes(): Promise<ResumeSummary[]> {
   const items = await scanResumeFiles()
   return items.map(({ id, resume }) => ({
     id,
-    name: resume.basics?.name || id,
+    name: resume.title || resume.basics?.name || id, // T3：列表显示简历标题，空则回落姓名
     updatedAt: resume.meta?.updatedAt,
     boundJobIds: resume.boundJobIds ?? []
   }))
@@ -350,7 +350,7 @@ export async function recentResumes(): Promise<RecentResume[]> {
       const lastActivityAt = ts.length > 0 ? ts.sort().at(-1)! : new Date(mtime).toISOString()
       return {
         id,
-        name: resume.basics?.name || id,
+        name: resume.title || resume.basics?.name || id, // T3：最近列表显示简历标题，空则回落姓名
         lastActivityAt,
         lastEditedAt: updatedAt,
         lastOpenedAt

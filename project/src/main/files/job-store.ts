@@ -125,7 +125,7 @@ export async function listJobs(): Promise<JobSummary[]> {
   } catch {
     return []
   }
-  const items: Array<{ id: string; name: string; appliedAt?: string; mtime: number }> = []
+  const items: Array<{ id: string; name: string; appliedAt?: string; status?: string; mtime: number }> = []
   for (const f of files) {
     if (!f.endsWith('.json') || f.includes('.bak.') || f.endsWith('.tmp')) continue
     const id = f.slice(0, -5)
@@ -133,10 +133,10 @@ export async function listJobs(): Promise<JobSummary[]> {
     try {
       const job = JobSchema.parse(JSON.parse(await fs.readFile(path.join(JOBS_DIR, f), 'utf-8')))
       const stat = await fs.stat(path.join(JOBS_DIR, f))
-      items.push({ id: job.id, name: job.name, appliedAt: job.appliedAt, mtime: stat.mtimeMs })
+      items.push({ id: job.id, name: job.name, appliedAt: job.appliedAt, status: job.status, mtime: stat.mtimeMs })
     } catch {
       /* 单份损坏不影响整体列表 */
     }
   }
-  return items.sort((a, b) => b.mtime - a.mtime).map(({ id, name, appliedAt }) => ({ id, name, appliedAt }))
+  return items.sort((a, b) => b.mtime - a.mtime).map(({ id, name, appliedAt, status }) => ({ id, name, appliedAt, status }))
 }

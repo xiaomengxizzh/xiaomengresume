@@ -23,9 +23,18 @@ export function EditorView(): React.JSX.Element {
   const [split, setSplit] = useState(50)
   const dragging = useRef(false)
   const raf = useRef<number | null>(null)
-  // 2026-08-08 P0-1 修复：挂载自动保存（此前全仓库零调用，编辑内容永不落盘）。
-  // P1 修复：flush 立即落盘——卸载（切走视图）与导出前各调一次，杜绝防抖窗内丢最后编辑。
-  const { state: saveState, flush } = useAutoSave()
+// 2026-08-08 P0-1 修复：挂载自动保存（此前全仓库零调用，编辑内容永不落盘）。
+// P1 修复：flush 立即落盘——卸载（切走视图）与导出前各调一次，杜绝防抖窗内丢最后编辑。
+const { state: saveState, flush } = useAutoSave()
+
+// 2026-08-09 T2：自动保存成功 → 底部状态栏短暂轻提示「已自动保存」（1.8s 后淡出，不干扰视线）
+const [savedVisible, setSavedVisible] = useState(false)
+useEffect(() => {
+  if (saveState !== 'saved') return
+  setSavedVisible(true)
+  const timer = setTimeout(() => setSavedVisible(false), 1800)
+  return () => clearTimeout(timer)
+}, [saveState])
 
   // 切走视图（EditorView 卸载）前 flush 落盘最后编辑
   useEffect(() => {
@@ -74,7 +83,7 @@ export function EditorView(): React.JSX.Element {
 
   return (
     <>
-      <TopBar saveState={saveState} onExport={() => setExportOpen(true)} />
+      <TopBar onExport={() => setExportOpen(true)} />
       <div className="workspace" ref={wsRef} style={{ ['--split' as string]: `${split}%` }}>
         <EditorPane />
         <div
@@ -88,12 +97,22 @@ export function EditorView(): React.JSX.Element {
         />
         <BasicPreview />
       </div>
-      {/* M2 F16 3d：隐私模式常驻提示（状态栏） */}
+      {/* M2 F16 3d：隐私模式常驻提示（状态栏）；export.privacyHint 已含完整语义（"隐私模式已开启，导出将自动脱敏"），
+          不再拼接 status.privacyOn 避免文案重复（2026-08-09 UI 全审查 P0-4 修复） */}
       {privacyMode ? (
         <div className="border-t border-border/60 bg-selected/30 px-4 py-1.5 text-center text-xs text-foreground/80">
-          {t('status.privacyOn')} · {t('export.privacyHint')}
+          {t('export.privacyHint')}
         </div>
       ) : null}
+      {/* 2026-08-09 T2：自动保存成功轻提示（短暂显示，不干扰视线） */}
+      <div
+        aria-live="polite"
+        className={`pointer-events-none absolute bottom-2 right-4 z-10 rounded-full bg-surface px-3 py-1 text-xs text-foreground/55 shadow-card-press transition-opacity duration-500 ${
+          savedVisible ? 'opacity-100' : 'opacity-0'
+        }`}
+      >
+        {t('editor.autoSaved')}
+      </div>
       <ExportDialog open={exportOpen} onClose={() => setExportOpen(false)} resumeId={resumeId ?? ''} flush={flush} />
     </>
   )

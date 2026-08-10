@@ -1,66 +1,53 @@
 /**
- * ResumesHome —— 简历主功能首页（5 卡片：新建/打开或最近/导入/管理/岗位目录）
- * 定案子功能清单（用户 2026-08-07 拍板）；「新建空白」直接进编辑器，其余跳子页或占位。
- * 2026-08-08 M2 L7/D14：顶部欢迎面板（基础版：欢迎文案 + 引导，不含最近简历区——随 M3 WP-T1）。
+ * ResumesHome —— 简历主功能首页（2026-08-09 T8 四大入口：新建简历 / 打开简历 / 简历管理 / 岗位管理）
+ * 2026-08-09 T5：移除顶部欢迎面板（独立 WelcomeView 已承担欢迎；本页仅功能卡片网格）。
  */
-import { useTranslation } from 'react-i18next'
 import { useResumeStore } from '../store/useResumeStore'
 import { HomeView, type HomeItem } from './HomeView'
 
+/** 四大入口线框图标（内联 SVG，对齐 ImportHome/HomeView 风格） */
+function CardIcon({ kind }: { kind: 'new' | 'folder' | 'list' | 'jobs' }): React.JSX.Element {
+  const p = { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none' as const, stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true }
+  switch (kind) {
+    case 'new':
+      return (
+        <svg {...p}>
+          <rect x="3" y="3" width="18" height="18" rx="5" />
+          <path d="M12 8v8M8 12h8" />
+        </svg>
+      )
+    case 'folder':
+      return (
+        <svg {...p}>
+          <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        </svg>
+      )
+    case 'list':
+      return (
+        <svg {...p}>
+          <path d="M8 6h13M8 12h13M8 18h13" />
+          <path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01" strokeWidth="2.2" />
+        </svg>
+      )
+    case 'jobs':
+      return (
+        <svg {...p}>
+          <rect x="3" y="7" width="18" height="13" rx="2" />
+          <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+          <path d="M3 13h18" />
+        </svg>
+      )
+  }
+}
+
 export function ResumesHome(): React.JSX.Element {
-  const { t } = useTranslation()
-  const newResume = useResumeStore((s) => s.newResume)
   const setCurrentView = useResumeStore((s) => s.setCurrentView)
 
   const items: HomeItem[] = [
-    {
-      key: 'newBlank',
-      titleKey: 'homeCard.newBlank',
-      descKey: 'homeCard.newBlankDesc',
-      onClick: () => {
-        // P1 修复（2026-08-08）：无条件新建空白。原实现用 resumeId 判断"是否已在编辑器上下文"，
-        // 但启动恢复永久置位 resumeId → newResume() 分支不可达，老用户「新建空白」永远只是
-        // 回到编辑器显示最近简历。当前简历内容已由自动保存落盘，新建不会丢失。
-        newResume()
-        setCurrentView('editor')
-      }
-    },
-    {
-      key: 'openRecent',
-      titleKey: 'homeCard.openRecent',
-      descKey: 'homeCard.openRecentDesc',
-      onClick: () => setCurrentView('resumes-list')
-    },
-    {
-      key: 'import',
-      titleKey: 'homeCard.import',
-      descKey: 'homeCard.importDesc',
-      onClick: () => setCurrentView('import-home')
-    },
-    {
-      key: 'manage',
-      titleKey: 'homeCard.manage',
-      descKey: 'homeCard.manageDesc',
-      onClick: () => setCurrentView('resumes-list')
-    },
-    {
-      key: 'jobs',
-      titleKey: 'homeCard.jobs',
-      descKey: 'homeCard.jobsDesc',
-      disabled: true,
-      onClick: () => {
-        // 岗位目录随 F19 v1.1
-      }
-    }
+    { key: 'newResume', titleKey: 'navSub.newResume', descKey: 'homeDesc.newResume', icon: <CardIcon kind="new" />, onClick: () => setCurrentView('resumes-new') },
+    { key: 'openResume', titleKey: 'navSub.openResume', descKey: 'homeDesc.openResume', icon: <CardIcon kind="folder" />, onClick: () => setCurrentView('resumes-recent') },
+    { key: 'manage', titleKey: 'navSub.manage', descKey: 'homeDesc.manage', icon: <CardIcon kind="list" />, onClick: () => setCurrentView('resumes-manage') },
+    { key: 'jobs', titleKey: 'navSub.jobs', descKey: 'homeDesc.jobs', icon: <CardIcon kind="jobs" />, onClick: () => setCurrentView('jobs-manage') }
   ]
-  return (
-    <>
-      {/* L7/D14：欢迎面板（基础版，welcome.* key 复活） */}
-      <div className="mb-4 rounded-xl bg-surface p-5 shadow-sm">
-        <div className="text-lg font-semibold text-foreground">{t('welcome.title')}</div>
-        <div className="mt-1 text-sm text-foreground/60">{t('welcome.subtitle')}</div>
-      </div>
-      <HomeView items={items} />
-    </>
-  )
+  return <HomeView items={items} grid />
 }

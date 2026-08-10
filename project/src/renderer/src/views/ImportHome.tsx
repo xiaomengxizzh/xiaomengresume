@@ -3,13 +3,14 @@
  * 点击 → electronAPI.import.run({ format }) → 成功进三步核对向导（ImportWizard）；
  * 扫描件/图片（needsVision）→ VISION_REQUIRED 提示（M4b 占位，不崩溃）；
  * 错误（PARSE_FAILED/NO_PROVIDER…）→ 按 code 查 i18n 提示。
- * 图片卡片标注 M4b（点击仍可试选文件，主进程返回占位草稿提示）。
+ * 2026-08-09 P2-1/P2-5：图片卡标注 i18n 化（「敬请期待」，不再外泄内部代号 M4b）+ 四卡格式图标。
  */
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ImportDraft, ImportFormat, AiError } from '@shared/ipc-channels'
 import { ImportWizard } from '../components/import/ImportWizard'
 import { Button } from '../components/ui'
+import { useResumeStore } from '../store/useResumeStore'
 
 interface ImportCard {
   key: string
@@ -17,6 +18,43 @@ interface ImportCard {
   titleKey: string
   descKey: string
   m4b?: boolean
+}
+
+/** P2-5：四格式线框图标（内联 SVG，零依赖，对齐 nav 图标 stroke 1.5 风格） */
+function FormatIcon({ format }: { format: ImportFormat }): React.JSX.Element {
+  const common = { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none' as const, stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true }
+  if (format === 'pdf') {
+    return (
+      <svg {...common}>
+        <path d="M6 3h8l4 4v14H6z" />
+        <path d="M14 3v4h4" />
+        <path d="M9 12l1.5 3 1.5-3M9.8 13.5h1.4M13 12l1.5 3L16 12" />
+      </svg>
+    )
+  }
+  if (format === 'docx') {
+    return (
+      <svg {...common}>
+        <path d="M6 3h8l4 4v14H6z" />
+        <path d="M14 3v4h4" />
+        <path d="M9 12h6M9 15h4" />
+      </svg>
+    )
+  }
+  if (format === 'json') {
+    return (
+      <svg {...common}>
+        <path d="M8 4H6a2 2 0 0 0-2 2v3a2 2 0 0 1-2 2 2 2 0 0 1 2 2v3a2 2 0 0 0 2 2h2M16 4h2a2 2 0 0 1 2 2v3a2 2 0 0 0 2 2 2 2 0 0 0-2 2v3a2 2 0 0 1-2 2h-2" />
+      </svg>
+    )
+  }
+  return (
+    <svg {...common}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="9" cy="10" r="1.6" />
+      <path d="M3 17l5-4 4 3 4-5 5 6" />
+    </svg>
+  )
 }
 
 const CARDS: ImportCard[] = [
@@ -28,6 +66,7 @@ const CARDS: ImportCard[] = [
 
 export function ImportHome(): React.JSX.Element {
   const { t } = useTranslation()
+  const setCurrentView = useResumeStore((s) => s.setCurrentView)
   const [busy, setBusy] = useState<'parsing' | 'mapping' | null>(null)
   const [draft, setDraft] = useState<ImportDraft | null>(null)
   const [vision, setVision] = useState<ImportDraft | null>(null)
@@ -80,7 +119,16 @@ export function ImportHome(): React.JSX.Element {
 
   return (
     <div className="home-view">
-      <h2 className="home-title">{t('import.title')}</h2>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-foreground/70 transition-colors hover:bg-border/40 hover:text-foreground"
+          onClick={() => setCurrentView('resumes-home')}
+        >
+          ← {t('common.back')}
+        </button>
+        <h2 className="home-title">{t('import.title')}</h2>
+      </div>
       <p className="home-subtitle">{t('import.subtitle')}</p>
 
       {vision ? (
@@ -116,11 +164,19 @@ export function ImportHome(): React.JSX.Element {
               key={c.key}
               type="button"
               className={`home-card ${c.m4b ? 'disabled' : ''}`}
+              title={c.m4b ? t('import.m4bBadge') : undefined}
               onClick={() => void startImport(c.format)}
             >
               <span className="home-card-title">
+                <span className="mr-2 inline-flex text-foreground/60">
+                  <FormatIcon format={c.format} />
+                </span>
                 {t(c.titleKey)}
-                {c.m4b ? <span className="ml-2 text-xs font-normal text-foreground/40">（M4b）</span> : null}
+                {c.m4b ? (
+                  <span className="ml-2 inline-flex items-center rounded-full bg-border/40 px-1.5 py-0.5 text-[11px] font-normal text-foreground/55">
+                    {t('import.m4bBadge')}
+                  </span>
+                ) : null}
               </span>
               <span className="home-card-desc">{t(c.descKey)}</span>
             </button>

@@ -11,6 +11,13 @@ import { runExportVerify } from './verify-export'
 import type { Settings } from '../shared/schema/settings'
 import icon from '../../resources/icon.png?asset'
 
+// 2026-08-09 真机修复（用户报告：编辑区文本框鼠标点击无反应/光标不出现，稳定复现于 dev 模式）。
+// 双模式诊断（build 产物 + dev/StrictMode）代码层均无法复现（elementFromPoint 无遮挡、
+// sendInputEvent 真实点击聚焦正常、富文本 ProseMirror 正常）——症状符合 Chromium GPU 合成层
+// 未更新聚焦态（DevTools 开关会改变合成路径可验证）。禁用硬件加速走软件合成（可逆；影响：
+// 渲染走 CPU，桌面表单类应用可接受；printToPDF 为软件路径不受影响）。若用户验证无效可删除此行回退。
+app.disableHardwareAcceleration()
+
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const store = new Store<Settings>()

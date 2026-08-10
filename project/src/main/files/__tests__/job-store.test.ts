@@ -67,4 +67,15 @@ describe('job-store（F19）', () => {
     expect(list).toHaveLength(2)
     expect(new Set(list.map((j) => j.id))).toEqual(new Set([a.id, b.id]))
   })
+
+  it('默认状态 = notApplied，list 保留 status（2026-08-09 R4 回归）', async () => {
+    const a = await saveJob(createEmptyJob('岗位A'))
+    const b = createEmptyJob('岗位B')
+    b.status = 'rejected'
+    await saveJob(b)
+    const list = await listJobs()
+    const byId = new Map(list.map((j) => [j.id, j]))
+    expect(byId.get(a.id)?.status).toBe('notApplied')
+    expect(byId.get(b.id)?.status).toBe('rejected')
+  })
 })

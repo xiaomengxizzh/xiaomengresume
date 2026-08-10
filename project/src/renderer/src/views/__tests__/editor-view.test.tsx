@@ -68,12 +68,12 @@ describe('EditorView 自动保存接线（P0-1 回归）', () => {
     document.body.innerHTML = ''
   })
 
-  it('渲染编辑器后，模拟编辑简历名 → 500ms 防抖后 resume.save 被调用且携带新值', async () => {
+  it('渲染编辑器后，模拟编辑简历标题 → 500ms 防抖后 resume.save 被调用且携带新值（T3：改 title 不影响 basics.name 姓名）', async () => {
     render(<EditorView />)
 
-    // 简历名输入框（TopBar placeholder="…"）
-    const nameInput = screen.getByPlaceholderText('…')
-    fireEvent.change(nameInput, { target: { value: '张三' } })
+    // 简历标题输入框（TopBar，T3：独立于姓名 basics.name；placeholder 来自真实 i18n zh-CN）
+    const titleInput = screen.getByPlaceholderText('未命名简历')
+    fireEvent.change(titleInput, { target: { value: '张三的简历' } })
 
     // 防抖 500ms 推进 + flush promise 链
     await act(async () => {
@@ -81,9 +81,10 @@ describe('EditorView 自动保存接线（P0-1 回归）', () => {
     })
 
     expect(saveMock).toHaveBeenCalledTimes(1)
-    const [id, resume] = saveMock.mock.calls[0] as [string, { basics: { name: string } }]
+    const [id, resume] = saveMock.mock.calls[0] as [string, { title?: string; basics: { name: string } }]
     expect(id).toBe('11111111-2222-4333-8444-555555555555')
-    expect(resume.basics.name).toBe('张三')
+    expect(resume.title).toBe('张三的简历')
+    expect(resume.basics.name).not.toBe('张三的简历') // 姓名保持独立（空/原值）
   })
 
   it('resumeId 为空（首页态）时不触发保存', async () => {

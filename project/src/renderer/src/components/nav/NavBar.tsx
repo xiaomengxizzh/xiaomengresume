@@ -19,12 +19,12 @@ interface SubItem {
 }
 
 const SUBS: Record<MainKey, SubItem[]> = {
+  // 2026-08-09 T8 四大入口：新建简历（二级选择）/ 打开简历 / 简历管理 / 岗位管理
   resume: [
-    { key: 'newBlank', titleKey: 'navSub.newBlank', view: 'editor' },
-    { key: 'openRecent', titleKey: 'navSub.openRecent', view: 'resumes-recent' },
-    { key: 'import', titleKey: 'navSub.import', view: 'import-home' },
-    { key: 'manage', titleKey: 'navSub.manage', view: 'resumes-list' },
-    { key: 'jobs', titleKey: 'navSub.jobs', view: 'jobs-home' }
+    { key: 'newResume', titleKey: 'navSub.newResume', view: 'resumes-new' },
+    { key: 'openResume', titleKey: 'navSub.openResume', view: 'resumes-recent' },
+    { key: 'manage', titleKey: 'navSub.manage', view: 'resumes-manage' },
+    { key: 'jobs', titleKey: 'navSub.jobs', view: 'jobs-manage' }
   ],
   ai: [
     { key: 'grammar', titleKey: 'navSub.grammar', view: 'ai:grammar' },
@@ -74,6 +74,7 @@ function SubList({ k, currentView, setCurrentView, open }: { k: MainKey; current
           type="button"
           className={`nav-sub ${s.disabled ? 'disabled' : ''} ${!s.disabled && currentView === s.view ? 'active' : ''}`}
           disabled={s.disabled}
+          title={s.disabled ? undefined : t(s.titleKey)}
           onClick={() => {
             if (!s.disabled) setCurrentView(s.view)
           }}
@@ -139,7 +140,10 @@ export function NavBar(): React.JSX.Element {
 
   return (
     <nav className="navbar-v2">
-      <div className="nav-brand">xiaomengresume</div>
+      <div className="nav-brand">
+        <img src="/icon.png" alt="" className="nav-brand-icon" draggable={false} />
+        xiaomengresume
+      </div>
       <div className="nav-list">{MAIN_ORDER.map(renderItem)}</div>
       <div className="nav-spacer" />
       <button type="button" className="nav-collapse-btn" title={t('nav.collapse')} onClick={toggleSidebar}>
