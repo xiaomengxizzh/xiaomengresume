@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, fireEvent, act, waitFor } from '@testing-library/react'
 import '../../i18n'
 import { EditorView } from '../EditorView'
+import { ResumeBody } from '../../templates/shared/ResumeBody'
 import { useResumeStore } from '../../store/useResumeStore'
 import { createEmptyResume } from '@shared/schema/resume'
 
@@ -150,5 +151,31 @@ describe('TagsBlock combobox（回归测试（2026-08-10 用户反馈修复）�
     const f0 = (useResumeStore.getState().resume.basics.customFields ?? [])[0]
     expect(f0.label).toBe('邮箱') // 图案替换文字
     expect(f0.icon).toBe('mail')
+  })
+
+  it('F：文字标签（无 icon）渲染显示 label 标题（非地址图标）', async () => {
+    const r = createEmptyResume()
+    r.basics.customFields = [{ id: 'c1', label: '宠物', value: '旺财', icon: '' }]
+    const { container } = render(<ResumeBody variant="classic" resume={r} />)
+    const body = container.querySelector('.preview-paper-body') as HTMLElement
+    expect(body).toBeTruthy()
+    expect(body.textContent).toContain('宠物') // 文字标签标题显示
+    expect(body.textContent).toContain('旺财') // value 显示
+    // 无 pin 图标（文字标签不兜底图案）——该格无 <svg>
+    const cell = [...body.querySelectorAll('.redact-field')].find((el) => el.textContent?.includes('旺财'))
+    expect(cell?.querySelector('svg')).toBeFalsy()
+  })
+
+  it('G：旧 infoItems 迁入 customFields（双源统一）+ infoItems 清空', async () => {
+    const r = createEmptyResume()
+    r.basics.infoItems = [{ id: 'x1', icon: 'phone', label: '', value: '13800138000' }]
+    useResumeStore.setState({ resume: r, resumeId: 'g-id', currentView: 'editor', activeSection: null, activeFieldPath: null })
+    const { container } = render(<EditorView />)
+    await waitFor(() => expect(comboInputs(container).length).toBeGreaterThan(0))
+    const st = useResumeStore.getState().resume.basics
+    // infoItems 迁入 customFields + infoItems 清空（编辑区与简历显示统一为 customFields）
+    expect(st.infoItems ?? []).toHaveLength(0)
+    const cf = st.customFields ?? []
+    expect(cf.some((f) => f.value === '13800138000')).toBe(true)
   })
 })

@@ -371,7 +371,7 @@ function IconCombo({
   const setField = useResumeStore((s) => s.setField)
   const resume = useResumeStore((s) => s.resume)
   const resumeId = useResumeStore((s) => s.resumeId)
-  const MAX_TAGS = 6
+  const MAX_TAGS = 8
   const fields = (customFields as Array<{ id: string; label: string; value: string; icon?: string }> | undefined) ?? []
   // 2026-08-10 修复：注入仅一次（同一简历删除全部标签后不重注入旧字段）
   const injectedRef = useRef<string | null>(null)
@@ -395,10 +395,9 @@ function IconCombo({
     return o && o.value ? o.label : ''
   }
 
-  // 旧固定字段自动注入自定义字段（双向绑定；对照示例 6 项 + 图标）
+  // 旧字段自动注入自定义字段（双向绑定；对照示例 6 项 + 图标）
   useEffect(() => {
-    if (fields.length > 0) return
-    // 2026-08-10 修复：同一简历只注入一次——删除全部标签后 fields 空，若重注入会覆盖用户删除意图
+    // 2026-08-10 修复：同一简历只注入/迁移一次——删除全部标签后不重注入（injectedRef 守卫）
     if (injectedRef.current === resumeId) return
     injectedRef.current = resumeId
     const b = resume.basics
@@ -410,13 +409,23 @@ function IconCombo({
       { icon: 'calendar', label: labelForIcon('calendar'), value: getString(b.birthDate) },
       { icon: 'briefcase', label: labelForIcon('briefcase'), value: getString(b.employmentStatus) }
     ].filter((f) => f.value.length > 0)
-    if (legacy.length > 0) {
+    // 2026-08-10 修复：旧 infoItems（双数据源）并入 customFields——编辑区与简历显示统一为
+    // customFields 单一来源（用户编辑/删除标签才真正反映到简历；原显示 infoItems 致编辑不生效）
+    const fromInfo = (b.infoItems ?? [])
+      .filter((it) => it.value)
+      .map((it) => ({ icon: it.icon ?? '', label: it.label ?? '', value: it.value }))
+    const merged = [...fromInfo, ...legacy].filter(
+      (f, i, arr) => arr.findIndex((x) => x.value === f.value) === i // 同值去重（infoItems 优先）
+    )
+    if (merged.length > 0) {
       setField(
         'basics.customFields',
-        legacy.map((f) => ({ id: crypto.randomUUID(), label: f.label, value: f.value, icon: f.icon }))
+        merged.map((f) => ({ id: crypto.randomUUID(), label: f.label, value: f.value, icon: f.icon }))
       )
+      // 迁移后清空 infoItems（防渲染兜底/再次显示旧标签）
+      if ((b.infoItems ?? []).length > 0) setField('basics.infoItems', [])
     }
-    // 仅随 resume 加载/变化触发一次（注入后 fields 非空或 injectedRef 已标记，守卫跳过）
+    // 仅随 resume 加载/变化触发一次（injectedRef 标记，删除/编辑后不再注入）
   }, [resume, resumeId])
 
   const setTag = (i: number, patch: { icon?: string; label?: string; value?: string }): void => {

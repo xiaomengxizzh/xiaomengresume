@@ -112,14 +112,15 @@ export function ResumeBody({ variant, resume: externalResume }: { variant: Templ
 
   const pStyle: CSSProperties = { fontSize: `${TYPE_SCALE.descEm}em`, lineHeight, marginBottom: paragraphGap }
 
-  // 2026-08-09 T2：标签（customFields，含 icon）并入 infoItems 网格——预览同步显示用户标签内容；
-  // 均空时回退旧固定字段 6 项（兼容导入数据）
-  let infoItems: Array<{ id: string; icon: string; label: string; value: string }> = [
-    ...(basics.infoItems ?? []).map((it) => ({ id: it.id, icon: it.icon, label: it.label, value: it.value })),
-    ...(basics.customFields ?? [])
-      .filter((cf) => cf.value)
-      .map((cf) => ({ id: cf.id, icon: cf.icon || 'pin', label: cf.label, value: cf.value }))
-  ]
+  // 2026-08-10 修复：标签单一来源统一——customFields（用户编辑的标签）优先；
+  // infoItems（旧数据，TagsBlock 注入已迁入 customFields）仅兜底（未迁移场景兼容）；
+  // icon 不兜底 pin（文字标签无图标，防"输入文字后默认显示地址图标"——原 cf.icon||'pin' 致空 icon 变 pin）
+  let infoItems: Array<{ id: string; icon: string; label: string; value: string }> =
+    (basics.customFields ?? []).length > 0
+      ? (basics.customFields ?? [])
+          .filter((cf) => cf.value)
+          .map((cf) => ({ id: cf.id, icon: cf.icon ?? '', label: cf.label, value: cf.value }))
+      : (basics.infoItems ?? []).map((it) => ({ id: it.id, icon: it.icon, label: it.label, value: it.value }))
   if (infoItems.length === 0) {
     infoItems = [
       { id: 'emp', icon: 'briefcase', label: '', value: basics.employmentStatus ?? '' },
@@ -330,11 +331,14 @@ export function ResumeBody({ variant, resume: externalResume }: { variant: Templ
                 {infoItems.map((it) => (
                   <div key={it.id} className="redact-field" style={{ display: 'flex', alignItems: 'center', gap: `${CONTACT_GRID_LOGIC.iconGap}px`, minWidth: 0, fontSize: contactFontSize(it.value) }}>
                     {/* 2026-08-10 任务1：lineHeight:0 消除 svg 基线对垂直居中的影响（图1 图标-文字错位加固） */}
-                    {/* 2026-08-10 需求：文字类标签（无 icon）不渲染图标占位——纯文字显示 */}
+                    {/* 2026-08-10 需求：文字标签（无 icon）显示 label 作为标题（用户"简历标签题目显示文字"）；
+                        图案标签保持图标标题；均无则纯 value */}
                     {it.icon ? (
                       <span style={{ display: 'inline-flex', alignItems: 'center', lineHeight: 0, color: 'var(--rm-accent)', flexShrink: 0 }}>
                         <InfoIcon id={it.icon as InfoIconId} size={CONTACT_GRID_LOGIC.iconSize} />
                       </span>
+                    ) : it.label ? (
+                      <span style={{ color: 'var(--rm-accent)', flexShrink: 0, fontSize: `${TYPE_SCALE.langEm}em` }}>{it.label}</span>
                     ) : null}
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: `${CONTACT_GRID_LOGIC.maxWidth}px` }}>{it.value}</span>
                   </div>
