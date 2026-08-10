@@ -43,7 +43,11 @@ export const IPC = {
     /** 读 AI 服务商配置（脱敏形态，apiKey 前4后4） */
     ConfigGet: 'ai:config:get',
     /** 保存 AI 服务商配置（apiKey 入 safeStorage，其余入 electron-store） */
-    ConfigSave: 'ai:config:save'
+    ConfigSave: 'ai:config:save',
+    /** 2026-08-09 T3：检测模型（临时 apiKey+modelId 发最小请求验证） */
+    ConfigTest: 'ai:config:test',
+    /** 2026-08-09：重置全部 AI 配置为系统预设默认值（服务商覆盖/Key/自定义/参数/提示词） */
+    ConfigReset: 'ai:config:reset'
   },
   /** 简历生命周期（F11 WP-P5 定案 + M1 落码；路径 = <storageFolderPath>/<id>.json，F21 #18） */
   Resume: {
@@ -93,7 +97,9 @@ export const IPC = {
   /** 导入（M4a 文本批冻结；M4b 扩展图片能力） */
   Import: {
     /** 导入简历：主进程开文件对话框 → 解析+映射 → 返回草稿（渲染层不传路径，防路径穿越） */
-    Run: 'import:run'
+    Run: 'import:run',
+    /** 2026-08-09 R8：批量导入（多选 → 逐份解析 → 直接落盘为独立新简历，无需三步核对） */
+    RunBatch: 'import:runBatch'
   }
 } as const
 
@@ -130,6 +136,8 @@ export interface JobSummary {
   id: string
   name: string
   appliedAt?: string
+  /** 2026-08-09 T8：岗位状态（在投/已过/已拒） */
+  status?: string
 }
 
 // ── M2 F5 导出契约（F5 落地点，冻结）───────────────────────────────────────
@@ -158,6 +166,8 @@ export interface ExportRunResult {
   /** image 多页时为数组 */
   filePath?: string | string[]
   error?: string
+  /** 2026-08-10：PDF 实际页数（textPdf；first 裁剪后为 1）——导出对话框展示真实页数 */
+  pageCount?: number
 }
 
 /** 导出进度事件（webContents.send('export:progress')） */
@@ -173,6 +183,8 @@ export type AiErrorCode =
   | 'PROVIDER_DISABLED' // 目标服务商 enabled=false
   | 'NO_PROVIDER' // 无任何 enabled 服务商
   | 'CONFIG_INVALID' // 配置缺失/非法（custom 缺 modelId、baseURL 非法等）
+  | 'NO_API_KEY' // 2026-08-09 T3：检测模型时未填 API Key
+  | 'MODEL_NO_RESPONSE' // 2026-08-09 T3：检测模型时模型无响应（key/model 无效）
   | 'TIMEOUT' // AI 调用超时
   | 'NETWORK' // 网络/端点错误
   | 'RATE_LIMIT' // 限流
@@ -243,7 +255,20 @@ export interface ProviderConfigView {
   hasApiKey: boolean
   modelId: string | null
   enabled: boolean
-  /** 仅 custom */
+  /** 2026-08-09 T3：内置与 custom 均有接口地址（builtin 默认端点） */
+  baseURL?: string
+  /** 2026-08-09 R3：默认显示名（重置按钮回退值；内置 = BUILTIN_INFO.name，custom = 添加时名） */
+  defaultName?: string
+  /** 2026-08-09 R3：默认接口地址（重置按钮回退值；内置 = BUILTIN_INFO.baseURL） */
+  defaultBaseURL?: string
+}
+
+/** 2026-08-09 T3/R3：检测模型入参（临时 apiKey/modelId/baseURL，不入库） */
+export interface AiConfigTestArgs {
+  providerId: string
+  apiKey: string
+  modelId: string
+  /** 2026-08-09 R3：custom/volcengine 兼容通道 baseURL（检测用输入值） */
   baseURL?: string
 }
 
@@ -262,6 +287,8 @@ type AiPrompts = {
   intro: string
   polish: string
   match: string
+  /** 2026-08-09 R7：豆包视觉模型提示词（M4b 图片/扫描件提取） */
+  vision: string
 }
 
 // ── M4a 导入契约（2026-08-09 冻结）──────────────────────────────────────────
@@ -274,6 +301,18 @@ export interface ImportRunArgs {
   format: ImportFormat
   /** 目标简历（覆盖模式）；省略 = 新建模式 */
   resumeId?: string
+}
+
+/** import:runBatch 入参（R8：格式不限定——主进程按文件扩展名分派 pdf/docx/json） */
+export interface ImportRunBatchArgs {
+  /** 2026-08-09 R8：预留——批量导入不需要格式参数（多选混合格式） */
+  format?: ImportFormat
+}
+
+/** import:runBatch 返回（R8：逐份落盘结果摘要） */
+export interface ImportBatchResult {
+  imported: number
+  failed: Array<{ fileName: string; code: string; message?: string }>
 }
 
 /** 导入草稿（import:run 返回） */

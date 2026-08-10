@@ -5,7 +5,10 @@
   },
   "welcome": {
     "title": "欢迎回来",
-    "subtitle": "您的简历数据仅保存在本机，AI 只做辅助编辑。"
+    "subtitle": "您的简历数据仅保存在本机，AI 只做辅助编辑。",
+    "privacyNote": "数据仅保存在本机 · 无账号 · 无订阅",
+    "newBlank": "新建空白简历",
+    "openResume": "打开简历"
   },
   "verify": {
     "title": "M0 骨架验证",
@@ -64,6 +67,11 @@
       "languages": "语言",
       "custom": "自定义模块"
     },
+    "basicsBlock": {
+      "photo": "图片",
+      "identity": "姓名与职业",
+      "tags": "标签信息"
+    },
     "field": {
       "name": "姓名",
       "englishName": "英文名",
@@ -104,7 +112,12 @@
       "photo": "照片",
       "photoPick": "选择图片",
       "infoItemsLabel": "基本信息条目（顶部两列）",
-      "remove": "移除"
+      "remove": "移除",
+      "customTitle": "字段标题（如：电话）",
+      "presets": "快捷添加",
+      "tagNoIcon": "图案",
+      "tagEmpty": "空位",
+      "jobTitle": "职业"
     },
     "action": {
       "add": "新增",
@@ -143,6 +156,8 @@
     "layoutPadding": "页面边距",
     "layoutParagraph": "段落间距",
     "layoutSection": "区块间距",
+    "layoutCompact": "紧凑排版",
+    "layoutCompactHint": "一键压缩间距至最小可读阈值（允许内容溢出多页，不截断不缩放）",
     "layoutReset": "恢复默认",
     "fontLabel": "字体",
     "aiAssist": "AI 润色",
@@ -158,7 +173,11 @@
       "pin": "地址",
       "globe": "网址",
       "briefcase": "状态",
-      "calendar": "生日"
+      "calendar": "生日",
+      "link": "链接",
+      "user": "身份",
+      "star": "星标",
+      "map": "地图"
     },
     "privacyOn": "开启隐私模式（Ctrl+Shift+P）",
     "privacyOff": "关闭隐私模式（Ctrl+Shift+P）",
@@ -167,7 +186,10 @@
       "remove": "删除模块",
       "title": "模块标题",
       "prompt": "请输入模块标题（如：兴趣爱好）"
-    }
+    },
+    "resumeNamePlaceholder": "未命名简历",
+    "autoSaved": "已自动保存",
+    "entryHidden": "已隐藏"
   },
   "themeColor": {
     "preset": {
@@ -208,15 +230,18 @@
     "newBlank": "新建空白",
     "openRecent": "打开或最近",
     "import": "导入",
-    "manage": "管理多份",
-    "jobs": "岗位目录",
+    "manage": "简历管理",
+    "jobs": "岗位管理",
     "grammar": "语法纠正",
     "intro": "自我介绍",
     "polish": "简历润色",
     "match": "匹配打分",
     "appearance": "外观",
     "aiSettings": "AI 设置",
-    "storage": "存储位置"
+    "storage": "存储位置",
+    "openResume": "打开简历",
+    "manageJobs": "简历与岗位目录",
+    "newResume": "新建简历"
   },
   "homeTitle": {
     "resumes": "简历",
@@ -242,7 +267,11 @@
     "match": "与所选岗位的要求做匹配度打分",
     "appearance": "主题色 / 语言 / 界面字体",
     "aiSettings": "AI 服务商 / 提示词 / 上下文参数",
-    "storage": "简历存储位置与备份"
+    "storage": "简历存储位置与备份",
+    "newResume": "从空白或导入开始",
+    "openResume": "打开最近编辑的简历",
+    "manage": "查看与管理全部简历",
+    "jobs": "维护岗位与绑定关系"
   },
   "homeEmpty": {
     "resumes": "还没有简历，点击「新建空白」开始"
@@ -255,11 +284,13 @@
     "back": "返回",
     "open": "打开",
     "cancel": "取消",
-    "save": "保存"
+    "save": "保存",
+    "retry": "重试"
   },
   "export": {
     "title": "导出",
     "close": "关闭",
+    "flushFailed": "保存失败，已中止导出（请检查存储目录权限后重试）",
     "format": {
       "textPdf": "文字版 PDF",
       "textPdf.desc": "矢量 · 文字可选 · 与预览一致",
@@ -298,18 +329,20 @@
     "polishDisabledHint": "润色需要简历与岗位",
     "matchDisabledHint": "匹配打分需要简历与岗位",
     "grammar": {
-      "scope": "检查范围",
-      "scopeSelection": "选中文本",
+      "scope": "范围",
+      "scopeSelection": "所选区域",
       "scopeFull": "全文",
       "run": "开始检查",
       "running": "检查中…",
-      "issues": "发现 {{count}} 处问题",
+      "issues": "共 {{count}} 处问题",
       "noIssues": "未发现问题",
-      "replace": "替换",
+      "replace": "建议替换",
       "ignore": "忽略",
-      "emptySelection": "请先在编辑器中选中文本",
-      "staleRange": "原文已变化，请重新检查",
-      "invalidRange": "所选范围已失效，请重新选中"
+      "emptySelection": "选区为空",
+      "staleRange": "选区已失效",
+      "invalidRange": "无效选区",
+      "idle": "全文语法检查",
+      "idleDesc": "点击「开始检查」对整份简历做语法与措辞诊断，逐条定位到编辑区。"
     },
     "intro": {
       "generate": "生成草稿",
@@ -358,12 +391,13 @@
       "RATE_LIMIT": "请求过于频繁，请稍后重试",
       "INVALID_RESPONSE": "AI 返回内容无法解析，请重试",
       "CANCELLED": "已取消",
-      "UNKNOWN": "AI 调用失败：{{message}}"
-    }
+      "UNKNOWN": "AI 调用失败，请重试"
+    },
+    "noResumeDesc": "在顶栏选择一份简历后即可使用此功能。"
   },
   "job": {
     "title": "岗位目录",
-    "empty": "暂无岗位，点击下方新建",
+    "empty": "暂无岗位",
     "newJob": "新建岗位",
     "editJob": "编辑",
     "deleteJob": "删除",
@@ -376,28 +410,55 @@
     "cancel": "取消",
     "deleteConfirm": "删除岗位「{{name}}」？已绑定的简历不会级联删除",
     "reqPlaceholder": "粘贴岗位 JD / 要求（供 AI 润色与匹配打分）",
-    "namePlaceholder": "如：前端工程师（字节跳动）"
+    "namePlaceholder": "如：前端工程师（字节跳动）",
+    "emptyDesc": "点击右上角「新建岗位」创建第一份岗位，用于 AI 润色与匹配打分。"
   },
   "settings": {
     "ai": {
       "title": "AI 设置",
       "providers": "AI 服务商",
+      "providerName": "供应商名字",
       "apiKey": "API Key",
+      "apiKeyLabel": "API Key",
       "getApiKey": "获取 API Key",
       "modelId": "模型 ID",
+      "modelIdLabel": "模型 ID",
       "enabled": "启用",
       "statusConnected": "已配置",
       "statusNotConfigured": "未配置",
       "statusDisabled": "已禁用",
       "temperature": "温度",
-      "maxTokens": "最长上下文",
+      "tempObjective": "客观（0.3）",
+      "tempNormal": "正常（0.5）",
+      "tempDivergent": "发散（0.7）",
+      "save": "保存",
       "custom": {
         "add": "添加自定义服务商",
-        "name": "名称",
+        "name": "供应商名称",
         "baseURL": "接口地址（OpenAI 兼容）",
         "save": "保存",
         "delete": "删除",
         "deleteConfirm": "删除自定义服务商「{{name}}」？"
+      },
+      "baseURL": "接口地址",
+      "reset": "重置",
+      "resetDefault": "恢复默认值",
+      "clearKey": "清除",
+      "visionPromptTitle": "豆包视觉提示词",
+      "visionPromptHint": "用于 M4b 图片/扫描件简历信息提取（与简历提示词分开设置）",
+      "visionPrompt": "视觉信息提取",
+      "testModel": "检测模型",
+      "testing": "检测中…",
+      "testHint": "点击检测验证 API Key 与模型 ID",
+      "noApiKey": "无 API Key",
+      "noResponse": "模型未响应",
+      "testOk": "检测通过",
+      "lockHint": "请先检测模型，验证成功后解锁下方配置",
+      "tabs": {
+        "deepseek": "DeepSeek",
+        "volcengine": "火山方舟",
+        "openai": "OpenAI",
+        "google": "Gemini"
       }
     }
   },
@@ -411,7 +472,7 @@
     "cardJson": "JSON",
     "cardJsonDesc": "本站导出的 .json 简历",
     "cardImage": "图片 / 扫描件",
-    "cardImageDesc": "规划中（M4b）",
+    "cardImageDesc": "扫描件/图片导入，规划中",
     "step1": "解析预览",
     "step2": "字段核对",
     "step3": "确认写入",
@@ -482,12 +543,59 @@
       "proficiency": "熟练程度"
     },
     "confirmWriteHeading": "确认写入",
+    "batchDone": "批量导入完成：成功 {{count}} 份",
+    "batchFailed": "失败 {{count}} 份",
+    "batchFail": "批量导入失败：{{code}}",
     "warning.garbled": "疑似乱码行已剔除",
     "warning.scanned": "文本过少，疑似扫描件",
     "warning.vision": "图片/扫描件导入需视觉识别（M4b）",
     "warning.docx": "文档部分内容可能未完整解析",
     "warning.localRules": "已使用本地规则解析（未用 AI），字段归属请在核对中确认",
     "warning.dirtyLayout": "检测到复杂排版，建议配置 AI 服务商后重试精准映射",
-    "previewRaw": "查看原文（提取文本）"
+    "previewRaw": "查看原文（提取文本）",
+    "m4bBadge": "敬请期待"
+  },
+  "resumeList": {
+    "loadError": "简历列表加载失败",
+    "loadErrorDesc": "无法读取简历列表，请重试；若持续失败请检查存储目录权限。",
+    "retry": "重试",
+    "emptyRecentDesc": "最近打开的简历会显示在这里。"
+  },
+  "resumesJobs": {
+    "rename": "重命名",
+    "delete": "删除",
+    "bulkDelete": "批量删除",
+    "selected": "已选 {{count}} 项",
+    "confirmDelete": "确定删除选中的 {{count}} 项吗？此操作不可撤销。",
+    "confirmDeleteOne": "确定删除「{{name}}」吗？此操作不可撤销。",
+    "emptyResumes": "还没有简历",
+    "emptyJobs": "还没有岗位",
+    "editResumeTitle": "修改简历名称",
+    "resumes": "简历目录",
+    "jobs": "岗位目录",
+    "selectAll": "全选"
+  },
+  "newResume": {
+    "blank": "新建空白简历",
+    "blankDesc": "从零开始创建一份简历",
+    "import": "导入已有简历",
+    "importDesc": "从 PDF / Word / JSON 导入"
+  },
+  "resumesManager": {
+    "new": "新建简历",
+    "import": "导入简历",
+    "batchImport": "批量导入"
+  },
+  "jobsManager": {
+    "new": "新建岗位",
+    "edit": "编辑岗位",
+    "status": "岗位状态",
+    "statusNotApplied": "未投",
+    "statusApplying": "在投",
+    "statusPassed": "已过",
+    "statusRejected": "已拒",
+    "bound": "已绑定",
+    "bindResume": "绑定简历",
+    "untitled": "未命名岗位"
   }
 }

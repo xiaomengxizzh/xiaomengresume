@@ -31,12 +31,12 @@ export class AiServiceError extends Error {
 }
 
 /** 内置服务商信息（默认模型 + 官网「获取 API Key」链接） */
-export const BUILTIN_INFO: Record<ProviderId, { name: string; defaultModelId: string; link?: string }> = {
-  deepseek: { name: 'DeepSeek', defaultModelId: 'deepseek-chat', link: 'https://platform.deepseek.com/api_keys' },
+export const BUILTIN_INFO: Record<ProviderId, { name: string; defaultModelId: string; link?: string; baseURL?: string }> = {
+  deepseek: { name: 'DeepSeek', defaultModelId: 'deepseek-chat', link: 'https://platform.deepseek.com/api_keys', baseURL: 'https://api.deepseek.com' },
   // 火山方舟无默认模型：modelId 由用户填写（OpenAI 兼容 baseURL，见 client.ts）
-  volcengine: { name: '火山方舟', defaultModelId: '', link: 'https://www.volcengine.com/product/doubao' },
-  openai: { name: 'OpenAI', defaultModelId: 'gpt-4o-mini', link: 'https://platform.openai.com/api-keys' },
-  google: { name: 'Gemini', defaultModelId: 'gemini-2.0-flash', link: 'https://aistudio.google.com/apikey' }
+  volcengine: { name: '火山方舟', defaultModelId: '', link: 'https://www.volcengine.com/product/doubao', baseURL: 'https://ark.cn-beijing.volces.com/api/v3' },
+  openai: { name: 'OpenAI', defaultModelId: 'gpt-4o-mini', link: 'https://platform.openai.com/api-keys', baseURL: 'https://api.openai.com/v1' },
+  google: { name: 'Gemini', defaultModelId: 'gemini-2.0-flash', link: 'https://aistudio.google.com/apikey', baseURL: 'https://generativelanguage.googleapis.com' }
 }
 
 /* ── apiKey keyring（safeStorage）──────────────────────────────────────── */
@@ -101,13 +101,14 @@ export interface AiConfig {
   enabled: boolean
   temperature: number
   maxTokens: number
-  /** 仅 volcengine / custom：OpenAI 兼容 baseURL */
+  /** 2026-08-09 R3：显示名（内置缺省 = BUILTIN_INFO.name；custom = 添加时名） */
+  name?: string
+  /** OpenAI 兼容 baseURL（volcengine / custom 消费；内置覆盖值含 deepseek/openai/google） */
   baseURL?: string
 }
 
 /** 取单个服务商运行时配置（enabled 未开启也返回，供 UI/错误区分） */
-export async function getAiConfig(providerId: string): Promise<AiConfig> {
-  const temperature = store.get('temperature') ?? 0.7
+export async function getAiConfig(providerId: string): Promise<AiConfig> {  const temperature = store.get('temperature') ?? 0.7
   const maxTokens = store.get('maxTokens') ?? 4096
 
   if (providerId.startsWith('custom:')) {
@@ -119,6 +120,7 @@ export async function getAiConfig(providerId: string): Promise<AiConfig> {
       enabled: custom.enabled,
       temperature,
       maxTokens,
+      name: custom.name,
       baseURL: custom.baseURL
     }
   }
@@ -131,7 +133,10 @@ export async function getAiConfig(providerId: string): Promise<AiConfig> {
     modelId: provider.modelId ?? (info.defaultModelId || null),
     enabled: provider.enabled,
     temperature,
-    maxTokens
+    maxTokens,
+    // 2026-08-09 R3：内置名称/地址支持覆盖（缺省回退 BUILTIN_INFO）
+    name: provider.name ?? info.name,
+    ...(provider.baseURL || info.baseURL ? { baseURL: provider.baseURL ?? info.baseURL } : {})
   }
 }
 
@@ -143,21 +148,50 @@ function maskKey(key: string | null): string | null {
   return `${key.slice(0, 4)}••••${key.slice(-4)}`
 }
 
+/** 重置全部 AI 配置为系统预设默认值（ai:config:reset）：
+ *  服务商覆盖（name/baseURL/modelId/enabled）清空、全部 apiKey 清除、
+ *  自定义服务商清空、temperature/maxTokens 回默认、提示词回内置默认。 */
+export async function resetAiConfig(): Promise<void> {
+  const providers = store.get('providers')
+  const customs = store.get('customProviders') ?? []
+  const cleared: Record<string, { enabled: boolean }> = {}
+  for (const id of PROVIDER_IDS) cleared[id] = { enabled: false }
+  store.set('providers', { ...providers, ...cleared })
+  store.set('customProviders', [])
+  store.delete('temperature')
+  store.delete('maxTokens')
+  store.delete('aiPrompts')
+  // 清除全部 apiKey（内置四家 + 自定义）
+  for (const id of PROVIDER_IDS) await setApiKey(id, undefined)
+  for (const c of customs) await setApiKey(`custom:${c.id}`, undefined)
+}
+
 /** 组装全量脱敏视图（内置四家 + 自定义） */
-export async function buildConfigView(): Promise<AiConfigView> {
-  const providers: ProviderConfigView[] = []
+export async function buildConfigView(): Promise<AiConfigView> {  const providers: ProviderConfigView[] = []
   for (const id of PROVIDER_IDS) {
     const info = BUILTIN_INFO[id]
     const cfg = store.get('providers')[id]
+    // 2026-08-09 T1 修复：getApiKey（safeStorage）异常不阻断——返回 null，界面始终能渲染四内置服务商
+    let apiKey: string | null = null
+    try {
+      apiKey = await getApiKey(id)
+    } catch {
+      apiKey = null
+    }
     providers.push({
       providerId: id,
       kind: 'builtin',
-      name: info.name,
-      apiKeyMasked: maskKey(await getApiKey(id)),
-      hasApiKey: (await getApiKey(id)) !== null,
+      // 2026-08-09 R3：支持覆盖（store 值优先，缺省回退 BUILTIN_INFO）
+      name: cfg.name ?? info.name,
+      apiKeyMasked: apiKey ? maskKey(apiKey) : null,
+      hasApiKey: apiKey !== null,
       modelId: cfg.modelId ?? (info.defaultModelId || null),
       enabled: cfg.enabled,
-      ...(id === 'volcengine' ? { baseURL: 'https://ark.cn-beijing.volces.com/api/v3' } : {})
+      // 2026-08-09 T3：内置四家均返回默认接口地址（供设置界面展示）
+      ...(info.baseURL ? { baseURL: cfg.baseURL ?? info.baseURL } : {}),
+      // 2026-08-09 R3：重置按钮回退值
+      ...(info.name ? { defaultName: info.name } : {}),
+      ...(info.baseURL ? { defaultBaseURL: info.baseURL } : {})
     })
   }
   for (const c of store.get('customProviders') ?? []) {
@@ -169,7 +203,9 @@ export async function buildConfigView(): Promise<AiConfigView> {
       hasApiKey: (await getApiKey(`custom:${c.id}`)) !== null,
       modelId: c.modelId ?? null,
       enabled: c.enabled,
-      baseURL: c.baseURL
+      baseURL: c.baseURL,
+      defaultName: c.name,
+      defaultBaseURL: c.baseURL
     })
   }
   return { providers, temperature: store.get('temperature') ?? 0.7, maxTokens: store.get('maxTokens') ?? 4096, prompts: store.get('aiPrompts') ?? null }

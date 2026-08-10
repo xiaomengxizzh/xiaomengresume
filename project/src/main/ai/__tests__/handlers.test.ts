@@ -220,3 +220,57 @@ describe('runMatch（F9）', () => {
     expect(call?.prompt).toContain('兜底 JD')
   })
 })
+
+describe('config:save 内置覆盖（2026-08-09 R3）', () => {
+  it('内置 name/baseURL 写入 store 且 buildConfigView 回显覆盖值 + 默认值', async () => {
+    // 直接经 registerAiIpc 的 ConfigSave handler 太重，改测底层 store 形态：
+    // 与 register-ai.ts 同构的写入逻辑在 ConfigSave handler，此处验证 buildConfigView 回读覆盖字段
+    const { buildConfigView } = await import('../config')
+    const data = storeData as Record<string, unknown>
+    data.providers = {
+      deepseek: { name: 'DeepSeek 中文', baseURL: 'https://api.deepseek.com/custom', modelId: 'deepseek-chat', enabled: true },
+      volcengine: { enabled: false },
+      openai: { enabled: false },
+      google: { enabled: false }
+    }
+    const view = await buildConfigView()
+    const ds = view.providers.find((p) => p.providerId === 'deepseek')
+    expect(ds?.name).toBe('DeepSeek 中文')
+    expect(ds?.baseURL).toBe('https://api.deepseek.com/custom')
+    expect(ds?.defaultName).toBe('DeepSeek')
+    expect(ds?.defaultBaseURL).toBe('https://api.deepseek.com')
+    // volcengine 未覆盖 → 回退 BUILTIN_INFO 默认
+    const vol = view.providers.find((p) => p.providerId === 'volcengine')
+    expect(vol?.baseURL).toBe('https://ark.cn-beijing.volces.com/api/v3')
+    expect(vol?.defaultBaseURL).toBe('https://ark.cn-beijing.volces.com/api/v3')
+  })
+})
+
+describe('config:reset 重置为系统默认（2026-08-09）', () => {
+  it('清空服务商覆盖/Key/自定义/参数/提示词，buildConfigView 回默认', async () => {
+    const { resetAiConfig, buildConfigView } = await import('../config')
+    const data = storeData as Record<string, unknown>
+    data.providers = {
+      deepseek: { name: 'DeepSeek 中文', baseURL: 'https://x', modelId: 'deepseek-reasoner', enabled: true },
+      volcengine: { enabled: false },
+      openai: { enabled: false },
+      google: { enabled: false }
+    }
+    data.customProviders = [{ id: 'c1', name: '自定义', baseURL: 'https://y', modelId: '', enabled: true, createdAt: '2026-08-09T00:00:00.000Z' }]
+    data.temperature = 0.3
+    data.maxTokens = 8192
+    data.aiPrompts = { grammar: '自定义', intro: '', polish: '', match: '', vision: '' }
+
+    await resetAiConfig()
+    const view = await buildConfigView()
+    const ds = view.providers.find((p) => p.providerId === 'deepseek')
+    expect(ds?.name).toBe('DeepSeek') // 覆盖清空回默认
+    expect(ds?.baseURL).toBe('https://api.deepseek.com')
+    expect(ds?.enabled).toBe(false)
+    expect(ds?.modelId).toBe('deepseek-chat') // 默认模型
+    expect(view.providers.filter((p) => p.kind === 'custom')).toHaveLength(0)
+    expect(view.temperature).toBe(0.7)
+    expect(view.maxTokens).toBe(4096)
+    expect(view.prompts).toBeNull()
+  })
+})

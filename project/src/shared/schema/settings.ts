@@ -21,21 +21,27 @@ export const PROVIDER_IDS = ['deepseek', 'volcengine', 'openai', 'google'] as co
 export type ProviderId = (typeof PROVIDER_IDS)[number]
 
 export const ProviderSchema = z.object({
+  /** 2026-08-09 R3：服务商显示名覆盖（内置缺省 = BUILTIN_INFO.name，持久化覆盖值） */
+  name: z.string().max(64).optional(),
+  /** 2026-08-09 R3：接口地址覆盖（内置缺省 = BUILTIN_INFO.baseURL） */
+  baseURL: z.string().url().max(2048).optional(),
   apiKey: z.string().optional(),
   modelId: z.string().optional(),
   enabled: z.boolean().default(false)
 })
 export type Provider = z.infer<typeof ProviderSchema>
 
-/** AI 提示词（R 批：aiPrompts 四键） */
-export const AI_PROMPT_KEYS = ['grammar', 'intro', 'polish', 'match'] as const
+/** AI 提示词（R 批：aiPrompts 四键；2026-08-09 R7 增 vision 视觉键——UI 与简历提示词分开设置） */
+export const AI_PROMPT_KEYS = ['grammar', 'intro', 'polish', 'match', 'vision'] as const
 export type AiPromptKey = (typeof AI_PROMPT_KEYS)[number]
 
 export const AiPromptsSchema = z.object({
   grammar: z.string(),
   intro: z.string(),
   polish: z.string(),
-  match: z.string()
+  match: z.string(),
+  /** R7：豆包视觉模型提示词（M4b 图片/扫描件信息提取；与简历提示词分开设置） */
+  vision: z.string()
 })
 export type AiPrompts = z.infer<typeof AiPromptsSchema>
 

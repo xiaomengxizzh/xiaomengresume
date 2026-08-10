@@ -12,8 +12,10 @@ export const AiConfigSaveArgsSchema = z
     providerId: z.string().min(1).max(128).optional(),
     apiKey: z.string().max(4096).optional(),
     modelId: z.string().max(256).optional(),
-    /** 仅 custom */
+    /** 内置与 custom 均可（内置缺省 = BUILTIN_INFO.baseURL） */
     baseURL: z.string().url().max(2048).optional(),
+    /** 2026-08-09 T1/R3：内置与 custom 均可，修改显示名（内置缺省 = BUILTIN_INFO.name） */
+    name: z.string().max(64).optional(),
     enabled: z.boolean().optional(),
     addCustom: z
       .object({
@@ -34,6 +36,8 @@ export const AiConfigSaveArgsSchema = z
   .refine(
     (v) =>
       v.providerId !== undefined ||
+      v.name !== undefined ||
+      v.baseURL !== undefined ||
       v.addCustom !== undefined ||
       v.deleteCustom !== undefined ||
       v.temperature !== undefined ||

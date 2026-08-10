@@ -9,6 +9,7 @@
 import { createDeepSeek } from '@ai-sdk/deepseek'
 import { createOpenAI } from '@ai-sdk/openai'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
+import { generateText } from 'ai'
 import type { LanguageModel } from 'ai'
 import Store from 'electron-store'
 import { PROVIDER_IDS, type Settings } from '../../shared/schema/settings'
@@ -46,7 +47,8 @@ export async function createModel(providerId: string): Promise<AiModelHandle> {
   const handle = { temperature: cfg.temperature, maxTokens: cfg.maxTokens } as const
 
   if (providerId.startsWith('custom:') || providerId === 'volcengine') {
-    const baseURL = providerId.startsWith('custom:') ? cfg.baseURL : VOLCENGINE_BASE_URL
+    // R3：volcengine 同样支持用户覆盖 baseURL（缺省回退 VOLCENGINE_BASE_URL）
+    const baseURL = providerId.startsWith('custom:') ? cfg.baseURL : (cfg.baseURL ?? VOLCENGINE_BASE_URL)
     if (!baseURL) throw new AiServiceError('CONFIG_INVALID', `${providerId}: missing baseURL`)
     if (!cfg.modelId) throw new AiServiceError('CONFIG_INVALID', `${providerId}: missing modelId`)
     const openai = createOpenAI({ apiKey: cfg.apiKey, baseURL })
@@ -68,6 +70,24 @@ export async function createModel(providerId: string): Promise<AiModelHandle> {
       ...handle
     }
   }
+  throw new AiServiceError('CONFIG_INVALID', `unknown provider: ${providerId}`)
+}
+
+/** 2026-08-09 T3/R3：检测模型（临时 apiKey/modelId/baseURL 发最小请求验证，不入库） */
+export async function testProvider(providerId: string, apiKey: string, modelId: string, baseURL?: string): Promise<boolean> {
+  const ping = async (model: LanguageModel): Promise<boolean> => {
+    await generateText({ model, prompt: 'ping', maxOutputTokens: 5 })
+    return true
+  }
+  // R3：custom 走 OpenAI 兼容通道（此前缺失导致 custom 检测恒失败）；volcengine 透传覆盖 baseURL
+  if (providerId.startsWith('custom:')) {
+    if (!baseURL) throw new AiServiceError('CONFIG_INVALID', `${providerId}: missing baseURL`)
+    return ping(createOpenAI({ apiKey, baseURL })(modelId))
+  }
+  if (providerId === 'volcengine') return ping(createOpenAI({ apiKey, baseURL: baseURL ?? VOLCENGINE_BASE_URL })(modelId))
+  if (providerId === 'deepseek') return ping(createDeepSeek({ apiKey })(modelId))
+  if (providerId === 'openai') return ping(createOpenAI({ apiKey })(modelId))
+  if (providerId === 'google') return ping(createGoogleGenerativeAI({ apiKey })(modelId))
   throw new AiServiceError('CONFIG_INVALID', `unknown provider: ${providerId}`)
 }
 

@@ -17,6 +17,7 @@ import {
   type AiMatchArgs,
   type ImportRunArgs,
   type ImportDraft,
+  type ImportBatchResult,
   type ImportProgress
 } from '@shared/ipc-channels'
 import type { Resume } from '@shared/schema/resume'
@@ -24,6 +25,7 @@ import type { Job } from '@shared/schema/job'
 import type { GrammarIssue } from '@shared/schema/grammar'
 import type { MatchScore } from '@shared/schema/match'
 import type { AiConfigSaveArgs } from '@shared/schema/ai-config'
+import type { AiConfigTestArgs } from '@shared/ipc-channels'
 
 /** 订阅流式 chunk（返回退订函数） */
 function subscribe<T>(channel: string, cb: (payload: T) => void): () => void {
@@ -104,7 +106,12 @@ const electronAPI = {
     config: {
       get: (): Promise<AiResult<AiConfigView>> => ipcRenderer.invoke(IPC.Ai.ConfigGet),
       save: (args: AiConfigSaveArgs): Promise<AiResult<boolean>> =>
-        ipcRenderer.invoke(IPC.Ai.ConfigSave, args)
+        ipcRenderer.invoke(IPC.Ai.ConfigSave, args),
+      // 2026-08-09 T3：检测模型（临时 apiKey+modelId，不入库）
+      test: (args: AiConfigTestArgs): Promise<AiResult<boolean>> =>
+        ipcRenderer.invoke(IPC.Ai.ConfigTest, args),
+      // 2026-08-09：重置全部 AI 配置为系统预设默认值
+      reset: (): Promise<AiResult<boolean>> => ipcRenderer.invoke(IPC.Ai.ConfigReset)
     }
   },
   jobs: {
@@ -146,6 +153,8 @@ const electronAPI = {
     /** M4a：导入简历（主进程开对话框选文件；返回草稿进三步核对向导）；进度经 onProgress */
     run: (args: ImportRunArgs): Promise<AiResult<ImportDraft>> =>
       ipcRenderer.invoke(IPC.Import.Run, args),
+    /** R8：批量导入（多选 → 逐份落盘为独立新简历，无需三步核对） */
+    runBatch: (): Promise<AiResult<ImportBatchResult>> => ipcRenderer.invoke(IPC.Import.RunBatch),
     onProgress: (cb: (p: ImportProgress) => void): (() => void) => subscribe('import:progress', cb)
   }
 }

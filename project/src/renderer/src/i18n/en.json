@@ -5,7 +5,10 @@
   },
   "welcome": {
     "title": "Welcome back",
-    "subtitle": "Your resume data stays on this device. AI only assists editing."
+    "subtitle": "Your resume data stays on this device. AI only assists editing.",
+    "privacyNote": "Local-only data · No account · No subscription",
+    "newBlank": "New blank resume",
+    "openResume": "Open resume"
   },
   "verify": {
     "title": "M0 Skeleton Verification",
@@ -64,6 +67,11 @@
       "languages": "Languages",
       "custom": "Custom section"
     },
+    "basicsBlock": {
+      "photo": "Photo",
+      "identity": "Name & Title",
+      "tags": "Tags"
+    },
     "field": {
       "name": "Name",
       "englishName": "English name",
@@ -104,7 +112,12 @@
       "photo": "Photo",
       "photoPick": "Choose image",
       "infoItemsLabel": "Info items (top two columns)",
-      "remove": "Remove"
+      "remove": "Remove",
+      "customTitle": "Field label (e.g. Phone)",
+      "presets": "Quick add",
+      "tagNoIcon": "Icon",
+      "tagEmpty": "Empty",
+      "jobTitle": "Job title"
     },
     "action": {
       "add": "Add",
@@ -143,6 +156,8 @@
     "layoutPadding": "Page padding",
     "layoutParagraph": "Paragraph gap",
     "layoutSection": "Section gap",
+    "layoutCompact": "Compact layout",
+    "layoutCompactHint": "Compress spacing to minimum readable (content may overflow to more pages; no truncation or scaling)",
     "layoutReset": "Reset",
     "fontLabel": "Font",
     "aiAssist": "AI Polish",
@@ -158,7 +173,11 @@
       "pin": "Location",
       "globe": "Website",
       "briefcase": "Status",
-      "calendar": "Birthday"
+      "calendar": "Birthday",
+      "link": "Link",
+      "user": "Identity",
+      "star": "Star",
+      "map": "Map"
     },
     "privacyOn": "Enable privacy mode (Ctrl+Shift+P)",
     "privacyOff": "Disable privacy mode (Ctrl+Shift+P)",
@@ -167,7 +186,10 @@
       "remove": "Remove module",
       "title": "Section title",
       "prompt": "Enter section title (e.g. Interests)"
-    }
+    },
+    "resumeNamePlaceholder": "Untitled resume",
+    "autoSaved": "Auto-saved",
+    "entryHidden": "Hidden"
   },
   "themeColor": {
     "preset": {
@@ -208,15 +230,18 @@
     "newBlank": "New blank",
     "openRecent": "Open or recent",
     "import": "Import",
-    "manage": "Manage all",
-    "jobs": "Jobs",
+    "manage": "Resume manager",
+    "jobs": "Job manager",
     "grammar": "Grammar",
     "intro": "Intro",
     "polish": "Polish",
     "match": "Match",
     "appearance": "Appearance",
     "aiSettings": "AI settings",
-    "storage": "Storage"
+    "storage": "Storage",
+    "openResume": "Open resume",
+    "manageJobs": "Resumes & Jobs",
+    "newResume": "New resume"
   },
   "homeTitle": {
     "resumes": "Resume",
@@ -242,7 +267,11 @@
     "match": "Score match against selected job requirements",
     "appearance": "Theme / language / UI font",
     "aiSettings": "AI provider / prompts / context",
-    "storage": "Storage folder & backup"
+    "storage": "Storage folder & backup",
+    "newResume": "Start blank or import",
+    "openResume": "Open recently edited resumes",
+    "manage": "View and manage all resumes",
+    "jobs": "Maintain jobs and bindings"
   },
   "homeEmpty": {
     "resumes": "No resumes yet. Click New blank to start."
@@ -255,11 +284,13 @@
     "back": "Back",
     "open": "Open",
     "cancel": "Cancel",
-    "save": "Save"
+    "save": "Save",
+    "retry": "Retry"
   },
   "export": {
     "title": "Export",
     "close": "Close",
+    "flushFailed": "Save failed; export aborted (check storage directory permissions and retry)",
     "format": {
       "textPdf": "Text PDF",
       "textPdf.desc": "Vector · selectable text · matches preview",
@@ -299,17 +330,19 @@
     "matchDisabledHint": "Match scoring requires a resume and a job",
     "grammar": {
       "scope": "Scope",
-      "scopeSelection": "Selected text",
-      "scopeFull": "Full resume",
-      "run": "Check",
+      "scopeSelection": "Selection",
+      "scopeFull": "Full document",
+      "run": "Run check",
       "running": "Checking…",
-      "issues": "{{count}} issue(s) found",
+      "issues": "{{count}} issues found",
       "noIssues": "No issues found",
-      "replace": "Replace",
+      "replace": "Suggestion",
       "ignore": "Ignore",
-      "emptySelection": "Select text in the editor first",
-      "staleRange": "The source text has changed, please re-check",
-      "invalidRange": "Selection is no longer valid, please select again"
+      "emptySelection": "Empty selection",
+      "staleRange": "Selection out of date",
+      "invalidRange": "Invalid selection",
+      "idle": "Full grammar check",
+      "idleDesc": "Click “Run check” to diagnose grammar and wording across the whole resume, with per-issue jump-to-edit."
     },
     "intro": {
       "generate": "Generate draft",
@@ -358,12 +391,13 @@
       "RATE_LIMIT": "Too many requests, please retry later",
       "INVALID_RESPONSE": "AI returned unparseable content, please retry",
       "CANCELLED": "Cancelled",
-      "UNKNOWN": "AI call failed: {{message}}"
-    }
+      "UNKNOWN": "AI call failed, please retry"
+    },
+    "noResumeDesc": "Select a resume in the top bar to use this feature."
   },
   "job": {
     "title": "Job board",
-    "empty": "No jobs yet — create one below",
+    "empty": "No jobs yet",
     "newJob": "New job",
     "editJob": "Edit",
     "deleteJob": "Delete",
@@ -376,28 +410,55 @@
     "cancel": "Cancel",
     "deleteConfirm": "Delete job “{{name}}”? Bound resumes will not be deleted",
     "reqPlaceholder": "Paste the job JD / requirements (used by AI polish & match)",
-    "namePlaceholder": "e.g. Frontend Engineer (ByteDance)"
+    "namePlaceholder": "e.g. Frontend Engineer (ByteDance)",
+    "emptyDesc": "Click “New job” in the top-right to create your first job, used for AI polish and matching."
   },
   "settings": {
     "ai": {
       "title": "AI Settings",
       "providers": "AI providers",
+      "providerName": "Provider name",
       "apiKey": "API Key",
+      "apiKeyLabel": "API Key",
       "getApiKey": "Get API Key",
       "modelId": "Model ID",
+      "modelIdLabel": "Model ID",
       "enabled": "Enabled",
       "statusConnected": "Configured",
       "statusNotConfigured": "Not configured",
       "statusDisabled": "Disabled",
       "temperature": "Temperature",
-      "maxTokens": "Max tokens",
+      "tempObjective": "Objective (0.3)",
+      "tempNormal": "Normal (0.5)",
+      "tempDivergent": "Divergent (0.7)",
+      "save": "Save",
       "custom": {
         "add": "Add custom provider",
-        "name": "Name",
+        "name": "Provider name",
         "baseURL": "Endpoint (OpenAI-compatible)",
         "save": "Save",
         "delete": "Delete",
         "deleteConfirm": "Delete custom provider “{{name}}”?"
+      },
+      "baseURL": "Base URL",
+      "reset": "Reset",
+      "resetDefault": "Restore default value",
+      "clearKey": "Clear",
+      "visionPromptTitle": "Doubao Vision Prompt",
+      "visionPromptHint": "Used for M4b image/scanned resume extraction (configured separately from resume prompts)",
+      "visionPrompt": "Vision extraction",
+      "testModel": "Test model",
+      "testing": "Testing…",
+      "testHint": "Click to verify API key and model ID",
+      "noApiKey": "No API key",
+      "noResponse": "Model did not respond",
+      "testOk": "Verified",
+      "lockHint": "Test the model first to unlock the configuration below",
+      "tabs": {
+        "deepseek": "DeepSeek",
+        "volcengine": "Volcano Ark",
+        "openai": "OpenAI",
+        "google": "Gemini"
       }
     }
   },
@@ -411,7 +472,7 @@
     "cardJson": "JSON",
     "cardJsonDesc": "JSON resume exported by this app",
     "cardImage": "Image / Scan",
-    "cardImageDesc": "Planned (M4b)",
+    "cardImageDesc": "Scan/image import, planned",
     "step1": "Parsed preview",
     "step2": "Field review",
     "step3": "Confirm write",
@@ -482,12 +543,59 @@
       "proficiency": "Proficiency"
     },
     "confirmWriteHeading": "Confirm write",
+    "batchDone": "Batch import done: {{count}} succeeded",
+    "batchFailed": "{{count}} failed",
+    "batchFail": "Batch import failed: {{code}}",
     "warning.garbled": "Garbled lines were removed",
     "warning.scanned": "Too little text; possibly a scanned document",
     "warning.vision": "Image/scan import needs vision support (M4b)",
     "warning.docx": "Some document content may not be fully parsed",
     "warning.localRules": "Parsed with local rules (no AI); review field assignment",
     "warning.dirtyLayout": "Complex layout detected; enable an AI provider for precise mapping",
-    "previewRaw": "Raw extracted text"
+    "previewRaw": "Raw extracted text",
+    "m4bBadge": "Coming soon"
+  },
+  "resumeList": {
+    "loadError": "Failed to load resume list",
+    "loadErrorDesc": "Could not read the resume list. Please retry; if it persists, check storage folder permissions.",
+    "retry": "Retry",
+    "emptyRecentDesc": "Recently opened resumes will appear here."
+  },
+  "resumesJobs": {
+    "rename": "Rename",
+    "delete": "Delete",
+    "bulkDelete": "Delete selected",
+    "selected": "{{count}} selected",
+    "confirmDelete": "Delete the selected {{count}} items? This cannot be undone.",
+    "confirmDeleteOne": "Delete “{{name}}”? This cannot be undone.",
+    "emptyResumes": "No resumes yet",
+    "emptyJobs": "No jobs yet",
+    "editResumeTitle": "Rename resume",
+    "resumes": "Resumes",
+    "jobs": "Jobs",
+    "selectAll": "Select all"
+  },
+  "newResume": {
+    "blank": "New blank resume",
+    "blankDesc": "Start from scratch",
+    "import": "Import existing",
+    "importDesc": "Import from PDF / Word / JSON"
+  },
+  "resumesManager": {
+    "new": "New resume",
+    "import": "Import resume",
+    "batchImport": "Batch import"
+  },
+  "jobsManager": {
+    "new": "New job",
+    "edit": "Edit job",
+    "status": "Status",
+    "statusNotApplied": "Not applied",
+    "statusApplying": "Applying",
+    "statusPassed": "Passed",
+    "statusRejected": "Rejected",
+    "bound": "Bound",
+    "bindResume": "Bind resume",
+    "untitled": "Untitled job"
   }
 }

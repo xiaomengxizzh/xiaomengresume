@@ -27,10 +27,11 @@ export function AiContextBar(): React.JSX.Element {
   const currentJob = jobs.find((j) => j.id === jobId)
 
   return (
-    <div className="flex items-center gap-3 border-b border-border/70 px-4 py-2 text-sm">
+    /* 2026-08-09 T7：选择器放大并相对导航右侧内容区居中（justify-center + select 加宽） */
+    <div className="flex flex-wrap items-center justify-center gap-3 border-b border-border/70 px-6 py-2.5 text-sm">
       <label className="shrink-0 text-xs text-foreground/60">{t('ai.context.resume')}</label>
       <select
-        className="min-w-0 flex-1 rounded border border-border bg-surface px-2 py-1 text-sm outline-none focus:border-foreground/50"
+        className="min-w-[180px] flex-1 max-w-[300px] rounded-lg border border-border bg-surface px-3 py-1.5 text-sm outline-none transition-colors focus:border-foreground/50"
         value={resumeId ?? ''}
         onChange={(e) => {
           const id = e.target.value
@@ -54,7 +55,7 @@ export function AiContextBar(): React.JSX.Element {
 
       <label className="shrink-0 text-xs text-foreground/60">{t('ai.context.job')}</label>
       <select
-        className="min-w-0 flex-1 rounded border border-border bg-surface px-2 py-1 text-sm outline-none focus:border-foreground/50 disabled:opacity-50"
+        className="min-w-[180px] flex-1 max-w-[300px] rounded-lg border border-border bg-surface px-3 py-1.5 text-sm outline-none transition-colors focus:border-foreground/50 disabled:opacity-50"
         value={jobId ?? ''}
         disabled={!resumeId}
         onChange={(e) => setAiContext({ jobId: e.target.value || null })}

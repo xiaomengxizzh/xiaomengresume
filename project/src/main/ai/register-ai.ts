@@ -19,8 +19,10 @@ import {
   type AiMatchArgs
 } from '../../shared/ipc-channels'
 import { AiConfigSaveArgsSchema, type AiConfigSaveArgs } from '../../shared/schema/ai-config'
+import type { AiConfigTestArgs } from '../../shared/ipc-channels'
 import type { Settings } from '../../shared/schema/settings'
-import { AiServiceError, buildConfigView, setApiKey } from './config'
+import { AiServiceError, buildConfigView, resetAiConfig, setApiKey } from './config'
+import { testProvider } from './client'
 import { isAiMock, mockGrammar, mockIntro, mockPolish, mockMatch } from './mock'
 import { runGrammar } from './grammar'
 import { runIntro } from './intro'
@@ -126,6 +128,16 @@ export function registerAiIpc(): void {
     }
   })
 
+  // ── 2026-08-09：重置全部 AI 配置为系统预设默认值 ────────────────────────
+  ipcMain.handle(IPC.Ai.ConfigReset, async (): Promise<AiResult<boolean>> => {
+    try {
+      await resetAiConfig()
+      return ok(true)
+    } catch (err) {
+      return { ok: false, error: toAiError(err) }
+    }
+  })
+
   // ── 配置：保存（apiKey → safeStorage；其余 → store；custom 增删）────────
   ipcMain.handle(IPC.Ai.ConfigSave, async (_e, raw: unknown): Promise<AiResult<boolean>> => {
     try {
@@ -164,6 +176,7 @@ export function registerAiIpc(): void {
           if (idx < 0) throw new AiServiceError('CONFIG_INVALID', `unknown provider: ${providerId}`)
           const patch = {
             ...customs[idx],
+            ...(args.name !== undefined ? { name: args.name } : {}),
             ...(args.modelId !== undefined ? { modelId: args.modelId } : {}),
             ...(args.baseURL !== undefined ? { baseURL: args.baseURL } : {}),
             ...(args.enabled !== undefined ? { enabled: args.enabled } : {})
@@ -178,6 +191,9 @@ export function registerAiIpc(): void {
             ...providers,
             [providerId]: {
               ...cur,
+              // 2026-08-09 R3：内置名称/接口地址支持覆盖（仅增不改；apiKey 仍走 safeStorage）
+              ...(args.name !== undefined ? { name: args.name } : {}),
+              ...(args.baseURL !== undefined ? { baseURL: args.baseURL } : {}),
               ...(args.modelId !== undefined ? { modelId: args.modelId } : {}),
               ...(args.enabled !== undefined ? { enabled: args.enabled } : {})
             }
@@ -198,6 +214,25 @@ export function registerAiIpc(): void {
         return { ok: false, error: { code: 'CONFIG_INVALID', message: err.message } satisfies AiError }
       }
       return { ok: false, error: toAiError(err) }
+    }
+  })
+
+  // ── 2026-08-09 T3/R3：检测模型（临时 apiKey+modelId(+baseURL) 验证，不入库）────
+  ipcMain.handle(IPC.Ai.ConfigTest, async (_e, raw: unknown): Promise<AiResult<boolean>> => {
+    try {
+      const args = raw as AiConfigTestArgs
+      if (!args || typeof args.apiKey !== 'string' || args.apiKey.trim() === '') {
+        return { ok: false, error: { code: 'NO_API_KEY' } satisfies AiError }
+      }
+      if (typeof args.modelId !== 'string' || args.modelId.trim() === '') {
+        return { ok: false, error: { code: 'NO_API_KEY' } satisfies AiError }
+      }
+      // R3：custom/volcengine 透传 baseURL（兼容通道用输入值检测）
+      await testProvider(args.providerId, args.apiKey.trim(), args.modelId.trim(), args.baseURL)
+      return ok(true)
+    } catch {
+      // 模型无响应（key/model 无效、网络失败等）→ 统一提示模型未响应
+      return { ok: false, error: { code: 'MODEL_NO_RESPONSE' } satisfies AiError }
     }
   })
 }
