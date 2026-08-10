@@ -370,8 +370,11 @@ function IconCombo({
   const [customFields] = useField('basics.customFields')
   const setField = useResumeStore((s) => s.setField)
   const resume = useResumeStore((s) => s.resume)
+  const resumeId = useResumeStore((s) => s.resumeId)
   const MAX_TAGS = 6
   const fields = (customFields as Array<{ id: string; label: string; value: string; icon?: string }> | undefined) ?? []
+  // 2026-08-10 修复：注入仅一次（同一简历删除全部标签后不重注入旧字段）
+  const injectedRef = useRef<string | null>(null)
 
   // 图案选项（label 走 i18n editor.infoIcon.*；2026-08-09 R5 扩至 10 个）
   const ICON_OPTIONS: Array<{ value: string; label: string }> = [
@@ -395,6 +398,9 @@ function IconCombo({
   // 旧固定字段自动注入自定义字段（双向绑定；对照示例 6 项 + 图标）
   useEffect(() => {
     if (fields.length > 0) return
+    // 2026-08-10 修复：同一简历只注入一次——删除全部标签后 fields 空，若重注入会覆盖用户删除意图
+    if (injectedRef.current === resumeId) return
+    injectedRef.current = resumeId
     const b = resume.basics
     const legacy: Array<{ icon: string; label: string; value: string }> = [
       { icon: 'phone', label: labelForIcon('phone'), value: getString(b.phone) },
@@ -410,8 +416,8 @@ function IconCombo({
         legacy.map((f) => ({ id: crypto.randomUUID(), label: f.label, value: f.value, icon: f.icon }))
       )
     }
-    // 仅随 resume 加载/变化触发一次（注入后 fields 非空，守卫跳过）
-  }, [resume])
+    // 仅随 resume 加载/变化触发一次（注入后 fields 非空或 injectedRef 已标记，守卫跳过）
+  }, [resume, resumeId])
 
   const setTag = (i: number, patch: { icon?: string; label?: string; value?: string }): void => {
     const cur = fields[i]
@@ -426,6 +432,21 @@ function IconCombo({
   }
 
   const removeTag = (i: number): void => {
+    const cur = fields[i]
+    // 2026-08-10 修复：删除标签格同步清除对应 basics 固定字段——防预览/导出 fallback
+    //（contactItems 仅 infoItems 空时拼接 basics 字段）仍显示已删标签（用户"删除标签简历仍显示"）
+    if (cur) {
+      const iconToField: Record<string, string> = {
+        phone: 'phone',
+        mail: 'email',
+        pin: 'location',
+        globe: 'website',
+        calendar: 'birthDate',
+        briefcase: 'employmentStatus'
+      }
+      const field = iconToField[cur.icon ?? '']
+      if (field) setField(`basics.${field}`, '')
+    }
     const next = fields.filter((_, idx) => idx !== i)
     setField('basics.customFields', next)
   }
@@ -455,7 +476,14 @@ function IconCombo({
                 <IconCombo
                   icon={f?.icon ?? ''}
                   label={f?.label ?? ''}
-                  onIconChange={(v) => setTag(i, { icon: v })}
+                  onIconChange={(v) => {
+                    setTag(i, { icon: v })
+                    // 2026-08-10 修复：有值格切换图案时 label 同步为图案名（当前 label 为默认名/空时）——
+                    // 原只改 icon 不改 label 致"无法切换图案"（实测 label 停留旧名）
+                    if (f && (!f.label || f.label === labelForIcon(f.icon ?? ''))) {
+                      setTag(i, { label: labelForIcon(v) })
+                    }
+                  }}
                   onLabelChange={(v) => setTag(i, { label: v })}
                 />
                 <button

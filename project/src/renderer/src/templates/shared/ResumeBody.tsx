@@ -330,9 +330,12 @@ export function ResumeBody({ variant, resume: externalResume }: { variant: Templ
                 {infoItems.map((it) => (
                   <div key={it.id} className="redact-field" style={{ display: 'flex', alignItems: 'center', gap: `${CONTACT_GRID_LOGIC.iconGap}px`, minWidth: 0, fontSize: contactFontSize(it.value) }}>
                     {/* 2026-08-10 任务1：lineHeight:0 消除 svg 基线对垂直居中的影响（图1 图标-文字错位加固） */}
-                    <span style={{ display: 'inline-flex', alignItems: 'center', lineHeight: 0, color: 'var(--rm-accent)', flexShrink: 0 }}>
-                      <InfoIcon id={it.icon as InfoIconId} size={CONTACT_GRID_LOGIC.iconSize} />
-                    </span>
+                    {/* 2026-08-10 需求：文字类标签（无 icon）不渲染图标占位——纯文字显示 */}
+                    {it.icon ? (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', lineHeight: 0, color: 'var(--rm-accent)', flexShrink: 0 }}>
+                        <InfoIcon id={it.icon as InfoIconId} size={CONTACT_GRID_LOGIC.iconSize} />
+                      </span>
+                    ) : null}
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: `${CONTACT_GRID_LOGIC.maxWidth}px` }}>{it.value}</span>
                   </div>
                 ))}
