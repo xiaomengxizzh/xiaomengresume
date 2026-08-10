@@ -125,8 +125,10 @@ export async function printAppToPdf(resumeId: string, opts: PrintAppOptions): Pr
       url.searchParams.set('language', opts.language)
       await win.loadURL(url.toString())
     } else {
-      // prod：构建产物（main 在 out/main，renderer 在 out/renderer）
-      await win.loadFile(join(__dirname, '../../renderer/index.html'), {
+      // prod：构建产物（⚠️ electron-vite 单 bundle，__dirname 运行时 = out/main，
+      // 故与 main/index.ts 同为 ../renderer → out/renderer；初版误写 ../../renderer
+      // 解析到 project/renderer（缺 out/ 层）致 ERR_FILE_NOT_FOUND）
+      await win.loadFile(join(__dirname, '../renderer/index.html'), {
         query: {
           export: '1',
           resumeId,
