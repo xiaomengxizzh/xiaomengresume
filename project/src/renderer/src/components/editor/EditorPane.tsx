@@ -290,8 +290,82 @@ function IdentityBlock(): React.JSX.Element {
   )
 }
 
-/** 标签信息模块（固定 6 格；每格选图案 + 自由编辑 label + 内容；旧字段自动注入） */
-function TagsBlock(): React.JSX.Element {
+/**
+ * 2026-08-10 需求 2：图案标签 combobox——文本框（可直接输入自定义标签名）+ 右侧向下箭头
+ * → 下拉列式展示图案选项（参考岗位状态 select 交互）；选图标后 label 自动填图标名。
+ * 2026-08-10 修复：定义在模块顶层（TagsBlock 外）——函数引用稳定，防 TagsBlock re-render
+ * 时组件类型变化致重挂（实测输入即失焦：input 被移出 DOM）。
+ */
+function IconCombo({
+  icon,
+  label,
+  onIconChange,
+  onLabelChange
+}: {
+  icon: string
+  label: string
+  onIconChange: (id: string) => void
+  onLabelChange: (label: string) => void
+}): React.JSX.Element {
+  const { t } = useTranslation() // 顶层组件自行取 t
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const onDocClick = (e: MouseEvent): void => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDocClick)
+    return () => document.removeEventListener('mousedown', onDocClick)
+  }, [open])
+  const pick = (id: string): void => {
+    onIconChange(id)
+    setOpen(false)
+  }
+  return (
+    <div ref={ref} className="relative min-w-0 flex-1">
+      <div className="flex items-center rounded-lg border border-border bg-surface focus-within:border-foreground/50">
+        <input
+          className="min-w-0 flex-1 bg-transparent px-2 py-1 text-xs outline-none"
+          value={label}
+          placeholder={t('editor.field.customTitle')}
+          onChange={(e) => onLabelChange(e.target.value)}
+        />
+        <button
+          type="button"
+          className="shrink-0 px-1.5 text-foreground/50 transition-colors hover:text-foreground"
+          title={t('editor.field.customFieldLabel')}
+          onClick={() => setOpen((o) => !o)}
+        >
+          ▾
+        </button>
+      </div>
+      {open && (
+        <div className="absolute right-0 top-full z-20 mt-1 max-h-64 overflow-y-auto rounded-lg border border-border bg-surface py-1 shadow-card-hover">
+          {ICON_CHOICES.map((id) => {
+            const name = id ? t(`editor.infoIcon.${id}`) : t('editor.field.tagNoIcon')
+            const selected = icon === id
+            return (
+              <button
+                key={id || 'none'}
+                type="button"
+                onClick={() => pick(id)}
+                className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-border/40 ${
+                  selected ? 'text-foreground' : 'text-foreground/70'
+                }`}
+              >
+                {id ? <InfoIcon id={id as never} className="h-4 w-4 shrink-0" /> : <span className="h-4 w-4 shrink-0" />}
+                <span className="truncate">{name}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** 标签信息模块（固定 6 格；每格选图案 + 自由编辑 label + 内容；旧字段自动注入） */function TagsBlock(): React.JSX.Element {
   const { t } = useTranslation()
   const [customFields] = useField('basics.customFields')
   const setField = useResumeStore((s) => s.setField)
@@ -316,78 +390,6 @@ function TagsBlock(): React.JSX.Element {
   const labelForIcon = (icon: string): string => {
     const o = ICON_OPTIONS.find((x) => x.value === icon)
     return o && o.value ? o.label : ''
-  }
-
-  /**
-   * 2026-08-10 需求 2：图案标签 combobox——文本框（可直接输入自定义标签名）+ 右侧向下箭头
-   * → 下拉列式展示图案选项（参考岗位状态 select 交互）；选图标后 label 自动填图标名。
-   */
-  function IconCombo({
-    icon,
-    label,
-    onIconChange,
-    onLabelChange
-  }: {
-    icon: string
-    label: string
-    onIconChange: (id: string) => void
-    onLabelChange: (label: string) => void
-  }): React.JSX.Element {
-    const [open, setOpen] = useState(false)
-    const ref = useRef<HTMLDivElement>(null)
-    useEffect(() => {
-      if (!open) return
-      const onDocClick = (e: MouseEvent): void => {
-        if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-      }
-      document.addEventListener('mousedown', onDocClick)
-      return () => document.removeEventListener('mousedown', onDocClick)
-    }, [open])
-    const pick = (id: string): void => {
-      onIconChange(id)
-      setOpen(false)
-    }
-    return (
-      <div ref={ref} className="relative min-w-0 flex-1">
-        <div className="flex items-center rounded-lg border border-border bg-surface focus-within:border-foreground/50">
-          <input
-            className="min-w-0 flex-1 bg-transparent px-2 py-1 text-xs outline-none"
-            value={label}
-            placeholder={t('editor.field.customTitle')}
-            onChange={(e) => onLabelChange(e.target.value)}
-          />
-          <button
-            type="button"
-            className="shrink-0 px-1.5 text-foreground/50 transition-colors hover:text-foreground"
-            title={t('editor.field.customFieldLabel')}
-            onClick={() => setOpen((o) => !o)}
-          >
-            ▾
-          </button>
-        </div>
-        {open && (
-          <div className="absolute right-0 top-full z-20 mt-1 max-h-64 overflow-y-auto rounded-lg border border-border bg-surface py-1 shadow-card-hover">
-            {ICON_CHOICES.map((id) => {
-              const name = id ? t(`editor.infoIcon.${id}`) : t('editor.field.tagNoIcon')
-              const selected = icon === id
-              return (
-                <button
-                  key={id || 'none'}
-                  type="button"
-                  onClick={() => pick(id)}
-                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-border/40 ${
-                    selected ? 'text-foreground' : 'text-foreground/70'
-                  }`}
-                >
-                  {id ? <InfoIcon id={id as never} className="h-4 w-4 shrink-0" /> : <span className="h-4 w-4 shrink-0" />}
-                  <span className="truncate">{name}</span>
-                </button>
-              )
-            })}
-          </div>
-        )}
-      </div>
-    )
   }
 
   // 旧固定字段自动注入自定义字段（双向绑定；对照示例 6 项 + 图标）
@@ -439,41 +441,37 @@ function TagsBlock(): React.JSX.Element {
       <div className="grid grid-cols-2 gap-x-3 gap-y-2">
         {Array.from({ length: MAX_TAGS }).map((_, i) => {
           const f = fields[i]
-          if (!f) {
-            return (
-              // 2026-08-10 修复：key 统一稳定（'tag-i'）——空位输入创建后组件不重挂，防输入失焦中断
-              <div key={'tag-' + i} className="flex items-center gap-1.5 rounded-lg border border-dashed border-border/70 px-2 py-1.5">
-                <span className="text-[11px] text-foreground/40">{i + 1}</span>
-                {/* 2026-08-10 需求 2：图案标签 combobox——输入自定义名或下拉选图标创建格 */}
-                <IconCombo icon="" label="" onIconChange={(v) => setTag(i, { icon: v })} onLabelChange={(v) => setTag(i, { label: v })} />
-                <span className="text-[11px] text-foreground/40">{t('editor.field.tagEmpty')}</span>
-              </div>
-            )
-          }
+          // 2026-08-10 修复：空位/有值格渲染完全一致的 DOM 树（value 框/✕ 始终渲染，空位用
+          // invisible 隐藏不移除节点）——两分支结构不同（单行 vs 双行）致创建时 React 重建子树
+          // → combobox input 重挂 → 输入即失焦（实测 isConnected=false）
           return (
-            <div key={'tag-' + i} className="flex flex-col gap-1.5">
+            <div
+              key={'tag-' + i}
+              className={`flex flex-col gap-1.5 rounded-lg border px-2 py-1.5 ${f ? 'border-border' : 'border-dashed border-border/70'}`}
+            >
               <div className="flex items-center gap-1.5">
-                {/* 2026-08-10 需求 2：combobox——文本框输 label + 下拉箭头列选图案 */}
+                <span className="text-[11px] text-foreground/40">{i + 1}</span>
+                {/* 2026-08-10 需求 2：图案标签 combobox——文本框输 label + 下拉箭头列选图案 */}
                 <IconCombo
-                  icon={f.icon ?? ''}
-                  label={f.label}
+                  icon={f?.icon ?? ''}
+                  label={f?.label ?? ''}
                   onIconChange={(v) => setTag(i, { icon: v })}
                   onLabelChange={(v) => setTag(i, { label: v })}
                 />
                 <button
                   type="button"
-                  className="shrink-0 px-1 text-foreground/40 transition-colors hover:text-danger"
+                  className={`shrink-0 px-1 text-foreground/40 transition-colors hover:text-danger ${f ? '' : 'invisible'}`}
                   title={t('resumesJobs.delete')}
-                  onClick={() => removeTag(i)}
+                  onClick={() => f && removeTag(i)}
                 >
                   ✕
                 </button>
               </div>
               <input
-                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-foreground/50"
-                value={f.value}
-                placeholder={f.label || t('editor.field.customTitle')}
-                onChange={(e) => setTag(i, { value: e.target.value })}
+                className={`min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-foreground/50 ${f ? '' : 'invisible'}`}
+                value={f?.value ?? ''}
+                placeholder={f?.label || t('editor.field.customTitle')}
+                onChange={(e) => f && setTag(i, { value: e.target.value })}
               />
             </div>
           )
