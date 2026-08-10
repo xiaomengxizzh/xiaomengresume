@@ -220,7 +220,8 @@
     "setStorage": "Storage",
     "placeholder": "Planned",
     "collapse": "Collapse nav",
-    "expand": "Expand nav"
+    "expand": "Expand nav",
+    "brand": "XM Resume"
   },
   "navMain": {
     "resume": "Resume",

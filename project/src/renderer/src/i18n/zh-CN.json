@@ -220,7 +220,8 @@
     "setStorage": "存储位置",
     "placeholder": "规划中",
     "collapse": "收起导航",
-    "expand": "展开导航"
+    "expand": "展开导航",
+    "brand": "XM简历"
   },
   "navMain": {
     "resume": "简历",

@@ -142,7 +142,7 @@ export function NavBar(): React.JSX.Element {
     <nav className="navbar-v2">
       <div className="nav-brand">
         <img src="/icon.png" alt="" className="nav-brand-icon" draggable={false} />
-        xiaomengresume
+        {t('nav.brand')}
       </div>
       <div className="nav-list">{MAIN_ORDER.map(renderItem)}</div>
       <div className="nav-spacer" />

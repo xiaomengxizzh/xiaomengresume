@@ -441,7 +441,8 @@ function TagsBlock(): React.JSX.Element {
           const f = fields[i]
           if (!f) {
             return (
-              <div key={'empty-' + i} className="flex items-center gap-1.5 rounded-lg border border-dashed border-border/70 px-2 py-1.5">
+              // 2026-08-10 修复：key 统一稳定（'tag-i'）——空位输入创建后组件不重挂，防输入失焦中断
+              <div key={'tag-' + i} className="flex items-center gap-1.5 rounded-lg border border-dashed border-border/70 px-2 py-1.5">
                 <span className="text-[11px] text-foreground/40">{i + 1}</span>
                 {/* 2026-08-10 需求 2：图案标签 combobox——输入自定义名或下拉选图标创建格 */}
                 <IconCombo icon="" label="" onIconChange={(v) => setTag(i, { icon: v })} onLabelChange={(v) => setTag(i, { label: v })} />
@@ -450,7 +451,7 @@ function TagsBlock(): React.JSX.Element {
             )
           }
           return (
-            <div key={f.id} className="flex flex-col gap-1.5">
+            <div key={'tag-' + i} className="flex flex-col gap-1.5">
               <div className="flex items-center gap-1.5">
                 {/* 2026-08-10 需求 2：combobox——文本框输 label + 下拉箭头列选图案 */}
                 <IconCombo
