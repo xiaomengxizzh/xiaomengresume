@@ -1,0 +1,1702 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XMResume UI 美化方案报告</title>
+<style>
+/* ========== Reset & Base ========== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f5f5;--card:#fff;--fg:#424242;--fg2:#666;--fg3:#999;
+  --accent:#5b6abf;--accent2:#7c6dd8;--accent-grad:linear-gradient(135deg,#5b6abf,#7c6dd8);
+  --green:#3b6d11;--green-bg:#eaf3de;--warm:#f0e6d3;
+  --border:#e5e5e7;--radius:12px;--shadow:0 6px 24px rgba(0,0,0,.05);
+  --nav-w:260px;--transition:0.25s cubic-bezier(.4,0,.2,1);
+}
+html{scroll-behavior:smooth;font-size:16px}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Noto Sans SC",sans-serif;
+  background:var(--bg);color:var(--fg);line-height:1.6;
+}
+
+/* ========== Sidebar Navigation ========== */
+.sidebar{
+  position:fixed;left:0;top:0;bottom:0;width:var(--nav-w);
+  background:var(--card);border-right:1px solid var(--border);
+  overflow-y:auto;z-index:100;display:flex;flex-direction:column;
+  padding:24px 0;
+  scrollbar-width:thin;
+}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:#d4d4d4;border-radius:4px}
+.sidebar-brand{
+  padding:0 20px 20px;border-bottom:1px solid var(--border);
+  margin-bottom:12px;
+}
+.sidebar-brand h2{
+  font-size:15px;font-weight:700;color:var(--accent);
+  letter-spacing:-.3px;display:flex;align-items:center;gap:8px;
+}
+.sidebar-brand h2::before{
+  content:'';display:inline-block;width:24px;height:24px;
+  background:var(--accent-grad);border-radius:6px;
+}
+.sidebar-brand p{font-size:12px;color:var(--fg3);margin-top:4px}
+.sidebar a{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 20px;font-size:13px;color:var(--fg2);
+  text-decoration:none;transition:var(--transition);
+  border-left:3px solid transparent;
+}
+.sidebar a:hover{background:#f0f0f5;color:var(--accent);border-left-color:#d4d4e8}
+.sidebar a.active{
+  background:linear-gradient(90deg,rgba(91,106,191,.08),transparent);
+  color:var(--accent);font-weight:600;border-left-color:var(--accent);
+}
+.sidebar .nav-num{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:20px;height:20px;border-radius:6px;
+  background:#f0f0f5;font-size:11px;font-weight:600;color:var(--fg3);
+  flex-shrink:0;
+}
+.sidebar a.active .nav-num{background:var(--accent-grad);color:#fff}
+.sidebar .nav-group{
+  font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.8px;color:var(--fg3);padding:16px 20px 6px;
+}
+
+/* ========== Main Content ========== */
+.main{
+  margin-left:var(--nav-w);padding:40px 48px 80px;
+  max-width:960px;
+}
+
+/* ========== Hero ========== */
+.hero{
+  background:linear-gradient(135deg,#5b6abf 0%,#7c6dd8 50%,#a78bfa 100%);
+  border-radius:20px;padding:56px 48px;color:#fff;
+  margin-bottom:48px;position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;top:-40%;right:-10%;
+  width:400px;height:400px;border-radius:50%;
+  background:rgba(255,255,255,.06);
+}
+.hero::after{
+  content:'';position:absolute;bottom:-30%;left:-5%;
+  width:300px;height:300px;border-radius:50%;
+  background:rgba(255,255,255,.04);
+}
+.hero h1{font-size:32px;font-weight:800;letter-spacing:-.5px;margin-bottom:8px;position:relative}
+.hero p{font-size:15px;opacity:.85;max-width:500px;position:relative}
+.hero-meta{
+  display:flex;gap:16px;margin-top:24px;position:relative;
+}
+.hero-meta span{
+  background:rgba(255,255,255,.15);backdrop-filter:blur(8px);
+  padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;
+}
+
+/* ========== Section ========== */
+.section{
+  margin-bottom:56px;scroll-margin-top:24px;
+}
+.section-header{
+  display:flex;align-items:center;gap:12px;margin-bottom:24px;
+  padding-bottom:12px;border-bottom:2px solid var(--border);
+}
+.section-num{
+  width:36px;height:36px;border-radius:10px;
+  background:var(--accent-grad);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;flex-shrink:0;
+}
+.section-header h2{font-size:22px;font-weight:700;color:var(--fg)}
+.section-header p{font-size:13px;color:var(--fg3);margin-left:auto}
+
+/* ========== Cards ========== */
+.card{
+  background:var(--card);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:28px;margin-bottom:20px;
+  border:1px solid var(--border);
+}
+.card h3{font-size:15px;font-weight:700;margin-bottom:12px;color:var(--fg)}
+.card h4{font-size:13px;font-weight:600;margin:16px 0 8px;color:var(--fg2)}
+.card p,.card li{font-size:13.5px;color:var(--fg2);line-height:1.7}
+.card ul{padding-left:18px}
+.card li{margin-bottom:4px}
+
+.badge{
+  display:inline-block;padding:3px 10px;border-radius:20px;
+  font-size:11px;font-weight:600;
+}
+.badge-problem{background:#fcebeb;color:#a32d2d}
+.badge-goal{background:#eaf3de;color:#3b6d11}
+.badge-tip{background:#fff3cd;color:#7a5c00}
+
+/* ========== Comparison ========== */
+.compare{
+  display:grid;grid-template-columns:1fr 1fr;gap:20px;
+  margin:20px 0;
+}
+.compare-col{border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
+.compare-label{
+  padding:8px 16px;font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.5px;
+}
+.compare-label.before{background:#fcebeb;color:#a32d2d}
+.compare-label.after{background:#eaf3de;color:#3b6d11}
+.compare-body{padding:20px;background:var(--card);min-height:120px}
+
+/* ========== Code Block ========== */
+.code-block{
+  background:#1e1e2e;border-radius:10px;padding:20px;
+  margin:16px 0;overflow-x:auto;position:relative;
+}
+.code-block::before{
+  content:'CSS';position:absolute;top:8px;right:12px;
+  font-size:10px;font-weight:700;color:#6c7086;
+  letter-spacing:.5px;
+}
+.code-block pre{
+  font-family:"JetBrains Mono","Fira Code",monospace;
+  font-size:12px;line-height:1.6;color:#cdd6f4;
+  white-space:pre;
+}
+.code-block .hl-prop{color:#89b4fa}
+.code-block .hl-val{color:#a6e3a1}
+.code-block .hl-sel{color:#f9e2af}
+.code-block .hl-com{color:#6c7086;font-style:italic}
+
+/* ========== Color Palette ========== */
+.palette{display:flex;gap:12px;flex-wrap:wrap;margin:16px 0}
+.swatch{
+  width:72px;border-radius:10px;overflow:hidden;
+  box-shadow:0 2px 8px rgba(0,0,0,.06);
+}
+.swatch-color{height:48px;position:relative}
+.swatch-color::after{
+  content:attr(data-hex);position:absolute;bottom:4px;left:0;right:0;
+  text-align:center;font-size:9px;font-weight:600;color:rgba(0,0,0,.5);
+}
+.swatch-name{padding:6px 4px;font-size:10px;text-align:center;color:var(--fg2);font-weight:500}
+
+/* ========== Spacing Demo ========== */
+.spacing-demo{display:flex;align-items:center;gap:8px;margin:12px 0}
+.spacing-box{
+  background:#e8e8f0;border:1px dashed #b4b4c8;border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;color:var(--fg3);font-weight:600;
+}
+
+/* ========== Mock UI Elements ========== */
+.mock-nav{
+  width:140px;background:#fff;border-radius:12px 0 0 12px;
+  padding:16px 12px;box-shadow:0 4px 16px rgba(0,0,0,.06);
+}
+.mock-nav-brand{
+  text-align:center;font-size:13px;font-weight:700;
+  padding-bottom:12px;border-bottom:1px solid #eee;margin-bottom:12px;
+}
+.mock-nav-item{
+  padding:8px 10px;border-radius:8px;font-size:12px;
+  margin-bottom:4px;display:flex;align-items:center;gap:6px;
+}
+.mock-card{
+  background:#fff;border-radius:10px;padding:14px 16px;
+  border:1px solid #e5e5e7;
+}
+.mock-topbar{
+  height:48px;background:#fff;border-radius:8px;
+  border:1px solid #e5e5e7;display:flex;align-items:center;
+  padding:0 12px;gap:8px;font-size:11px;
+}
+
+/* ========== Animation Demo ========== */
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(91,106,191,.3)}100%{box-shadow:0 0 0 8px rgba(91,106,191,0)}}
+
+.demo-btn{
+  padding:8px 20px;border-radius:8px;font-size:13px;font-weight:600;
+  border:none;cursor:pointer;transition:all .2s;
+}
+.demo-btn-primary{
+  background:var(--accent-grad);color:#fff;
+  box-shadow:0 4px 12px rgba(91,106,191,.3);
+}
+.demo-btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(91,106,191,.4)}
+.demo-btn-primary:active{transform:translateY(0) scale(.97)}
+
+/* ========== TOC Progress ========== */
+.reading-progress{
+  position:fixed;top:0;left:var(--nav-w);right:0;height:3px;
+  background:var(--accent-grad);z-index:200;
+  transform-origin:left;transform:scaleX(0);
+}
+
+/* ========== Grid Layout Demo ========== */
+.grid-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+/* ========== Responsive ========== */
+@media(max-width:1200px){
+  .sidebar{width:220px}
+  .main{margin-left:220px;padding:32px 32px 60px}
+  :root{--nav-w:220px}
+}
+@media(max-width:768px){
+  .sidebar{display:none}
+  .main{margin-left:0;padding:20px}
+  .compare{grid-template-columns:1fr}
+  .hero{padding:32px 24px}
+  .hero h1{font-size:24px}
+}
+
+/* ========== Scrollbar ========== */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#d4d4d4;border-radius:3px}
+
+/* ========== Typography Scale Demo ========== */
+.type-scale-item{
+  display:flex;align-items:baseline;gap:16px;
+  padding:8px 0;border-bottom:1px solid #f0f0f5;
+}
+.type-scale-label{
+  width:80px;font-size:11px;color:var(--fg3);
+  font-weight:600;flex-shrink:0;
+}
+
+/* ========== Split handle demo ========== */
+.split-demo{
+  display:flex;height:60px;border-radius:8px;overflow:hidden;
+  border:1px solid var(--border);margin:12px 0;
+}
+.split-left,.split-right{flex:1;background:#f8f8fc;padding:12px;font-size:11px;color:var(--fg3)}
+.split-handle{
+  width:12px;background:#e5e5e7;display:flex;align-items:center;
+  justify-content:center;cursor:col-resize;position:relative;
+}
+.split-handle::after{
+  content:'';width:4px;height:24px;border-radius:2px;background:#b4b4c8;
+}
+
+/* ========== Info Bar ========== */
+.info-bar{
+  display:flex;gap:8px;flex-wrap:wrap;margin:16px 0;
+}
+.info-tag{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:4px 12px;border-radius:6px;font-size:11px;font-weight:500;
+  background:#f0f0f5;color:var(--fg2);
+}
+
+/* ========== Before/After enhanced mocks ========== */
+.before-mock{background:#fafafa;border:1px solid #e0e0e0;border-radius:8px;padding:16px}
+.after-mock{background:#fff;border:1px solid #e5e5e7;border-radius:8px;padding:16px;box-shadow:0 4px 16px rgba(0,0,0,.04)}
+
+/* ========== Accent stripe ========== */
+.stripe-demo{
+  display:flex;align-items:stretch;gap:0;
+  border-radius:8px;overflow:hidden;margin:8px 0;
+}
+.stripe-demo .stripe{width:4px;flex-shrink:0}
+.stripe-demo .stripe-content{flex:1;background:#fff;padding:12px 16px;border:1px solid #e5e5e7;border-left:none;border-radius:0 8px 8px 0}
+
+/* Page info bar */
+.page-info-bar{
+  display:flex;align-items:center;justify-content:center;gap:16px;
+  padding:8px;font-size:11px;color:var(--fg3);
+  background:#f0f0f5;border-radius:6px;margin-top:8px;
+}
+.page-info-bar span{display:flex;align-items:center;gap:4px}
+</style>
+</head>
+<body>
+
+<!-- Reading Progress -->
+<div class="reading-progress" id="progressBar"></div>
+
+<!-- Sidebar Navigation -->
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <h2>XMResume</h2>
+    <p>UI 美化方案报告</p>
+  </div>
+  <div class="nav-group">概览</div>
+  <a href="#overview" class="active"><span class="nav-num">○</span>方案总览</a>
+  <a href="#palette"><span class="nav-num">◈</span>色彩系统</a>
+
+  <div class="nav-group">美化方案</div>
+  <a href="#s1"><span class="nav-num">1</span>品牌化设计</a>
+  <a href="#s2"><span class="nav-num">2</span>色彩升级</a>
+  <a href="#s3"><span class="nav-num">3</span>首页重设计</a>
+  <a href="#s4"><span class="nav-num">4</span>排版系统</a>
+  <a href="#s5"><span class="nav-num">5</span>卡片层次</a>
+  <a href="#s6"><span class="nav-num">6</span>导航增强</a>
+  <a href="#s7"><span class="nav-num">7</span>编辑器美化</a>
+  <a href="#s8"><span class="nav-num">8</span>预览区美化</a>
+  <a href="#s9"><span class="nav-num">9</span>微交互动效</a>
+  <a href="#s10"><span class="nav-num">10</span>TopBar瘦身</a>
+
+  <div class="nav-group">附录</div>
+  <a href="#tokens"><span class="nav-num">✦</span>Design Tokens</a>
+  <a href="#summary"><span class="nav-num">✓</span>优先级总结</a>
+</nav>
+
+<!-- Main Content -->
+<div class="main">
+
+  <!-- ==================== HERO ==================== -->
+  <div class="hero" id="overview">
+    <h1>XMResume UI 美化方案</h1>
+    <p>基于对 xiaomengresume 项目的深入 UI 审计，系统性提出 10 大维度美化策略，全面提升产品视觉品质与用户体验。</p>
+    <div class="hero-meta">
+      <span>📐 10 项方案</span>
+      <span>🎨 4 套主题</span>
+      <span>⚡ Electron + React 19</span>
+      <span>📄 Tailwind v4</span>
+    </div>
+  </div>
+
+  <!-- ==================== Color Palette Section ==================== -->
+  <div class="section" id="palette">
+    <div class="section-header">
+      <div class="section-num">◈</div>
+      <h2>现有色彩系统</h2>
+      <p>当前 CSS 变量一览</p>
+    </div>
+    <div class="card">
+      <h3>基础色板</h3>
+      <p>当前项目使用灰色系为主基调，搭配语义色。色彩体系已完备，但缺乏视觉温度和品牌识别色。</p>
+      <div class="palette" style="margin-top:16px">
+        <div class="swatch">
+          <div class="swatch-color" style="background:#f5f5f5" data-hex="#f5f5f5"></div>
+          <div class="swatch-name">背景</div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#ffffff;border:1px solid #e5e5e7" data-hex="#ffffff"></div>
+          <div class="swatch-name">卡片</div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#424242" data-hex="#424242"></div>
+          <div class="swatch-name">前景</div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#e5e5e7" data-hex="#e5e5e7"></div>
+          <div class="swatch-name">边框</div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#e5e5e7" data-hex="#e5e5e7"></div>
+          <div class="swatch-name">选中</div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#a32d2d" data-hex="#a32d2d"></div>
+          <div class="swatch-name">危险</div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#7a5c00" data-hex="#7a5c00"></div>
+          <div class="swatch-name">警告</div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#3b6d11" data-hex="#3b6d11"></div>
+          <div class="swatch-name">成功</div>
+        </div>
+      </div>
+
+      <h4>建议新增品牌色</h4>
+      <div class="palette">
+        <div class="swatch">
+          <div class="swatch-color" style="background:#5b6abf" data-hex="#5b6abf"></div>
+          <div class="swatch-name">主色</div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#7c6dd8" data-hex="#7c6dd8"></div>
+          <div class="swatch-name">辅色</div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:linear-gradient(135deg,#5b6abf,#7c6dd8)" data-hex="渐变"></div>
+          <div class="swatch-name">品牌渐变</div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#e8eaf6" data-hex="#e8eaf6"></div>
+          <div class="swatch-name">主色浅底</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 1: 品牌化设计 ==================== -->
+  <div class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>品牌化设计</h2>
+      <p>建立视觉辨识度</p>
+    </div>
+
+    <div class="card">
+      <div class="info-bar">
+        <span class="badge badge-problem">问题</span>
+        <span style="font-size:13px;color:var(--fg2)">导航品牌区仅有纯文字，无 Logo/图标，打开应用缺乏辨识度</span>
+      </div>
+
+      <h3>设计目标</h3>
+      <p>在 168px 导航卡顶部创建品牌标识区，包含简约 Logo 图标 + 品牌名称微调，让用户一眼识别应用。</p>
+
+      <h3>Before / After 对比</h3>
+      <div class="compare">
+        <div class="compare-col">
+          <div class="compare-label before">Before — 纯文字品牌</div>
+          <div class="compare-body" style="display:flex;justify-content:center;padding:24px">
+            <div class="mock-nav">
+              <div class="mock-nav-brand" style="font-size:16px;font-weight:600;">小萌简历</div>
+              <div class="mock-nav-item" style="background:#f0f0f5;color:#666">📄 简历</div>
+              <div class="mock-nav-item" style="color:#999">🤖 AI</div>
+              <div class="mock-nav-item" style="color:#999">⚙ 设置</div>
+            </div>
+          </div>
+        </div>
+        <div class="compare-col">
+          <div class="compare-label after">After — 品牌标识区</div>
+          <div class="compare-body" style="display:flex;justify-content:center;padding:24px">
+            <div class="mock-nav" style="background:linear-gradient(180deg,#fafaff,#fff)">
+              <div style="text-align:center;padding-bottom:12px;border-bottom:1px solid #eee;margin-bottom:12px">
+                <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#5b6abf,#7c6dd8);margin:0 auto 8px;display:flex;align-items:center;justify-content:center">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                </div>
+                <div style="font-size:14px;font-weight:700;letter-spacing:-.3px;color:#424242">小萌简历</div>
+                <div style="font-size:9px;color:#b4b4c8;letter-spacing:1px;margin-top:2px">XMRESUME</div>
+              </div>
+              <div class="mock-nav-item" style="background:linear-gradient(90deg,rgba(91,106,191,.08),transparent);color:#5b6abf;font-weight:600;border-left:2px solid #5b6abf">📄 简历</div>
+              <div class="mock-nav-item" style="color:#999">🤖 AI</div>
+              <div class="mock-nav-item" style="color:#999">⚙ 设置</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>CSS 方案</h3>
+      <div class="code-block">
+<pre><span class="hl-sel">.brand-area</span> {
+  <span class="hl-prop">padding</span>: <span class="hl-val">20px 16px 16px</span>;
+  <span class="hl-prop">text-align</span>: <span class="hl-val">center</span>;
+  <span class="hl-prop">border-bottom</span>: <span class="hl-val">1px solid var(--border)</span>;
+  <span class="hl-prop">background</span>: <span class="hl-val">linear-gradient(180deg, rgba(91,106,191,.04), transparent)</span>;
+}
+
+<span class="hl-sel">.brand-logo</span> {
+  <span class="hl-prop">width</span>: <span class="hl-val">32px</span>;
+  <span class="hl-prop">height</span>: <span class="hl-val">32px</span>;
+  <span class="hl-prop">border-radius</span>: <span class="hl-val">8px</span>;
+  <span class="hl-prop">background</span>: <span class="hl-val">var(--accent-grad)</span>;
+  <span class="hl-prop">margin</span>: <span class="hl-val">0 auto 8px</span>;
+  <span class="hl-prop">display</span>: <span class="hl-val">flex</span>;
+  <span class="hl-prop">align-items</span>: <span class="hl-val">center</span>;
+  <span class="hl-prop">justify-content</span>: <span class="hl-val">center</span>;
+  <span class="hl-prop">box-shadow</span>: <span class="hl-val">0 4px 12px rgba(91,106,191,.25)</span>;
+}
+
+<span class="hl-sel">.brand-name</span> {
+  <span class="hl-prop">font-size</span>: <span class="hl-val">14px</span>;
+  <span class="hl-prop">font-weight</span>: <span class="hl-val">700</span>;
+  <span class="hl-prop">letter-spacing</span>: <span class="hl-val">-0.3px</span>;
+}
+
+<span class="hl-sel">.brand-subtitle</span> {
+  <span class="hl-prop">font-size</span>: <span class="hl-val">9px</span>;
+  <span class="hl-prop">color</span>: <span class="hl-val">var(--fg3)</span>;
+  <span class="hl-prop">letter-spacing</span>: <span class="hl-val">1.5px</span>;
+  <span class="hl-prop">text-transform</span>: <span class="hl-val">uppercase</span>;
+  <span class="hl-prop">margin-top</span>: <span class="hl-val">2px</span>;
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 2: 色彩系统升级 ==================== -->
+  <div class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>色彩系统升级</h2>
+      <p>增加视觉温度</p>
+    </div>
+
+    <div class="card">
+      <div class="info-bar">
+        <span class="badge badge-problem">问题</span>
+        <span style="font-size:13px;color:var(--fg2)">#f5f5f5灰底 + 白卡 + #424242 前景，整体过于素淡，缺乏层次和温度感</span>
+      </div>
+
+      <h3>设计目标</h3>
+      <p>不改变现有 CSS 变量体系，通过渐变、微妙色调和卡片装饰增加视觉温度。</p>
+
+      <h3>卡片左侧彩色条纹区分功能域</h3>
+      <div class="compare">
+        <div class="compare-col">
+          <div class="compare-label before">Before — 纯白卡片</div>
+          <div class="compare-body">
+            <div class="mock-card" style="margin-bottom:8px;font-size:12px;color:#424242">📝 新建空白简历</div>
+            <div class="mock-card" style="margin-bottom:8px;font-size:12px;color:#424242">📂 打开最近简历</div>
+            <div class="mock-card" style="margin-bottom:8px;font-size:12px;color:#424242">📥 导入外部简历</div>
+            <div class="mock-card" style="font-size:12px;color:#424242">📋 管理模板</div>
+          </div>
+        </div>
+        <div class="compare-col">
+          <div class="compare-label after">After — 彩色条纹卡片</div>
+          <div class="compare-body">
+            <div class="stripe-demo">
+              <div class="stripe" style="background:linear-gradient(180deg,#5b6abf,#7c6dd8)"></div>
+              <div class="stripe-content" style="font-size:12px">📝 新建空白简历</div>
+            </div>
+            <div class="stripe-demo" style="margin-top:8px">
+              <div class="stripe" style="background:linear-gradient(180deg,#3b82f6,#60a5fa)"></div>
+              <div class="stripe-content" style="font-size:12px">📂 打开最近简历</div>
+            </div>
+            <div class="stripe-demo" style="margin-top:8px">
+              <div class="stripe" style="background:linear-gradient(180deg,#10b981,#34d399)"></div>
+              <div class="stripe-content" style="font-size:12px">📥 导入外部简历</div>
+            </div>
+            <div class="stripe-demo" style="margin-top:8px">
+              <div class="stripe" style="background:linear-gradient(180deg,#f59e0b,#fbbf24)"></div>
+              <div class="stripe-content" style="font-size:12px">📋 管理模板</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>背景微调 — 微妙暖灰</h3>
+      <div class="code-block">
+<pre><span class="hl-com">/* 将纯灰底改为带微妙蓝紫调的暖灰 */</span>
+<span class="hl-sel">:root</span> {
+  <span class="hl-prop">--background</span>: <span class="hl-val">#f5f5f7</span>;  <span class="hl-com">/* 微蓝灰，比纯灰更有质感 */</span>
+}
+
+<span class="hl-sel">body</span> {
+  <span class="hl-prop">background</span>: <span class="hl-val">radial-gradient(ellipse at top left, rgba(91,106,191,.03), transparent 50%),
+               radial-gradient(ellipse at bottom right, rgba(124,109,216,.03), transparent 50%),
+               var(--background)</span>;
+}
+
+<span class="hl-com">/* 卡片左侧彩色条纹 */</span>
+<span class="hl-sel">.home-card</span> {
+  <span class="hl-prop">position</span>: <span class="hl-val">relative</span>;
+  <span class="hl-prop">overflow</span>: <span class="hl-val">hidden</span>;
+}
+<span class="hl-sel">.home-card::before</span> {
+  <span class="hl-prop">content</span>: <span class="hl-val">''</span>;
+  <span class="hl-prop">position</span>: <span class="hl-val">absolute</span>;
+  <span class="hl-prop">left</span>: <span class="hl-val">0</span>;
+  <span class="hl-prop">top</span>: <span class="hl-val">0</span>;
+  <span class="hl-prop">bottom</span>: <span class="hl-val">0</span>;
+  <span class="hl-prop">width</span>: <span class="hl-val">4px</span>;
+  <span class="hl-prop">background</span>: <span class="hl-val">var(--card-accent, #5b6abf)</span>;
+  <span class="hl-prop">border-radius</span>: <span class="hl-val">0 4px 4px 0</span>;
+}</pre>
+      </div>
+
+      <h3>状态徽标视觉增强</h3>
+      <div class="compare">
+        <div class="compare-col">
+          <div class="compare-label before">Before</div>
+          <div class="compare-body" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span style="padding:3px 10px;border-radius:12px;font-size:11px;background:#eaf3de;color:#3b6d11">已保存</span>
+            <span style="padding:3px 10px;border-radius:12px;font-size:11px;background:#fff3cd;color:#7a5c00">未保存</span>
+            <span style="padding:3px 10px;border-radius:12px;font-size:11px;background:#fcebeb;color:#a32d2d">错误</span>
+          </div>
+        </div>
+        <div class="compare-col">
+          <div class="compare-label after">After — 加圆点指示器</div>
+          <div class="compare-body" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span style="padding:3px 10px;border-radius:12px;font-size:11px;background:#eaf3de;color:#3b6d11;display:inline-flex;align-items:center;gap:4px">
+              <span style="width:6px;height:6px;border-radius:50%;background:#3b6d11;display:inline-block;animation:pulse-ring 2s infinite"></span>已保存
+            </span>
+            <span style="padding:3px 10px;border-radius:12px;font-size:11px;background:#fff3cd;color:#7a5c00;display:inline-flex;align-items:center;gap:4px">
+              <span style="width:6px;height:6px;border-radius:50%;background:#7a5c00;display:inline-block"></span>未保存
+            </span>
+            <span style="padding:3px 10px;border-radius:12px;font-size:11px;background:#fcebeb;color:#a32d2d;display:inline-flex;align-items:center;gap:4px">
+              <span style="width:6px;height:6px;border-radius:50%;background:#a32d2d;display:inline-block"></span>错误
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 3: 首页重设计 ==================== -->
+  <div class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>首页重设计</h2>
+      <p>从竖排列表到网格卡片</p>
+    </div>
+
+    <div class="card">
+      <div class="info-bar">
+        <span class="badge badge-problem">问题</span>
+        <span style="font-size:13px;color:var(--fg2)">5 张纯白卡片竖排、无图标、无色彩区分，像功能列表不像产品首页</span>
+      </div>
+
+      <h3>设计目标</h3>
+      <p>竖排列表升级为双列网格 + 图标 + 渐变欢迎面板 + 空状态引导。</p>
+
+      <h3>Before / After</h3>
+      <div class="compare">
+        <div class="compare-col">
+          <div class="compare-label before">Before — 竖排纯白列表</div>
+          <div class="compare-body">
+            <div style="background:#fff;border-radius:8px;padding:16px;margin-bottom:12px;border:1px solid #e5e5e7">
+              <div style="font-size:14px;font-weight:600;margin-bottom:4px">欢迎使用小萌简历</div>
+              <div style="font-size:11px;color:#999">创建专业的简历，轻松获得面试机会</div>
+            </div>
+            <div style="background:#fff;border-radius:8px;padding:12px 16px;margin-bottom:8px;border:1px solid #e5e5e7;font-size:12px">新建空白简历</div>
+            <div style="background:#fff;border-radius:8px;padding:12px 16px;margin-bottom:8px;border:1px solid #e5e5e7;font-size:12px">打开最近简历</div>
+            <div style="background:#fff;border-radius:8px;padding:12px 16px;margin-bottom:8px;border:1px solid #e5e5e7;font-size:12px">导入外部简历</div>
+            <div style="background:#fff;border-radius:8px;padding:12px 16px;margin-bottom:8px;border:1px solid #e5e5e7;font-size:12px">管理模板</div>
+            <div style="background:#fff;border-radius:8px;padding:12px 16px;border:1px solid #e5e5e7;font-size:12px">岗位目录</div>
+          </div>
+        </div>
+        <div class="compare-col">
+          <div class="compare-label after">After — 网格卡片 + 图标</div>
+          <div class="compare-body">
+            <!-- Welcome -->
+            <div style="background:linear-gradient(135deg,#5b6abf,#7c6dd8);border-radius:10px;padding:20px;color:#fff;margin-bottom:12px;position:relative;overflow:hidden">
+              <div style="position:absolute;top:-20px;right:-10px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.08)"></div>
+              <div style="font-size:14px;font-weight:700">欢迎使用小萌简历 ✨</div>
+              <div style="font-size:11px;opacity:.8;margin-top:4px">创建专业的简历，轻松获得面试机会</div>
+            </div>
+            <!-- Grid -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div style="background:#fff;border-radius:8px;padding:14px;border:1px solid #e5e5e7;border-left:3px solid #5b6abf">
+                <div style="font-size:16px;margin-bottom:4px">📝</div>
+                <div style="font-size:11px;font-weight:600">新建空白简历</div>
+                <div style="font-size:10px;color:#999;margin-top:2px">从零开始创建</div>
+              </div>
+              <div style="background:#fff;border-radius:8px;padding:14px;border:1px solid #e5e5e7;border-left:3px solid #3b82f6">
+                <div style="font-size:16px;margin-bottom:4px">📂</div>
+                <div style="font-size:11px;font-weight:600">打开最近</div>
+                <div style="font-size:10px;color:#999;margin-top:2px">继续编辑</div>
+              </div>
+              <div style="background:#fff;border-radius:8px;padding:14px;border:1px solid #e5e5e7;border-left:3px solid #10b981">
+                <div style="font-size:16px;margin-bottom:4px">📥</div>
+                <div style="font-size:11px;font-weight:600">导入简历</div>
+                <div style="font-size:10px;color:#999;margin-top:2px">PDF / Word</div>
+              </div>
+              <div style="background:#fff;border-radius:8px;padding:14px;border:1px solid #e5e5e7;border-left:3px solid #f59e0b">
+                <div style="font-size:16px;margin-bottom:4px">📋</div>
+                <div style="font-size:11px;font-weight:600">管理模板</div>
+                <div style="font-size:10px;color:#999;margin-top:2px">3 套模板</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>网格布局 CSS</h3>
+      <div class="code-block">
+<pre><span class="hl-sel">.home-grid</span> {
+  <span class="hl-prop">display</span>: <span class="hl-val">grid</span>;
+  <span class="hl-prop">grid-template-columns</span>: <span class="hl-val">repeat(2, 1fr)</span>;
+  <span class="hl-prop">gap</span>: <span class="hl-val">16px</span>;
+  <span class="hl-prop">padding</span>: <span class="hl-val">0 24px</span>;
+}
+
+<span class="hl-sel">.home-card</span> {
+  <span class="hl-prop">background</span>: <span class="hl-val">var(--card)</span>;
+  <span class="hl-prop">border-radius</span>: <span class="hl-val">var(--radius)</span>;
+  <span class="hl-prop">padding</span>: <span class="hl-val">20px</span>;
+  <span class="hl-prop">border</span>: <span class="hl-val">1px solid var(--border)</span>;
+  <span class="hl-prop">border-left</span>: <span class="hl-val">4px solid var(--card-accent, #5b6abf)</span>;
+  <span class="hl-prop">transition</span>: <span class="hl-val">all 0.2s var(--ease)</span>;
+  <span class="hl-prop">cursor</span>: <span class="hl-val">pointer</span>;
+}
+
+<span class="hl-sel">.home-card:hover</span> {
+  <span class="hl-prop">transform</span>: <span class="hl-val">translateY(-3px)</span>;
+  <span class="hl-prop">box-shadow</span>: <span class="hl-val">0 8px 24px rgba(0,0,0,.08)</span>;
+}
+
+<span class="hl-com">/* 欢迎面板全宽 */</span>
+<span class="hl-sel">.welcome-panel</span> {
+  <span class="hl-prop">grid-column</span>: <span class="hl-val">1 / -1</span>;
+  <span class="hl-prop">background</span>: <span class="hl-val">linear-gradient(135deg, #5b6abf, #7c6dd8)</span>;
+  <span class="hl-prop">color</span>: <span class="hl-val">#fff</span>;
+  <span class="hl-prop">border-left</span>: <span class="hl-val">none</span>;
+  <span class="hl-prop">border-radius</span>: <span class="hl-val">16px</span>;
+  <span class="hl-prop">padding</span>: <span class="hl-val">28px 32px</span>;
+}</pre>
+      </div>
+
+      <h3>空状态引导</h3>
+      <div class="code-block">
+<pre><span class="hl-sel">.empty-state</span> {
+  <span class="hl-prop">display</span>: <span class="hl-val">flex</span>;
+  <span class="hl-prop">flex-direction</span>: <span class="hl-val">column</span>;
+  <span class="hl-prop">align-items</span>: <span class="hl-val">center</span>;
+  <span class="hl-prop">justify-content</span>: <span class="hl-val">center</span>;
+  <span class="hl-prop">padding</span>: <span class="hl-val">48px 24px</span>;
+  <span class="hl-prop">text-align</span>: <span class="hl-val">center</span>;
+}
+<span class="hl-sel">.empty-state-icon</span> {
+  <span class="hl-prop">width</span>: <span class="hl-val">64px</span>;
+  <span class="hl-prop">height</span>: <span class="hl-val">64px</span>;
+  <span class="hl-prop">border-radius</span>: <span class="hl-val">16px</span>;
+  <span class="hl-prop">background</span>: <span class="hl-val">#e8eaf6</span>;
+  <span class="hl-prop">display</span>: <span class="hl-val">flex</span>;
+  <span class="hl-prop">align-items</span>: <span class="hl-val">center</span>;
+  <span class="hl-prop">justify-content</span>: <span class="hl-val">center</span>;
+  <span class="hl-prop">margin-bottom</span>: <span class="hl-val">16px</span>;
+  <span class="hl-prop">font-size</span>: <span class="hl-val">24px</span>;
+}
+<span class="hl-sel">.empty-state h3</span> {
+  <span class="hl-prop">font-size</span>: <span class="hl-val">15px</span>;
+  <span class="hl-prop">font-weight</span>: <span class="hl-val">600</span>;
+  <span class="hl-prop">margin-bottom</span>: <span class="hl-val">8px</span>;
+}
+<span class="hl-sel">.empty-state p</span> {
+  <span class="hl-prop">font-size</span>: <span class="hl-val">13px</span>;
+  <span class="hl-prop">color</span>: <span class="hl-val">var(--fg3)</span>;
+  <span class="hl-prop">max-width</span>: <span class="hl-val">280px</span>;
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 4: 排版系统 ==================== -->
+  <div class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>排版系统</h2>
+      <p>建立 Type Scale</p>
+    </div>
+
+    <div class="card">
+      <div class="info-bar">
+        <span class="badge badge-problem">问题</span>
+        <span style="font-size:13px;color:var(--fg2)">全局 15px 基础，各处 11/12/13/15/16/17/22px 散用，缺乏系统化 Type Scale</span>
+      </div>
+
+      <h3>5 档 Type Scale</h3>
+      <div style="margin:16px 0">
+        <div class="type-scale-item">
+          <span class="type-scale-label">Display<br>28/800</span>
+          <span style="font-size:28px;font-weight:800;letter-spacing:-.5px;color:#424242">页面大标题</span>
+        </div>
+        <div class="type-scale-item">
+          <span class="type-scale-label">Title<br>18/700</span>
+          <span style="font-size:18px;font-weight:700;color:#424242">区域标题 / 卡片标题</span>
+        </div>
+        <div class="type-scale-item">
+          <span class="type-scale-label">Body<br>14/500</span>
+          <span style="font-size:14px;font-weight:500;color:#424242">正文内容，表单标签，导航主项</span>
+        </div>
+        <div class="type-scale-item">
+          <span class="type-scale-label">Caption<br>12/500</span>
+          <span style="font-size:12px;font-weight:500;color:#666">辅助文字，徽标，下拉选项</span>
+        </div>
+        <div class="type-scale-item">
+          <span class="type-scale-label">Micro<br>10/600</span>
+          <span style="font-size:10px;font-weight:600;color:#999;letter-spacing:.5px">标注 · 分类 · 序号</span>
+        </div>
+      </div>
+
+      <h3>行高与字重规范</h3>
+      <div class="code-block">
+<pre><span class="hl-com">/* Design Tokens — Typography */</span>
+<span class="hl-sel">:root</span> {
+  <span class="hl-com">/* Font Size Scale */</span>
+  <span class="hl-prop">--text-display</span>: <span class="hl-val">28px</span>;
+  <span class="hl-prop">--text-title</span>: <span class="hl-val">18px</span>;
+  <span class="hl-prop">--text-body</span>: <span class="hl-val">14px</span>;
+  <span class="hl-prop">--text-caption</span>: <span class="hl-val">12px</span>;
+  <span class="hl-prop">--text-micro</span>: <span class="hl-val">10px</span>;
+
+  <span class="hl-com">/* Font Weight */</span>
+  <span class="hl-prop">--font-bold</span>: <span class="hl-val">800</span>;     <span class="hl-com">/* Display only */</span>
+  <span class="hl-prop">--font-semibold</span>: <span class="hl-val">700</span>; <span class="hl-com">/* Titles, Buttons */</span>
+  <span class="hl-prop">--font-medium</span>: <span class="hl-val">500</span>;   <span class="hl-com">/* Body, Nav items */</span>
+  <span class="hl-prop">--font-regular</span>: <span class="hl-val">400</span>;  <span class="hl-com">/* Descriptions */</span>
+
+  <span class="hl-com">/* Line Height */</span>
+  <span class="hl-prop">--leading-tight</span>: <span class="hl-val">1.2</span>;   <span class="hl-com">/* Display / Title */</span>
+  <span class="hl-prop">--leading-normal</span>: <span class="hl-val">1.5</span>;  <span class="hl-com">/* Body */</span>
+  <span class="hl-prop">--leading-relaxed</span>: <span class="hl-val">1.7</span>; <span class="hl-com">/* Long-form text */</span>
+
+  <span class="hl-com">/* Letter Spacing */</span>
+  <span class="hl-prop">--tracking-tight</span>: <span class="hl-val">-0.3px</span>;  <span class="hl-com">/* Display */</span>
+  <span class="hl-prop">--tracking-normal</span>: <span class="hl-val">0</span>;      <span class="hl-com">/* Body */</span>
+  <span class="hl-prop">--tracking-wide</span>: <span class="hl-val">0.5px</span>;    <span class="hl-com">/* Micro / Labels */</span>
+}
+
+<span class="hl-sel">h1</span> { <span class="hl-prop">font</span>: <span class="hl-val">800 var(--text-display) / var(--leading-tight)</span>; <span class="hl-prop">letter-spacing</span>: <span class="hl-val">var(--tracking-tight)</span>; }
+<span class="hl-sel">h2</span> { <span class="hl-prop">font</span>: <span class="hl-val">700 var(--text-title) / var(--leading-tight)</span>; }
+<span class="hl-sel">p, label, input</span> { <span class="hl-prop">font</span>: <span class="hl-val">500 var(--text-body) / var(--leading-normal)</span>; }
+<span class="hl-sel">.caption, .badge</span> { <span class="hl-prop">font</span>: <span class="hl-val">500 var(--text-caption) / var(--leading-normal)</span>; }
+<span class="hl-sel">.micro, .label</span> { <span class="hl-prop">font</span>: <span class="hl-val">600 var(--text-micro) / 1</span>; <span class="hl-prop">letter-spacing</span>: <span class="hl-val">var(--tracking-wide)</span>; }</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 5: 卡片层次 ==================== -->
+  <div class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>卡片与容器层次</h2>
+      <p>建立视觉层级</p>
+    </div>
+
+    <div class="card">
+      <div class="info-bar">
+        <span class="badge badge-problem">问题</span>
+        <span style="font-size:13px;color:var(--fg2)">所有卡片（section / entry / home / list-item）视觉重量相同，无法快速区分信息层级</span>
+      </div>
+
+      <h3>三层阴影深度系统</h3>
+      <div style="display:flex;gap:20px;margin:20px 0;flex-wrap:wrap">
+        <div style="flex:1;min-width:160px;background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid #eee">
+          <div style="font-size:10px;color:#999;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Level 1 — 内嵌</div>
+          <div style="font-size:12px;margin-top:4px;color:#666">EntryCard · 列表项</div>
+        </div>
+        <div style="flex:1;min-width:160px;background:#fff;border-radius:12px;padding:16px;box-shadow:0 6px 24px rgba(0,0,0,.05);border:1px solid #e5e5e7">
+          <div style="font-size:10px;color:#999;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Level 2 — 卡片</div>
+          <div style="font-size:12px;margin-top:4px;color:#666">SectionCard · 首页卡</div>
+        </div>
+        <div style="flex:1;min-width:160px;background:#fff;border-radius:16px;padding:16px;box-shadow:0 12px 40px rgba(0,0,0,.1);border:1px solid #ddd">
+          <div style="font-size:10px;color:#999;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Level 3 — 浮层</div>
+          <div style="font-size:12px;margin-top:4px;color:#666">弹窗 · Popover · 预览纸</div>
+        </div>
+      </div>
+
+      <h3>SectionCard 加左侧彩色竖条</h3>
+      <div class="compare">
+        <div class="compare-col">
+          <div class="compare-label before">Before — 无标识白卡</div>
+          <div class="compare-body">
+            <div style="background:#fff;border-radius:12px;padding:16px;border:1px solid #e5e5e7">
+              <div style="font-size:13px;font-weight:600;margin-bottom:8px">教育经历</div>
+              <div style="background:#fafafa;border-radius:8px;padding:10px;border:1px solid #eee;font-size:11px;color:#666">北京大学 · 计算机科学</div>
+            </div>
+            <div style="background:#fff;border-radius:12px;padding:16px;border:1px solid #e5e5e7;margin-top:10px">
+              <div style="font-size:13px;font-weight:600;margin-bottom:8px">工作经历</div>
+              <div style="background:#fafafa;border-radius:8px;padding:10px;border:1px solid #eee;font-size:11px;color:#666">某科技公司 · 前端工程师</div>
+            </div>
+          </div>
+        </div>
+        <div class="compare-col">
+          <div class="compare-label after">After — 彩色锚点</div>
+          <div class="compare-body">
+            <div style="display:flex;border-radius:12px;overflow:hidden;border:1px solid #e5e5e7;background:#fff;margin-bottom:10px">
+              <div style="width:4px;background:linear-gradient(180deg,#5b6abf,#7c6dd8);flex-shrink:0"></div>
+              <div style="padding:16px;flex:1">
+                <div style="font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+                  <span style="font-size:14px">🎓</span>教育经历
+                </div>
+                <div style="background:#f8f8fc;border-radius:8px;padding:10px;border:1px solid #eef;font-size:11px;color:#666">北京大学 · 计算机科学</div>
+              </div>
+            </div>
+            <div style="display:flex;border-radius:12px;overflow:hidden;border:1px solid #e5e5e7;background:#fff">
+              <div style="width:4px;background:linear-gradient(180deg,#10b981,#34d399);flex-shrink:0"></div>
+              <div style="padding:16px;flex:1">
+                <div style="font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+                  <span style="font-size:14px">💼</span>工作经历
+                </div>
+                <div style="background:#f8f8fc;border-radius:8px;padding:10px;border:1px solid #eef;font-size:11px;color:#666">某科技公司 · 前端工程师</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>CSS 方案</h3>
+      <div class="code-block">
+<pre><span class="hl-com">/* SectionCard 带颜色锚点 */</span>
+<span class="hl-sel">.section-card</span> {
+  <span class="hl-prop">display</span>: <span class="hl-val">flex</span>;
+  <span class="hl-prop">border-radius</span>: <span class="hl-val">var(--radius)</span>;
+  <span class="hl-prop">overflow</span>: <span class="hl-val">hidden</span>;
+  <span class="hl-prop">background</span>: <span class="hl-val">var(--card)</span>;
+  <span class="hl-prop">border</span>: <span class="hl-val">1px solid var(--border)</span>;
+  <span class="hl-prop">box-shadow</span>: <span class="hl-val">var(--shadow)</span>;
+}
+
+<span class="hl-sel">.section-card-stripe</span> {
+  <span class="hl-prop">width</span>: <span class="hl-val">4px</span>;
+  <span class="hl-prop">flex-shrink</span>: <span class="hl-val">0</span>;
+  <span class="hl-prop">background</span>: <span class="hl-val">var(--section-accent, linear-gradient(180deg, #5b6abf, #7c6dd8))</span>;
+}
+
+<span class="hl-com">/* 阴影深度 tokens */</span>
+<span class="hl-sel">:root</span> {
+  <span class="hl-prop">--shadow-sm</span>: <span class="hl-val">0 1px 3px rgba(0,0,0,.04)</span>;     <span class="hl-com">/* Level 1 */</span>
+  <span class="hl-prop">--shadow-md</span>: <span class="hl-val">0 6px 24px rgba(0,0,0,.05)</span>;    <span class="hl-com">/* Level 2 */</span>
+  <span class="hl-prop">--shadow-lg</span>: <span class="hl-val">0 12px 40px rgba(0,0,0,.1)</span>;    <span class="hl-com">/* Level 3 */</span>
+}
+
+<span class="hl-com">/* EntryCard 轻量化 */</span>
+<span class="hl-sel">.entry-card</span> {
+  <span class="hl-prop">background</span>: <span class="hl-val">#fafafa</span>;
+  <span class="hl-prop">border-radius</span>: <span class="hl-val">10px</span>;
+  <span class="hl-prop">padding</span>: <span class="hl-val">12px 16px</span>;
+  <span class="hl-prop">border</span>: <span class="hl-val">1px solid #eee</span>;
+  <span class="hl-prop">box-shadow</span>: <span class="hl-val">none</span>;  <span class="hl-com">/* 无阴影，弱化层级 */</span>
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 6: 导航增强 ==================== -->
+  <div class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>导航视觉增强</h2>
+      <p>强化空间层次</p>
+    </div>
+
+    <div class="card">
+      <div class="info-bar">
+        <span class="badge badge-problem">问题</span>
+        <span style="font-size:13px;color:var(--fg2)">白卡 + 浅灰文字，主项之间缺乏明确视觉分隔，激活项标识偏弱</span>
+      </div>
+
+      <h3>Before / After</h3>
+      <div class="compare">
+        <div class="compare-col">
+          <div class="compare-label before">Before — 弱激活态</div>
+          <div class="compare-body" style="display:flex;justify-content:center">
+            <div style="width:140px;background:#fff;border-radius:12px 0 0 12px;padding:16px 12px;box-shadow:0 2px 8px rgba(0,0,0,.04)">
+              <div style="text-align:center;font-size:14px;font-weight:600;padding-bottom:20px;margin-bottom:12px">小萌简历</div>
+              <div style="padding:8px 10px;border-radius:8px;font-size:13px;background:#f0f0f0;margin-bottom:4px;color:#424242">📄 简历</div>
+              <div style="padding:8px 10px;border-radius:8px;font-size:13px;color:#999;margin-bottom:4px">🤖 AI 助手</div>
+              <div style="padding:8px 10px;border-radius:8px;font-size:13px;color:#999">⚙️ 设置</div>
+            </div>
+          </div>
+        </div>
+        <div class="compare-col">
+          <div class="compare-label after">After — 强激活 + 分隔</div>
+          <div class="compare-body" style="display:flex;justify-content:center">
+            <div style="width:140px;background:linear-gradient(180deg,#fafaff,#fff);border-radius:12px 0 0 12px;padding:16px 12px;box-shadow:0 4px 16px rgba(0,0,0,.06)">
+              <div style="text-align:center;padding-bottom:16px;margin-bottom:12px;border-bottom:1px solid #eee">
+                <div style="width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,#5b6abf,#7c6dd8);margin:0 auto 6px"></div>
+                <div style="font-size:13px;font-weight:700">小萌简历</div>
+              </div>
+              <!-- Active item -->
+              <div style="padding:8px 10px;border-radius:8px;font-size:13px;margin-bottom:4px;color:#5b6abf;font-weight:600;background:linear-gradient(90deg,rgba(91,106,191,.1),transparent);border-left:2px solid #5b6abf;display:flex;align-items:center;gap:6px">
+                <span>📄</span> 简历
+              </div>
+              <!-- Separator -->
+              <div style="height:1px;background:linear-gradient(90deg,transparent,#e0e0e0,transparent);margin:8px 10px"></div>
+              <div style="padding:8px 10px;border-radius:8px;font-size:13px;color:#999;margin-bottom:4px;display:flex;align-items:center;gap:6px">
+                <span>🤖</span> AI 助手
+              </div>
+              <!-- Separator -->
+              <div style="height:1px;background:linear-gradient(90deg,transparent,#e0e0e0,transparent);margin:8px 10px"></div>
+              <div style="padding:8px 10px;border-radius:8px;font-size:13px;color:#999;display:flex;align-items:center;gap:6px">
+                <span>⚙️</span> 设置
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>CSS 方案</h3>
+      <div class="code-block">
+<pre><span class="hl-com">/* 激活项增强 */</span>
+<span class="hl-sel">.nav-item.active</span> {
+  <span class="hl-prop">background</span>: <span class="hl-val">linear-gradient(90deg, rgba(91,106,191,.1), transparent)</span>;
+  <span class="hl-prop">color</span>: <span class="hl-val">var(--accent)</span>;
+  <span class="hl-prop">font-weight</span>: <span class="hl-val">600</span>;
+  <span class="hl-prop">border-left</span>: <span class="hl-val">2px solid var(--accent)</span>;
+  <span class="hl-prop">position</span>: <span class="hl-val">relative</span>;
+}
+
+<span class="hl-com">/* 主项间微妙分隔 */</span>
+<span class="hl-sel">.nav-item + .nav-item</span> {
+  <span class="hl-prop">margin-top</span>: <span class="hl-val">0</span>;
+}
+<span class="hl-sel">.nav-separator</span> {
+  <span class="hl-prop">height</span>: <span class="hl-val">1px</span>;
+  <span class="hl-prop">background</span>: <span class="hl-val">linear-gradient(90deg, transparent, var(--border), transparent)</span>;
+  <span class="hl-prop">margin</span>: <span class="hl-val">8px 16px</span>;
+}
+
+<span class="hl-com">/* 子功能展开动画增强 */</span>
+<span class="hl-sel">.sub-nav</span> {
+  <span class="hl-prop">overflow</span>: <span class="hl-val">hidden</span>;
+  <span class="hl-prop">max-height</span>: <span class="hl-val">0</span>;
+  <span class="hl-prop">opacity</span>: <span class="hl-val">0</span>;
+  <span class="hl-prop">transition</span>: <span class="hl-val">max-height 0.3s cubic-bezier(.4,0,.2,1),
+               opacity 0.25s ease,
+               transform 0.3s ease</span>;
+  <span class="hl-prop">transform</span>: <span class="hl-val">translateY(-4px)</span>;
+}
+<span class="hl-sel">.sub-nav.expanded</span> {
+  <span class="hl-prop">max-height</span>: <span class="hl-val">300px</span>;
+  <span class="hl-prop">opacity</span>: <span class="hl-val">1</span>;
+  <span class="hl-prop">transform</span>: <span class="hl-val">translateY(0)</span>;
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 7: 编辑器美化 ==================== -->
+  <div class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <h2>编辑器体验美化</h2>
+      <p>降低视觉噪声</p>
+    </div>
+
+    <div class="card">
+      <div class="info-bar">
+        <span class="badge badge-problem">问题</span>
+        <span style="font-size:13px;color:var(--fg2)">LayoutBar 6 个滑杆一字横排视觉混乱；SectionCard 无颜色锚点；分割条不可见</span>
+      </div>
+
+      <h3>LayoutBar 改为折叠面板</h3>
+      <div class="compare">
+        <div class="compare-col">
+          <div class="compare-label before">Before — 6 滑杆横排</div>
+          <div class="compare-body">
+            <div style="background:#fafafa;border-radius:8px;padding:12px;border:1px solid #eee">
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <div style="flex:1;min-width:80px;text-align:center">
+                  <div style="font-size:9px;color:#999">字号</div>
+                  <div style="height:4px;background:#e0e0e0;border-radius:2px;margin-top:4px"><div style="height:100%;width:60%;background:#424242;border-radius:2px"></div></div>
+                </div>
+                <div style="flex:1;min-width:80px;text-align:center">
+                  <div style="font-size:9px;color:#999">行高</div>
+                  <div style="height:4px;background:#e0e0e0;border-radius:2px;margin-top:4px"><div style="height:100%;width:50%;background:#424242;border-radius:2px"></div></div>
+                </div>
+                <div style="flex:1;min-width:80px;text-align:center">
+                  <div style="font-size:9px;color:#999">页边距</div>
+                  <div style="height:4px;background:#e0e0e0;border-radius:2px;margin-top:4px"><div style="height:100%;width:40%;background:#424242;border-radius:2px"></div></div>
+                </div>
+                <div style="flex:1;min-width:80px;text-align:center">
+                  <div style="font-size:9px;color:#999">段间距</div>
+                  <div style="height:4px;background:#e0e0e0;border-radius:2px;margin-top:4px"><div style="height:100%;width:30%;background:#424242;border-radius:2px"></div></div>
+                </div>
+                <div style="flex:1;min-width:80px;text-align:center">
+                  <div style="font-size:9px;color:#999">块间距</div>
+                  <div style="height:4px;background:#e0e0e0;border-radius:2px;margin-top:4px"><div style="height:100%;width:45%;background:#424242;border-radius:2px"></div></div>
+                </div>
+                <div style="flex:1;min-width:80px;text-align:center">
+                  <div style="font-size:9px;color:#999">标题字号</div>
+                  <div style="height:4px;background:#e0e0e0;border-radius:2px;margin-top:4px"><div style="height:100%;width:55%;background:#424242;border-radius:2px"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="compare-col">
+          <div class="compare-label after">After — 折叠 + 网格</div>
+          <div class="compare-body">
+            <!-- Collapsed -->
+            <div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid #e5e5e7;cursor:pointer;display:flex;align-items:center;justify-content:between;margin-bottom:8px">
+              <span style="font-size:12px;font-weight:600;color:#424242;flex:1">🎛️ 排版设置</span>
+              <span style="font-size:10px;color:#999">已调整 3 项 ▾</span>
+            </div>
+            <!-- Expanded (grid) -->
+            <div style="background:#fafafa;border-radius:8px;padding:14px;border:1px solid #eee">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div>
+                  <div style="display:flex;justify-content:space-between;font-size:10px;color:#666;margin-bottom:4px">
+                    <span>字号</span><span style="color:#5b6abf;font-weight:600">14px</span>
+                  </div>
+                  <div style="height:4px;background:#e0e0e0;border-radius:2px"><div style="height:100%;width:60%;background:linear-gradient(90deg,#5b6abf,#7c6dd8);border-radius:2px"></div></div>
+                </div>
+                <div>
+                  <div style="display:flex;justify-content:space-between;font-size:10px;color:#666;margin-bottom:4px">
+                    <span>行高</span><span style="color:#5b6abf;font-weight:600">1.5</span>
+                  </div>
+                  <div style="height:4px;background:#e0e0e0;border-radius:2px"><div style="height:100%;width:50%;background:linear-gradient(90deg,#5b6abf,#7c6dd8);border-radius:2px"></div></div>
+                </div>
+                <div>
+                  <div style="display:flex;justify-content:space-between;font-size:10px;color:#666;margin-bottom:4px">
+                    <span>页边距</span><span style="color:#5b6abf;font-weight:600">20mm</span>
+                  </div>
+                  <div style="height:4px;background:#e0e0e0;border-radius:2px"><div style="height:100%;width:40%;background:linear-gradient(90deg,#5b6abf,#7c6dd8);border-radius:2px"></div></div>
+                </div>
+                <div>
+                  <div style="display:flex;justify-content:space-between;font-size:10px;color:#666;margin-bottom:4px">
+                    <span>段间距</span><span style="color:#5b6abf;font-weight:600">8px</span>
+                  </div>
+                  <div style="height:4px;background:#e0e0e0;border-radius:2px"><div style="height:100%;width:30%;background:linear-gradient(90deg,#5b6abf,#7c6dd8);border-radius:2px"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>分割拖拽条增强</h3>
+      <div class="compare">
+        <div class="compare-col">
+          <div class="compare-label before">Before — 5px 透明条</div>
+          <div class="compare-body">
+            <div class="split-demo">
+              <div class="split-left">编辑区域...</div>
+              <div class="split-handle" style="width:5px;background:transparent"></div>
+              <div class="split-right">预览区域...</div>
+            </div>
+            <div style="text-align:center;font-size:10px;color:#999;margin-top:4px">↑ 用户不知道这里可以拖拽</div>
+          </div>
+        </div>
+        <div class="compare-col">
+          <div class="compare-label after">After — 可见把手</div>
+          <div class="compare-body">
+            <div class="split-demo">
+              <div class="split-left">编辑区域...</div>
+              <div style="width:16px;background:linear-gradient(180deg,#f0f0f5,#e8e8f0);display:flex;align-items:center;justify-content:center;cursor:col-resize;transition:background .2s" onmouseover="this.style.background='linear-gradient(180deg,#e0e0f0,#d8d8e8)'" onmouseout="this.style.background='linear-gradient(180deg,#f0f0f5,#e8e8f0)'">
+                <div style="display:flex;flex-direction:column;gap:3px">
+                  <div style="width:4px;height:4px;border-radius:50%;background:#b4b4c8"></div>
+                  <div style="width:4px;height:4px;border-radius:50%;background:#b4b4c8"></div>
+                  <div style="width:4px;height:4px;border-radius:50%;background:#b4b4c8"></div>
+                </div>
+              </div>
+              <div class="split-right">预览区域...</div>
+            </div>
+            <div style="text-align:center;font-size:10px;color:#5b6abf;margin-top:4px;font-weight:500">↑ 圆点把手 + hover 变色</div>
+          </div>
+        </div>
+      </div>
+
+      <h3>CSS 方案</h3>
+      <div class="code-block">
+<pre><span class="hl-com">/* LayoutBar 折叠面板 */</span>
+<span class="hl-sel">.layout-bar-toggle</span> {
+  <span class="hl-prop">display</span>: <span class="hl-val">flex</span>;
+  <span class="hl-prop">align-items</span>: <span class="hl-val">center</span>;
+  <span class="hl-prop">padding</span>: <span class="hl-val">10px 16px</span>;
+  <span class="hl-prop">background</span>: <span class="hl-val">var(--card)</span>;
+  <span class="hl-prop">border</span>: <span class="hl-val">1px solid var(--border)</span>;
+  <span class="hl-prop">border-radius</span>: <span class="hl-val">8px</span>;
+  <span class="hl-prop">cursor</span>: <span class="hl-val">pointer</span>;
+  <span class="hl-prop">transition</span>: <span class="hl-val">all 0.2s</span>;
+}
+
+<span class="hl-sel">.layout-bar-grid</span> {
+  <span class="hl-prop">display</span>: <span class="hl-val">grid</span>;
+  <span class="hl-prop">grid-template-columns</span>: <span class="hl-val">repeat(2, 1fr)</span>;
+  <span class="hl-prop">gap</span>: <span class="hl-val">12px</span>;
+  <span class="hl-prop">padding</span>: <span class="hl-val">16px</span>;
+  <span class="hl-prop">background</span>: <span class="hl-val">#fafafa</span>;
+  <span class="hl-prop">border-radius</span>: <span class="hl-val">0 0 8px 8px</span>;
+}
+
+<span class="hl-com">/* 分割拖拽把手 */</span>
+<span class="hl-sel">.split-handle</span> {
+  <span class="hl-prop">width</span>: <span class="hl-val">16px</span>;
+  <span class="hl-prop">background</span>: <span class="hl-val">linear-gradient(180deg, #f0f0f5, #e8e8f0)</span>;
+  <span class="hl-prop">display</span>: <span class="hl-val">flex</span>;
+  <span class="hl-prop">align-items</span>: <span class="hl-val">center</span>;
+  <span class="hl-prop">justify-content</span>: <span class="hl-val">center</span>;
+  <span class="hl-prop">cursor</span>: <span class="hl-val">col-resize</span>;
+  <span class="hl-prop">transition</span>: <span class="hl-val">background 0.2s</span>;
+}
+<span class="hl-sel">.split-handle:hover</span> {
+  <span class="hl-prop">background</span>: <span class="hl-val">linear-gradient(180deg, #e0e0f0, #d8d8e8)</span>;
+}
+<span class="hl-sel">.split-handle-dots</span> {
+  <span class="hl-prop">display</span>: <span class="hl-val">flex</span>;
+  <span class="hl-prop">flex-direction</span>: <span class="hl-val">column</span>;
+  <span class="hl-prop">gap</span>: <span class="hl-val">3px</span>;
+}
+<span class="hl-sel">.split-handle-dots span</span> {
+  <span class="hl-prop">width</span>: <span class="hl-val">4px</span>;
+  <span class="hl-prop">height</span>: <span class="hl-val">4px</span>;
+  <span class="hl-prop">border-radius</span>: <span class="hl-val">50%</span>;
+  <span class="hl-prop">background</span>: <span class="hl-val">#b4b4c8</span>;
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 8: 预览区美化 ==================== -->
+  <div class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num">8</div>
+      <h2>预览区美化</h2>
+      <p>增强沉浸感</p>
+    </div>
+
+    <div class="card">
+      <div class="info-bar">
+        <span class="badge badge-problem">问题</span>
+        <span style="font-size:13px;color:var(--fg2)">灰底上的白纸缺乏装饰，预览区无页面信息标注，空间浪费</span>
+      </div>
+
+      <h3>Before / After</h3>
+      <div class="compare">
+        <div class="compare-col">
+          <div class="compare-label before">Before — 纯灰底</div>
+          <div class="compare-body" style="background:#f5f5f5;display:flex;align-items:center;justify-content:center;min-height:180px">
+            <div style="width:100px;height:140px;background:#fff;box-shadow:0 8px 32px rgba(0,0,0,.08);border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#ccc">A4 纸张</div>
+          </div>
+        </div>
+        <div class="compare-col">
+          <div class="compare-label after">After — 点阵纹理 + 信息栏</div>
+          <div class="compare-body" style="min-height:180px;background:radial-gradient(circle,#e0e0e4 1px,transparent 1px);background-size:16px 16px;background-color:#f2f2f6;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px">
+            <div style="width:100px;height:140px;background:#fff;box-shadow:0 12px 40px rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.06);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#ccc;margin-bottom:8px">A4 纸张</div>
+            <div class="page-info-bar" style="width:100%">
+              <span>📄 A4 · 210×297mm</span>
+              <span>📐 85%</span>
+              <span>📃 1/2 页</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>CSS 方案</h3>
+      <div class="code-block">
+<pre><span class="hl-com">/* 预览区背景 — 点阵纹理 */</span>
+<span class="hl-sel">.preview-area</span> {
+  <span class="hl-prop">background</span>: <span class="hl-val">radial-gradient(circle, #e0e0e4 1px, transparent 1px)</span>;
+  <span class="hl-prop">background-size</span>: <span class="hl-val">16px 16px</span>;
+  <span class="hl-prop">background-color</span>: <span class="hl-val">#f2f2f6</span>;
+}
+
+<span class="hl-com">/* 纸张阴影增强 */</span>
+<span class="hl-sel">.a4-paper</span> {
+  <span class="hl-prop">box-shadow</span>: <span class="hl-val">
+    0 12px 40px rgba(0,0,0,.12),
+    0 2px 8px rgba(0,0,0,.06)</span>;
+  <span class="hl-prop">border-radius</span>: <span class="hl-val">3px</span>;
+}
+
+<span class="hl-com">/* 页面信息标注栏 */</span>
+<span class="hl-sel">.page-info-bar</span> {
+  <span class="hl-prop">display</span>: <span class="hl-val">flex</span>;
+  <span class="hl-prop">align-items</span>: <span class="hl-val">center</span>;
+  <span class="hl-prop">justify-content</span>: <span class="hl-val">center</span>;
+  <span class="hl-prop">gap</span>: <span class="hl-val">16px</span>;
+  <span class="hl-prop">padding</span>: <span class="hl-val">8px 12px</span>;
+  <span class="hl-prop">font-size</span>: <span class="hl-val">var(--text-micro)</span>;
+  <span class="hl-prop">color</span>: <span class="hl-val">var(--fg3)</span>;
+  <span class="hl-prop">background</span>: <span class="hl-val">rgba(255,255,255,.7)</span>;
+  <span class="hl-prop">backdrop-filter</span>: <span class="hl-val">blur(8px)</span>;
+  <span class="hl-prop">border-radius</span>: <span class="hl-val">8px</span>;
+  <span class="hl-prop">margin-top</span>: <span class="hl-val">12px</span>;
+}
+<span class="hl-sel">.page-info-bar span</span> {
+  <span class="hl-prop">display</span>: <span class="hl-val">flex</span>;
+  <span class="hl-prop">align-items</span>: <span class="hl-val">center</span>;
+  <span class="hl-prop">gap</span>: <span class="hl-val">4px</span>;
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 9: 微交互与动效 ==================== -->
+  <div class="section" id="s9">
+    <div class="section-header">
+      <div class="section-num">9</div>
+      <h2>微交互与动效规范</h2>
+      <p>统一动画语言</p>
+    </div>
+
+    <div class="card">
+      <div class="info-bar">
+        <span class="badge badge-problem">问题</span>
+        <span style="font-size:13px;color:var(--fg2)">0.12s~0.4s 散乱；按钮无按压反馈；主题色板选中仅靠 border</span>
+      </div>
+
+      <h3>3 档动画时长 Token</h3>
+      <div style="display:flex;gap:16px;margin:16px 0;flex-wrap:wrap">
+        <div style="flex:1;min-width:120px;background:#f8f8fc;border-radius:10px;padding:16px;text-align:center">
+          <div style="font-size:24px;font-weight:800;color:#5b6abf">150ms</div>
+          <div style="font-size:10px;color:#999;font-weight:600;margin-top:4px;letter-spacing:.5px">FAST</div>
+          <div style="font-size:11px;color:#666;margin-top:8px">按钮、hover、toggle</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:#f8f8fc;border-radius:10px;padding:16px;text-align:center">
+          <div style="font-size:24px;font-weight:800;color:#7c6dd8">250ms</div>
+          <div style="font-size:10px;color:#999;font-weight:600;margin-top:4px;letter-spacing:.5px">NORMAL</div>
+          <div style="font-size:11px;color:#666;margin-top:8px">展开、滑入、面板</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:#f8f8fc;border-radius:10px;padding:16px;text-align:center">
+          <div style="font-size:24px;font-weight:800;color:#a78bfa">400ms</div>
+          <div style="font-size:10px;color:#999;font-weight:600;margin-top:4px;letter-spacing:.5px">SLOW</div>
+          <div style="font-size:11px;color:#666;margin-top:8px">主题切换、页面过渡</div>
+        </div>
+      </div>
+
+      <h3>按钮按压效果</h3>
+      <div style="display:flex;gap:16px;align-items:center;margin:16px 0;flex-wrap:wrap">
+        <button class="demo-btn demo-btn-primary" onmousedown="this.style.transform='translateY(1px) scale(.97)';this.style.boxShadow='0 2px 8px rgba(91,106,191,.2)'" onmouseup="this.style.transform='';this.style.boxShadow=''" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 12px rgba(91,106,191,.3)'">
+          按住试试 →
+        </button>
+        <div style="font-size:11px;color:#999">← hover 上浮 + active 下沉缩放</div>
+      </div>
+
+      <h3>CSS 方案</h3>
+      <div class="code-block">
+<pre><span class="hl-com">/* 动画时长 Token */</span>
+<span class="hl-sel">:root</span> {
+  <span class="hl-prop">--duration-fast</span>: <span class="hl-val">150ms</span>;
+  <span class="hl-prop">--duration-normal</span>: <span class="hl-val">250ms</span>;
+  <span class="hl-prop">--duration-slow</span>: <span class="hl-val">400ms</span>;
+
+  <span class="hl-com">/* Easing */</span>
+  <span class="hl-prop">--ease</span>: <span class="hl-val">cubic-bezier(.4, 0, .2, 1)</span>;
+  <span class="hl-prop">--ease-out</span>: <span class="hl-val">cubic-bezier(0, 0, .2, 1)</span>;
+  <span class="hl-prop">--ease-spring</span>: <span class="hl-val">cubic-bezier(.34, 1.56, .64, 1)</span>;
+}
+
+<span class="hl-com">/* 按钮按压 */</span>
+<span class="hl-sel">.btn</span> {
+  <span class="hl-prop">transition</span>: <span class="hl-val">all var(--duration-fast) var(--ease)</span>;
+}
+<span class="hl-sel">.btn:hover</span> {
+  <span class="hl-prop">transform</span>: <span class="hl-val">translateY(-2px)</span>;
+  <span class="hl-prop">box-shadow</span>: <span class="hl-val">0 6px 16px rgba(91,106,191,.3)</span>;
+}
+<span class="hl-sel">.btn:active</span> {
+  <span class="hl-prop">transform</span>: <span class="hl-val">translateY(1px) scale(.97)</span>;
+  <span class="hl-prop">box-shadow</span>: <span class="hl-val">0 2px 8px rgba(91,106,191,.2)</span>;
+}
+
+<span class="hl-com">/* 主题色板选中增强 */</span>
+<span class="hl-sel">.color-swatch.selected</span> {
+  <span class="hl-prop">transform</span>: <span class="hl-val">scale(1.15)</span>;
+  <span class="hl-prop">box-shadow</span>: <span class="hl-val">0 0 0 3px var(--card), 0 0 0 5px currentColor</span>;
+}
+
+<span class="hl-com">/* 全局主题过渡 */</span>
+<span class="hl-sel">body.theme-transitioning *</span> {
+  <span class="hl-prop">transition</span>: <span class="hl-val">background-color var(--duration-slow) var(--ease),
+               color var(--duration-slow) var(--ease),
+               border-color var(--duration-slow) var(--ease)</span> !important;
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECTION 10: TopBar 瘦身 ==================== -->
+  <div class="section" id="s10">
+    <div class="section-header">
+      <div class="section-num">10</div>
+      <h2>TopBar 瘦身方案</h2>
+      <p>降低信息密度</p>
+    </div>
+
+    <div class="card">
+      <div class="info-bar">
+        <span class="badge badge-problem">问题</span>
+        <span style="font-size:13px;color:var(--fg2)">56px 高度塞入 7 个功能区（简历名/模板/色板/字体/保存状态/隐私/导出），信息过载</span>
+      </div>
+
+      <h3>Before / After</h3>
+      <div class="compare">
+        <div class="compare-col">
+          <div class="compare-label before">Before — 7 个功能区一字排开</div>
+          <div class="compare-body">
+            <div style="background:#fff;border-radius:8px;border:1px solid #e5e5e7;padding:0 8px;height:48px;display:flex;align-items:center;gap:6px;overflow-x:auto">
+              <div style="padding:4px 8px;background:#fafafa;border-radius:4px;font-size:10px;white-space:nowrap;border:1px solid #eee">我的简历</div>
+              <div style="padding:4px 8px;background:#fafafa;border-radius:4px;font-size:10px;white-space:nowrap;border:1px solid #eee">Classic ▾</div>
+              <div style="display:flex;gap:2px;align-items:center">
+                <div style="width:12px;height:12px;border-radius:50%;background:#333;border:1px solid #ddd"></div>
+                <div style="width:12px;height:12px;border-radius:50%;background:#2563eb;border:2px solid #ddd"></div>
+                <div style="width:12px;height:12px;border-radius:50%;background:#16a34a;border:1px solid #ddd"></div>
+                <div style="width:12px;height:12px;border-radius:50%;background:#dc2626;border:1px solid #ddd"></div>
+                <div style="width:12px;height:12px;border-radius:50%;background:#9333ea;border:1px solid #ddd"></div>
+              </div>
+              <div style="padding:4px 8px;background:#fafafa;border-radius:4px;font-size:10px;white-space:nowrap;border:1px solid #eee">字体 ▾</div>
+              <div style="padding:4px 8px;background:#eaf3de;border-radius:4px;font-size:10px;white-space:nowrap;color:#3b6d11">✓ 已保存</div>
+              <div style="padding:4px 8px;background:#fafafa;border-radius:4px;font-size:10px;white-space:nowrap;border:1px solid #eee">🔒 隐私</div>
+              <div style="padding:4px 8px;background:#5b6abf;border-radius:4px;font-size:10px;white-space:nowrap;color:#fff">导出</div>
+            </div>
+            <div style="font-size:10px;color:#a32d2d;margin-top:8px;text-align:center">⚠ 拥挤，难以扫视</div>
+          </div>
+        </div>
+        <div class="compare-col">
+          <div class="compare-label after">After — 精简 + Popover</div>
+          <div class="compare-body">
+            <!-- Simplified topbar -->
+            <div style="background:#fff;border-radius:8px;border:1px solid #e5e5e7;padding:0 14px;height:48px;display:flex;align-items:center;justify-content:space-between">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="font-size:13px;font-weight:600;color:#424242">我的简历</div>
+                <span style="padding:2px 8px;border-radius:10px;font-size:10px;background:#eaf3de;color:#3b6d11;display:inline-flex;align-items:center;gap:3px">
+                  <span style="width:5px;height:5px;border-radius:50%;background:#3b6d11;display:inline-block"></span>已保存
+                </span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="padding:5px 10px;background:#f8f8fc;border-radius:6px;font-size:11px;color:#666;cursor:pointer;border:1px solid #eee;display:flex;align-items:center;gap:4px">
+                  🎨 样式
+                  <span style="font-size:9px;color:#999">▾</span>
+                </div>
+                <div style="padding:5px 10px;background:#fafafa;border-radius:6px;font-size:11px;color:#666;cursor:pointer;border:1px solid #eee">🔒</div>
+                <div style="padding:5px 14px;background:linear-gradient(135deg,#5b6abf,#7c6dd8);border-radius:6px;font-size:11px;color:#fff;font-weight:600;cursor:pointer">导出</div>
+              </div>
+            </div>
+            <!-- Popover hint -->
+            <div style="margin-top:8px;background:#fff;border-radius:8px;border:1px solid #e5e5e7;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,.1);position:relative">
+              <div style="position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:12px;height:12px;background:#fff;border-left:1px solid #e5e5e7;border-top:1px solid #e5e5e7;transform:translateX(-50%) rotate(45deg)"></div>
+              <div style="font-size:10px;font-weight:600;color:#424242;margin-bottom:8px">样式设置面板</div>
+              <div style="display:flex;gap:12px">
+                <div>
+                  <div style="font-size:9px;color:#999;margin-bottom:4px">模板</div>
+                  <div style="font-size:10px;padding:3px 8px;background:#f0f0f5;border-radius:4px">Classic ▾</div>
+                </div>
+                <div>
+                  <div style="font-size:9px;color:#999;margin-bottom:4px">主题色</div>
+                  <div style="display:flex;gap:3px">
+                    <div style="width:14px;height:14px;border-radius:50%;background:#333"></div>
+                    <div style="width:14px;height:14px;border-radius:50%;background:#2563eb"></div>
+                    <div style="width:14px;height:14px;border-radius:50%;background:#16a34a"></div>
+                    <div style="width:14px;height:14px;border-radius:50%;background:#dc2626"></div>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-size:9px;color:#999;margin-bottom:4px">字体</div>
+                  <div style="font-size:10px;padding:3px 8px;background:#f0f0f5;border-radius:4px">思源黑体 ▾</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>CSS 方案</h3>
+      <div class="code-block">
+<pre><span class="hl-com">/* TopBar 精简布局 */</span>
+<span class="hl-sel">.topbar</span> {
+  <span class="hl-prop">height</span>: <span class="hl-val">56px</span>;
+  <span class="hl-prop">display</span>: <span class="hl-val">flex</span>;
+  <span class="hl-prop">align-items</span>: <span class="hl-val">center</span>;
+  <span class="hl-prop">justify-content</span>: <span class="hl-val">space-between</span>;
+  <span class="hl-prop">padding</span>: <span class="hl-val">0 16px</span>;
+}
+
+<span class="hl-sel">.topbar-left</span> {
+  <span class="hl-prop">display</span>: <span class="hl-val">flex</span>;
+  <span class="hl-prop">align-items</span>: <span class="hl-val">center</span>;
+  <span class="hl-prop">gap</span>: <span class="hl-val">12px</span>;
+}
+
+<span class="hl-sel">.topbar-right</span> {
+  <span class="hl-prop">display</span>: <span class="hl-val">flex</span>;
+  <span class="hl-prop">align-items</span>: <span class="hl-val">center</span>;
+  <span class="hl-prop">gap</span>: <span class="hl-val">8px</span>;
+}
+
+<span class="hl-com">/* 样式 Popover */</span>
+<span class="hl-sel">.style-popover</span> {
+  <span class="hl-prop">position</span>: <span class="hl-val">absolute</span>;
+  <span class="hl-prop">top</span>: <span class="hl-val">calc(100% + 8px)</span>;
+  <span class="hl-prop">right</span>: <span class="hl-val">0</span>;
+  <span class="hl-prop">background</span>: <span class="hl-val">var(--card)</span>;
+  <span class="hl-prop">border</span>: <span class="hl-val">1px solid var(--border)</span>;
+  <span class="hl-prop">border-radius</span>: <span class="hl-val">var(--radius)</span>;
+  <span class="hl-prop">box-shadow</span>: <span class="hl-val">var(--shadow-lg)</span>;
+  <span class="hl-prop">padding</span>: <span class="hl-val">16px</span>;
+  <span class="hl-prop">min-width</span>: <span class="hl-val">320px</span>;
+  <span class="hl-prop">z-index</span>: <span class="hl-val">50</span>;
+  <span class="hl-prop">animation</span>: <span class="hl-val">popover-in var(--duration-normal) var(--ease-out)</span>;
+}
+
+<span class="hl-sel">@keyframes popover-in</span> {
+  <span class="hl-prop">from</span> { <span class="hl-prop">opacity</span>: <span class="hl-val">0</span>; <span class="hl-prop">transform</span>: <span class="hl-val">translateY(-4px) scale(.98)</span>; }
+  <span class="hl-prop">to</span> { <span class="hl-prop">opacity</span>: <span class="hl-val">1</span>; <span class="hl-prop">transform</span>: <span class="hl-val">translateY(0) scale(1)</span>; }
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== Design Tokens ==================== -->
+  <div class="section" id="tokens">
+    <div class="section-header">
+      <div class="section-num">✦</div>
+      <h2>Design Tokens 汇总</h2>
+      <p>统一设计变量</p>
+    </div>
+
+    <div class="card">
+      <h3>完整 CSS 变量扩展</h3>
+      <p>在现有变量基础上，建议扩展以下 tokens：</p>
+      <div class="code-block">
+<pre><span class="hl-sel">:root</span> {
+  <span class="hl-com">/* ===== 现有变量（保留） ===== */</span>
+  <span class="hl-prop">--background</span>: <span class="hl-val">#f5f5f7</span>;    <span class="hl-com">/* 微调：纯灰 → 蓝灰 */</span>
+  <span class="hl-prop">--card</span>: <span class="hl-val">#ffffff</span>;
+  <span class="hl-prop">--sidebar</span>: <span class="hl-val">#ffffff</span>;
+  <span class="hl-prop">--foreground</span>: <span class="hl-val">#424242</span>;
+  <span class="hl-prop">--border</span>: <span class="hl-val">#e5e5e7</span>;
+  <span class="hl-prop">--selected</span>: <span class="hl-val">#e5e5e7</span>;
+  <span class="hl-prop">--radius</span>: <span class="hl-val">12px</span>;
+  <span class="hl-prop">--shadow</span>: <span class="hl-val">0 6px 24px rgba(0,0,0,.05)</span>;
+  <span class="hl-prop">--danger</span>: <span class="hl-val">#a32d2d</span>;  <span class="hl-prop">--danger-bg</span>: <span class="hl-val">#fcebeb</span>;
+  <span class="hl-prop">--warning</span>: <span class="hl-val">#7a5c00</span>; <span class="hl-prop">--warning-bg</span>: <span class="hl-val">#fff3cd</span>;
+  <span class="hl-prop">--success</span>: <span class="hl-val">#3b6d11</span>; <span class="hl-prop">--success-bg</span>: <span class="hl-val">#eaf3de</span>;
+
+  <span class="hl-com">/* ===== 新增：品牌色 ===== */</span>
+  <span class="hl-prop">--accent</span>: <span class="hl-val">#5b6abf</span>;
+  <span class="hl-prop">--accent-hover</span>: <span class="hl-val">#4f5db3</span>;
+  <span class="hl-prop">--accent-light</span>: <span class="hl-val">#e8eaf6</span>;
+  <span class="hl-prop">--accent-grad</span>: <span class="hl-val">linear-gradient(135deg, #5b6abf, #7c6dd8)</span>;
+
+  <span class="hl-com">/* ===== 新增：阴影层级 ===== */</span>
+  <span class="hl-prop">--shadow-sm</span>: <span class="hl-val">0 1px 3px rgba(0,0,0,.04)</span>;
+  <span class="hl-prop">--shadow-md</span>: <span class="hl-val">0 6px 24px rgba(0,0,0,.05)</span>;
+  <span class="hl-prop">--shadow-lg</span>: <span class="hl-val">0 12px 40px rgba(0,0,0,.1)</span>;
+
+  <span class="hl-com">/* ===== 新增：排版 ===== */</span>
+  <span class="hl-prop">--text-display</span>: <span class="hl-val">28px</span>;
+  <span class="hl-prop">--text-title</span>: <span class="hl-val">18px</span>;
+  <span class="hl-prop">--text-body</span>: <span class="hl-val">14px</span>;
+  <span class="hl-prop">--text-caption</span>: <span class="hl-val">12px</span>;
+  <span class="hl-prop">--text-micro</span>: <span class="hl-val">10px</span>;
+
+  <span class="hl-com">/* ===== 新增：间距 ===== */</span>
+  <span class="hl-prop">--space-xs</span>: <span class="hl-val">4px</span>;
+  <span class="hl-prop">--space-sm</span>: <span class="hl-val">8px</span>;
+  <span class="hl-prop">--space-md</span>: <span class="hl-val">16px</span>;
+  <span class="hl-prop">--space-lg</span>: <span class="hl-val">24px</span>;
+  <span class="hl-prop">--space-xl</span>: <span class="hl-val">32px</span>;
+  <span class="hl-prop">--space-2xl</span>: <span class="hl-val">48px</span>;
+
+  <span class="hl-com">/* ===== 新增：动画 ===== */</span>
+  <span class="hl-prop">--duration-fast</span>: <span class="hl-val">150ms</span>;
+  <span class="hl-prop">--duration-normal</span>: <span class="hl-val">250ms</span>;
+  <span class="hl-prop">--duration-slow</span>: <span class="hl-val">400ms</span>;
+  <span class="hl-prop">--ease</span>: <span class="hl-val">cubic-bezier(.4, 0, .2, 1)</span>;
+  <span class="hl-prop">--ease-out</span>: <span class="hl-val">cubic-bezier(0, 0, .2, 1)</span>;
+  <span class="hl-prop">--ease-spring</span>: <span class="hl-val">cubic-bezier(.34, 1.56, .64, 1)</span>;
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== Summary ==================== -->
+  <div class="section" id="summary">
+    <div class="section-header">
+      <div class="section-num">✓</div>
+      <h2>优先级总结</h2>
+      <p>建议实施顺序</p>
+    </div>
+
+    <div class="card">
+      <h3>实施优先级矩阵</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:16px">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border)">
+            <th style="text-align:left;padding:8px 12px;font-weight:700;font-size:11px;color:#999;letter-spacing:.5px">优先级</th>
+            <th style="text-align:left;padding:8px 12px;font-weight:700;font-size:11px;color:#999;letter-spacing:.5px">方案</th>
+            <th style="text-align:left;padding:8px 12px;font-weight:700;font-size:11px;color:#999;letter-spacing:.5px">影响力</th>
+            <th style="text-align:left;padding:8px 12px;font-weight:700;font-size:11px;color:#999;letter-spacing:.5px">工作量</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid #f0f0f5">
+            <td style="padding:10px 12px"><span style="background:#fcebeb;color:#a32d2d;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">P0</span></td>
+            <td style="padding:10px 12px;font-weight:600">Design Tokens 扩展</td>
+            <td style="padding:10px 12px"><div style="display:flex;gap:2px"><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div></div></td>
+            <td style="padding:10px 12px;color:#3b6d11;font-weight:500">低 · 纯变量</td>
+          </tr>
+          <tr style="border-bottom:1px solid #f0f0f5">
+            <td style="padding:10px 12px"><span style="background:#fcebeb;color:#a32d2d;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">P0</span></td>
+            <td style="padding:10px 12px;font-weight:600">品牌化设计</td>
+            <td style="padding:10px 12px"><div style="display:flex;gap:2px"><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#e0e0e0"></div></div></td>
+            <td style="padding:10px 12px;color:#3b6d11;font-weight:500">低 · 导航区域</td>
+          </tr>
+          <tr style="border-bottom:1px solid #f0f0f5">
+            <td style="padding:10px 12px"><span style="background:#fff3cd;color:#7a5c00;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">P1</span></td>
+            <td style="padding:10px 12px;font-weight:600">首页重设计</td>
+            <td style="padding:10px 12px"><div style="display:flex;gap:2px"><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div></div></td>
+            <td style="padding:10px 12px;color:#7a5c00;font-weight:500">中 · 布局重构</td>
+          </tr>
+          <tr style="border-bottom:1px solid #f0f0f5">
+            <td style="padding:10px 12px"><span style="background:#fff3cd;color:#7a5c00;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">P1</span></td>
+            <td style="padding:10px 12px;font-weight:600">卡片层次 + 色彩升级</td>
+            <td style="padding:10px 12px"><div style="display:flex;gap:2px"><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#e0e0e0"></div></div></td>
+            <td style="padding:10px 12px;color:#3b6d11;font-weight:500">低 · CSS 修改</td>
+          </tr>
+          <tr style="border-bottom:1px solid #f0f0f5">
+            <td style="padding:10px 12px"><span style="background:#fff3cd;color:#7a5c00;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">P1</span></td>
+            <td style="padding:10px 12px;font-weight:600">TopBar 瘦身</td>
+            <td style="padding:10px 12px"><div style="display:flex;gap:2px"><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#e0e0e0"></div></div></td>
+            <td style="padding:10px 12px;color:#7a5c00;font-weight:500">中 · 组件拆分</td>
+          </tr>
+          <tr style="border-bottom:1px solid #f0f0f5">
+            <td style="padding:10px 12px"><span style="background:#eaf3de;color:#3b6d11;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">P2</span></td>
+            <td style="padding:10px 12px;font-weight:600">导航增强</td>
+            <td style="padding:10px 12px"><div style="display:flex;gap:2px"><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#e0e0e0"></div><div style="width:8px;height:8px;border-radius:50%;background:#e0e0e0"></div></div></td>
+            <td style="padding:10px 12px;color:#3b6d11;font-weight:500">低 · CSS 修改</td>
+          </tr>
+          <tr style="border-bottom:1px solid #f0f0f5">
+            <td style="padding:10px 12px"><span style="background:#eaf3de;color:#3b6d11;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">P2</span></td>
+            <td style="padding:10px 12px;font-weight:600">微交互动效</td>
+            <td style="padding:10px 12px"><div style="display:flex;gap:2px"><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#e0e0e0"></div><div style="width:8px;height:8px;border-radius:50%;background:#e0e0e0"></div></div></td>
+            <td style="padding:10px 12px;color:#7a5c00;font-weight:500">中 · 全局 CSS</td>
+          </tr>
+          <tr style="border-bottom:1px solid #f0f0f5">
+            <td style="padding:10px 12px"><span style="background:#eaf3de;color:#3b6d11;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">P2</span></td>
+            <td style="padding:10px 12px;font-weight:600">编辑器美化</td>
+            <td style="padding:10px 12px"><div style="display:flex;gap:2px"><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#e0e0e0"></div><div style="width:8px;height:8px;border-radius:50%;background:#e0e0e0"></div></div></td>
+            <td style="padding:10px 12px;color:#7a5c00;font-weight:500">中 · 组件重构</td>
+          </tr>
+          <tr style="border-bottom:1px solid #f0f0f5">
+            <td style="padding:10px 12px"><span style="background:#eaf3de;color:#3b6d11;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">P2</span></td>
+            <td style="padding:10px 12px;font-weight:600">排版系统</td>
+            <td style="padding:10px 12px"><div style="display:flex;gap:2px"><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#e0e0e0"></div><div style="width:8px;height:8px;border-radius:50%;background:#e0e0e0"></div><div style="width:8px;height:8px;border-radius:50%;background:#e0e0e0"></div></div></td>
+            <td style="padding:10px 12px;color:#7a5c00;font-weight:500">中 · 全局替换</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 12px"><span style="background:#eaf3de;color:#3b6d11;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">P3</span></td>
+            <td style="padding:10px 12px;font-weight:600">预览区美化</td>
+            <td style="padding:10px 12px"><div style="display:flex;gap:2px"><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#5b6abf"></div><div style="width:8px;height:8px;border-radius:50%;background:#e0e0e0"></div><div style="width:8px;height:8px;border-radius:50%;background:#e0e0e0"></div><div style="width:8px;height:8px;border-radius:50%;background:#e0e0e0"></div></div></td>
+            <td style="padding:10px 12px;color:#3b6d11;font-weight:500">低 · 纯 CSS</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align:center;padding:40px 0 20px;border-top:1px solid var(--border);margin-top:40px">
+      <div style="font-size:12px;color:var(--fg3)">
+        XMResume UI 美化方案报告 · 基于 xiaomengresume 项目源码深度审计
+      </div>
+      <div style="font-size:11px;color:#b4b4c8;margin-top:4px">
+        Electron 43 · React 19 · Tailwind v4 · TypeScript 5
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Scroll Spy & Progress Script -->
+<script>
+(function(){
+  // Scroll progress
+  const bar = document.getElementById('progressBar');
+  window.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const pct = (h.scrollTop) / (h.scrollHeight - h.clientHeight);
+    bar.style.transform = `scaleX(${Math.min(pct, 1)})`;
+  });
+
+  // Scroll spy for sidebar
+  const links = document.querySelectorAll('.sidebar a');
+  const sections = [];
+  links.forEach(a => {
+    const id = a.getAttribute('href')?.replace('#','');
+    if (id) {
+      const el = document.getElementById(id);
+      if (el) sections.push({ el, a });
+    }
+  });
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(a => a.classList.remove('active'));
+        const match = sections.find(s => s.el === e.target);
+        if (match) match.a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(s => observer.observe(s.el));
+})();
+</script>
+
+</body>
+</html>
