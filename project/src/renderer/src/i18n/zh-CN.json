@@ -314,7 +314,7 @@
     "pagesFirstWarn": "（将截断后续内容）",
     "privacyHint": "隐私模式已开启，导出将自动脱敏",
     "atsNote": "单栏矢量 PDF，ATS 可正常解析",
-    "timeoutError": "导出超时：打印引擎未响应（常见于无 GPU 环境）。请重试或检查显卡驱动。"
+    "timeoutError": "导出超时：打印引擎未响应。请重试或重启应用；若持续失败请反馈应用日志。"
   },
   "ai": {
     "context": {

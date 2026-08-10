@@ -23,6 +23,12 @@ export function createPdfWindow(): BrowserWindow {
   pdfWindow = new BrowserWindow({
     show: false,
     webPreferences: {
+      preload: join(__dirname, '..', 'preload', 'index.mjs'),
+      // 2026-08-10 修复：B 档 printAppToPdf 加载完整应用 export 模式，需 preload 暴露
+      // electronAPI（useAppBootstrap → resumes.open）；缺 preload 致 electronAPI undefined
+      // → 简历加载静默失败 → __exportReady 永不置位 → 30s 就绪超时（实测复现）。
+      // ⚠️ electron-vite 主进程为单 bundle，__dirname 运行时 = out/main（非源码目录），
+      // 故与 main/index.ts 同为 ../preload/index.mjs（out/main/../preload = out/preload）
       sandbox: false,
       contextIsolation: true,
       nodeIntegration: false

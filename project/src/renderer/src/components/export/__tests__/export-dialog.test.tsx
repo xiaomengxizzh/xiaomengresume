@@ -71,7 +71,7 @@ describe('ExportDialog 导出超时兜底（P0 回归）', () => {
 
   it('printToPDF 永挂时 30s 后报超时并恢复按钮', async () => {
     const { runMock } = mockElectronApi()
-    // 模拟永挂：永不 resolve/reject 的 promise（等价于 GPU 不可用环境的 printToPDF）
+    // 模拟永挂：永不 resolve/reject 的 promise（打印/渲染管线异常，B 档 2026-08-10 后与 GPU 无关）
     runMock.mockReturnValue(new Promise(() => {}))
     const onClose = vi.fn()
 

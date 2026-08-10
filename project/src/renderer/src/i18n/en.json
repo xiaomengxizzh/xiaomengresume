@@ -314,7 +314,7 @@
     "pagesFirstWarn": "(rest will be truncated)",
     "privacyHint": "Privacy mode is on — export will be redacted",
     "atsNote": "Single-column vector PDF, ATS-friendly",
-    "timeoutError": "Export timed out: the print engine did not respond (common in GPU-less environments). Please retry or check your graphics driver."
+    "timeoutError": "Export timed out: the print engine did not respond. Please retry or restart the app; if it persists, report the app logs."
   },
   "ai": {
     "context": {
