@@ -15,7 +15,8 @@ import { Button, Select } from '../ui'
 import { TextField, DateField, SelectField } from '../fields'
 import { TiptapField } from '../tiptap/TiptapField'
 import { LayoutBar } from './LayoutBar'
-import { IconPicker } from './IconPicker'
+import { ICON_CHOICES } from './IconPicker'
+import { InfoIcon } from '../icons/InfoIcons'
 import { AiAssistPanel } from './AiAssistPanel'
 
 /* ── M3 F7/F8：字段编辑器注册表 + 白名单 ────────────────────────────────── */
@@ -317,6 +318,78 @@ function TagsBlock(): React.JSX.Element {
     return o && o.value ? o.label : ''
   }
 
+  /**
+   * 2026-08-10 需求 2：图案标签 combobox——文本框（可直接输入自定义标签名）+ 右侧向下箭头
+   * → 下拉列式展示图案选项（参考岗位状态 select 交互）；选图标后 label 自动填图标名。
+   */
+  function IconCombo({
+    icon,
+    label,
+    onIconChange,
+    onLabelChange
+  }: {
+    icon: string
+    label: string
+    onIconChange: (id: string) => void
+    onLabelChange: (label: string) => void
+  }): React.JSX.Element {
+    const [open, setOpen] = useState(false)
+    const ref = useRef<HTMLDivElement>(null)
+    useEffect(() => {
+      if (!open) return
+      const onDocClick = (e: MouseEvent): void => {
+        if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      }
+      document.addEventListener('mousedown', onDocClick)
+      return () => document.removeEventListener('mousedown', onDocClick)
+    }, [open])
+    const pick = (id: string): void => {
+      onIconChange(id)
+      setOpen(false)
+    }
+    return (
+      <div ref={ref} className="relative min-w-0 flex-1">
+        <div className="flex items-center rounded-lg border border-border bg-surface focus-within:border-foreground/50">
+          <input
+            className="min-w-0 flex-1 bg-transparent px-2 py-1 text-xs outline-none"
+            value={label}
+            placeholder={t('editor.field.customTitle')}
+            onChange={(e) => onLabelChange(e.target.value)}
+          />
+          <button
+            type="button"
+            className="shrink-0 px-1.5 text-foreground/50 transition-colors hover:text-foreground"
+            title={t('editor.field.customFieldLabel')}
+            onClick={() => setOpen((o) => !o)}
+          >
+            ▾
+          </button>
+        </div>
+        {open && (
+          <div className="absolute right-0 top-full z-20 mt-1 max-h-64 overflow-y-auto rounded-lg border border-border bg-surface py-1 shadow-card-hover">
+            {ICON_CHOICES.map((id) => {
+              const name = id ? t(`editor.infoIcon.${id}`) : t('editor.field.tagNoIcon')
+              const selected = icon === id
+              return (
+                <button
+                  key={id || 'none'}
+                  type="button"
+                  onClick={() => pick(id)}
+                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-border/40 ${
+                    selected ? 'text-foreground' : 'text-foreground/70'
+                  }`}
+                >
+                  {id ? <InfoIcon id={id as never} className="h-4 w-4 shrink-0" /> : <span className="h-4 w-4 shrink-0" />}
+                  <span className="truncate">{name}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   // 旧固定字段自动注入自定义字段（双向绑定；对照示例 6 项 + 图标）
   useEffect(() => {
     if (fields.length > 0) return
@@ -370,8 +443,8 @@ function TagsBlock(): React.JSX.Element {
             return (
               <div key={'empty-' + i} className="flex items-center gap-1.5 rounded-lg border border-dashed border-border/70 px-2 py-1.5">
                 <span className="text-[11px] text-foreground/40">{i + 1}</span>
-                {/* 2026-08-10 任务5：图案选择 = IconPicker（SVG 图标按钮组，替代原生 select 纯文本） */}
-                <IconPicker value="" onChange={(v) => setTag(i, { icon: v })} />
+                {/* 2026-08-10 需求 2：图案标签 combobox——输入自定义名或下拉选图标创建格 */}
+                <IconCombo icon="" label="" onIconChange={(v) => setTag(i, { icon: v })} onLabelChange={(v) => setTag(i, { label: v })} />
                 <span className="text-[11px] text-foreground/40">{t('editor.field.tagEmpty')}</span>
               </div>
             )
@@ -379,13 +452,12 @@ function TagsBlock(): React.JSX.Element {
           return (
             <div key={f.id} className="flex flex-col gap-1.5">
               <div className="flex items-center gap-1.5">
-                <IconPicker value={f.icon ?? ''} onChange={(v) => setTag(i, { icon: v })} />
-                {/* R5：标签文本自由编辑（替换图标后手动修正 label） */}
-                <input
-                  className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1 text-xs outline-none focus:border-foreground/50"
-                  value={f.label}
-                  placeholder={t('editor.field.customTitle')}
-                  onChange={(e) => setTag(i, { label: e.target.value })}
+                {/* 2026-08-10 需求 2：combobox——文本框输 label + 下拉箭头列选图案 */}
+                <IconCombo
+                  icon={f.icon ?? ''}
+                  label={f.label}
+                  onIconChange={(v) => setTag(i, { icon: v })}
+                  onLabelChange={(v) => setTag(i, { label: v })}
                 />
                 <button
                   type="button"

@@ -13,8 +13,8 @@ export interface IconPickerProps {
   onChange: (icon: string) => void
 }
 
-/** 可选图案（空 + 10 图标；label 走 i18n editor.infoIcon.*） */
-const ICON_CHOICES = ['', 'phone', 'mail', 'pin', 'globe', 'calendar', 'briefcase', 'link', 'user', 'star', 'map']
+/** 可选图案（空 + 10 图标；label 走 i18n editor.infoIcon.*）——TagsBlock combobox 下拉复用 */
+export const ICON_CHOICES = ['', 'phone', 'mail', 'pin', 'globe', 'calendar', 'briefcase', 'link', 'user', 'star', 'map']
 
 export function IconPicker({ value, onChange }: IconPickerProps): React.JSX.Element {
   const { t } = useTranslation()

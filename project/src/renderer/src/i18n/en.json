@@ -8,7 +8,8 @@
     "subtitle": "Your resume data stays on this device. AI only assists editing.",
     "privacyNote": "Local-only data · No account · No subscription",
     "newBlank": "New blank resume",
-    "openResume": "Open resume"
+    "openResume": "Open resume",
+    "newResume": "New Resume"
   },
   "verify": {
     "title": "M0 Skeleton Verification",

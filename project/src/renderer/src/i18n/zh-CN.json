@@ -8,7 +8,8 @@
     "subtitle": "您的简历数据仅保存在本机，AI 只做辅助编辑。",
     "privacyNote": "数据仅保存在本机 · 无账号 · 无订阅",
     "newBlank": "新建空白简历",
-    "openResume": "打开简历"
+    "openResume": "打开简历",
+    "newResume": "新建简历"
   },
   "verify": {
     "title": "M0 骨架验证",

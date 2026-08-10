@@ -7,14 +7,13 @@ import { useTranslation } from 'react-i18next'
 import { useResumeStore } from '../store/useResumeStore'
 import { Button } from '../components/ui'
 
-/** 品牌标志：material/图标.png（1024×1024，与 public/icon.png 同源） */
+/** 品牌标志：material/图标.png（1024×1024，与 public/icon.png 同源；品牌唯一标识） */
 function BrandLogo(): React.JSX.Element {
-  return <img src="/icon.png" alt="xiaomengresume" className="h-10 w-10 rounded-lg object-contain" draggable={false} />
+  return <img src="/icon.png" alt="xiaomengresume" className="h-12 w-12 rounded-lg object-contain" draggable={false} />
 }
 
 export function WelcomeView(): React.JSX.Element {
   const { t } = useTranslation()
-  const newResume = useResumeStore((s) => s.newResume)
   const setCurrentView = useResumeStore((s) => s.setCurrentView)
 
   return (
@@ -24,7 +23,7 @@ export function WelcomeView(): React.JSX.Element {
         style={{ background: 'linear-gradient(135deg, var(--brand-soft), var(--card) 62%)' }}
       >
         <div
-          className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl"
+          className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl"
           style={{ background: 'var(--brand-grad)', boxShadow: '0 8px 24px rgba(91,106,191,.3)' }}
         >
           <BrandLogo />
@@ -32,14 +31,9 @@ export function WelcomeView(): React.JSX.Element {
         <h1 className="text-2xl font-bold text-foreground">{t('welcome.title')}</h1>
         <p className="mt-2 text-sm leading-relaxed text-foreground/60">{t('welcome.subtitle')}</p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-          <Button
-            variant="default"
-            onClick={() => {
-              newResume()
-              setCurrentView('editor')
-            }}
-          >
-            {t('welcome.newBlank')}
+          {/* 2026-08-10 需求 1：新建简历 → 选择界面（新建空白/导入已有），与简历功能区同一 NewResumeView */}
+          <Button variant="default" onClick={() => setCurrentView('resumes-new')}>
+            {t('welcome.newResume')}
           </Button>
           <Button variant="outline" onClick={() => setCurrentView('resumes-recent')}>
             {t('welcome.openResume')}
