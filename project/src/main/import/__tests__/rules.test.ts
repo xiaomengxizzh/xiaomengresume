@@ -85,18 +85,18 @@ describe('splitBySectionAnchors（分段）', () => {
 
 describe('detectDirtyLayout（脏排版判定）', () => {
   it('表格残余 → table 提示', () => {
-    expect(detectDirtyLayout('a | b\nc | d', [{ id: 'work', rawText: '', items: [] }])).toContain('table')
+    expect(detectDirtyLayout('a | b\nc | d', [{ id: 'work', rawText: '', items: [], lines: [] }])).toContain('table')
   })
 
   it('无锚点 → no-anchor 提示', () => {
-    expect(detectDirtyLayout('随便一些文本', [{ id: 'unclassified', rawText: 'x', items: [] }])).toContain(
+    expect(detectDirtyLayout('随便一些文本', [{ id: 'unclassified', rawText: 'x', items: [], lines: [] }])).toContain(
       'no-anchor'
     )
   })
 
   it('短行密集 → multi-column 提示', () => {
     const text = Array.from({ length: 12 }, (_, i) => (i % 2 ? '短' : '甲乙')).join('\n')
-    expect(detectDirtyLayout(text, [{ id: 'work', rawText: '', items: [] }])).toContain('multi-column')
+    expect(detectDirtyLayout(text, [{ id: 'work', rawText: '', items: [], lines: [] }])).toContain('multi-column')
   })
 
   it('正常排版无提示', () => {
@@ -172,7 +172,7 @@ describe('rulesToImportMap（组装 ImportMap → importMapToResume 收口）', 
     expect(resume.projects[0].name).toBe('抖音创作者中台')
     expect(resume.projects[0].role).toBe('前端负责人')
     // 要点并入 description（bulletList 化）
-    const desc = resume.projects[0].description as { content: Array<{ type: string }> }
+    const desc = resume.projects[0].description as unknown as { content: Array<{ type: string }> }
     expect(JSON.stringify(desc)).toContain('bulletList')
     expect(JSON.stringify(desc)).toContain('基于 React 开发的创作者平台')
     // 工作 1 条 + 要点并入 summary
@@ -193,5 +193,51 @@ describe('rulesToImportMap（组装 ImportMap → importMapToResume 收口）', 
     const sections = splitBySectionAnchors('一段无法归类的自由文本')
     expect(sections.every((s) => s.id === 'unclassified')).toBe(true)
     expect(rulesToImportMap(sections)).toEqual({})
+  })
+
+  it('2026-08-10 导入标签全量：未知"标签: 值"行 → basics.customFields，已知字段不重复', () => {
+    const text = cleanText('基本信息\n姓名：张三\n电话：13800138000\n邮箱：zhangsan@example.com\n年龄：35\nQQ：123456\n籍贯：山东')
+    const sections = splitBySectionAnchors(text)
+    const map = rulesToImportMap(sections)
+    const resume = importMapToResume(map)
+    expect(resume.basics.phone).toBe('13800138000')
+    expect(resume.basics.email).toBe('zhangsan@example.com')
+    // 未知标签入库（电话/邮箱已知字段不入 customFields）
+    const labels = (resume.basics.customFields ?? []).map((c) => c.label)
+    expect(labels).toContain('年龄')
+    expect(labels).toContain('QQ')
+    expect(labels).toContain('籍贯')
+    expect(labels).not.toContain('电话')
+    expect(labels).not.toContain('邮箱')
+  })
+
+  it('2026-08-10 坐标候选对（pairs）并入 customFields + 去重 + 空格分隔短标签', () => {
+    // ① pairs（extractPdfLines 两列产出）并入：与固定字段 value 重复剔除，未知入库
+    const text = cleanText('基本信息\n姓名：张三\n电话：13800138000\n邮箱：zhangsan@example.com')
+    const sections = splitBySectionAnchors(text)
+    const map = rulesToImportMap(sections, [
+      { label: '籍贯', value: '山东' },
+      { label: '实习天数', value: '3天' },
+      { label: '电话', value: '13800138000' }, // 与固定字段重复 → 剔除
+      { label: '地址', value: '北京市朝阳区' } // 已知 label → 剔除
+    ])
+    const resume = importMapToResume(map)
+    const labels = (resume.basics.customFields ?? []).map((c) => c.label)
+    expect(labels).toContain('籍贯')
+    expect(labels).toContain('实习天数')
+    expect(labels).not.toContain('电话')
+    expect(labels).not.toContain('地址')
+    expect(resume.basics.phone).toBe('13800138000')
+  })
+
+  it('2026-08-10 无冒号、≥2 空格分隔的短标签行 → customFields（不绑定固定字段）', () => {
+    const text = cleanText('基本信息\n姓名 张三\n实习天数 3\n期望薪资 15K')
+    const sections = splitBySectionAnchors(text)
+    const map = rulesToImportMap(sections)
+    const resume = importMapToResume(map)
+    const labels = (resume.basics.customFields ?? []).map((c) => c.label)
+    expect(labels).toContain('实习天数')
+    expect(labels).toContain('期望薪资')
+    expect(resume.basics.customFields?.find((c) => c.label === '实习天数')?.value).toBe('3')
   })
 })

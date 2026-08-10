@@ -98,6 +98,11 @@ export function matchBullet(line: string): string | null {
   return null
 }
 
+/** 2026-08-10：值类文本判定（纯数字/URL/邮箱/日期）——不作为自定义标签的值候选 */
+function isValueOnly(v: string): boolean {
+  return /^\d{6,}$/.test(v) || /^https?:\/\/|^www\./.test(v) || /@/.test(v) || /^\d{4}[年./-]\d{1,2}/.test(v)
+}
+
 /** 按锚点分段（锚点行本身不入内容，仅作分隔；无锚点行归 unclassified 暂存） */
 export function splitBySectionAnchors(text: string): ParsedSection[] {
   const sections: ParsedSection[] = []
@@ -205,7 +210,7 @@ function appendBullet(entry: Record<string, unknown>, key: string, text: string)
 }
 
 /** B 档分段 → ImportMap（粗糙映射；姓名/联系方式正则，条目日期+主体拆分） */
-export function rulesToImportMap(sections: ParsedSection[]): ImportMap {
+export function rulesToImportMap(sections: ParsedSection[], pairs?: Array<{ label: string; value: string }>): ImportMap {
   const map: ImportMap = {}
   const pick = (id: LocalSection): ParsedSection | undefined => sections.find((s) => s.id === id)
 
@@ -216,17 +221,107 @@ export function rulesToImportMap(sections: ParsedSection[]): ImportMap {
   if (basics) {
     const lines = [...basics.rawText.split('\n'), ...basics.items].filter(Boolean)
     const b: NonNullable<ImportMap['basics']> = {}
-    const phone = lines.find((l) => /1[3-9]\d{9}|0\d{2,3}-\d{7,8}/.test(l))
-    const email = lines.find((l) => /[\w.-]+@[\w.-]+\.\w+/.test(l))
-    const website = lines.find((l) => /https?:\/\/|www\./.test(l))
-    if (phone) {
-      b.phone = phone.match(/1[3-9]\d{9}|0\d{2,3}-\d{7,8}/)?.[0] ?? ''
+    // 2026-08-10 修复：同行多字段拆分——电话/邮箱/网址按 token 独立匹配，地址按片段从行中提取
+    // （material 示例"北京市朝阳区 https://zhangsan.dev"同行——原整行 find+行去重致地址被网址抢占丢失）
+    const tokens = lines.flatMap((l) => l.split(/\s+/).filter(Boolean))
+    // 2026-08-10 修复：token 内提取（容忍"电话：13800138000"等冒号前缀 token）
+    const phone = tokens.map((t) => t.match(/1[3-9]\d{9}|0\d{2,3}-\d{7,8}/)?.[0]).find(Boolean)
+    const email = tokens.map((t) => t.match(/[\w.-]+@[\w.-]+\.\w+/)?.[0]).find(Boolean)
+    const website = tokens.map((t) => t.match(/https?:\/\/[^\s]+|www\.[^\s]+/)?.[0]).find(Boolean)
+    // 地址：从任一行提取中文地址片段（"XX省/市/区/路…"）；不含前缀要求
+    const addr = (() => {
+      for (const l of lines) {
+        const m = l.match(/([\u4e00-\u9fa5]{2,}(?:省|市|区|县|路|街|号|大厦|栋)[^\s]*)/)
+        if (m) return m[1]
+      }
+      return undefined
+    })()
+    // 状态：行内关键词（在职/离职等）
+    const status = lines.find((l) => /(在职|离职|待业|已离职|应届|退休)/.test(l))
+    // 生日：年月行；排除状态行（"离职 2025/01" 会被误捕为生日——2026-08-10 修复）
+    const birth = lines.find((l) => /(\d{4})[年./-](\d{1,2})\s*月?/.test(l) && !/^\d{4}-\d{1,2}$/.test(l) && l !== status && !/(在职|离职|待业|已离职|应届|退休)/.test(l))
+    // 2026-08-09 T2：职业（headline）——前缀匹配（求职意向/应聘职位等）
+    const headline = lines.find((l) => /(求职意向|应聘职位|目标职位|期望职位|职位[:：]|职业[:：])/.test(l))
+    // 2026-08-10 修复：裸职业行 fallback——basics 段第 2 行（第 1 行=姓名），若为干净短文本
+    // （非联系方式/地址/状态/前缀职业，≤20 字符）则作为 headline（material 示例"高级前端工程师"独立行）
+    let headlineRaw: string | undefined
+    if (headline) headlineRaw = headline
+    else if (lines.length > 1) {
+      const cand = lines[1].trim()
+      const notContact = !/1[3-9]\d{9}|[\w.-]+@[\w.-]+\.\w+|https?:\/\/|www\.|(?:省|市|区|县|路|街|号|大厦|栋)|(?:在职|离职|待业|已离职|应届|退休)/.test(cand)
+      // 2026-08-10 收紧：纯中文短词（无空格无数字——"实习天数 3"式标签行不误判为职业）
+      const isPlainChineseWord = !/[\s\d]/.test(cand)
+      if (cand.length > 0 && cand.length <= 20 && notContact && isPlainChineseWord) headlineRaw = cand
     }
-    if (email) b.email = email.match(/[\w.-]+@[\w.-]+\.\w+/)?.[0] ?? ''
-    if (website) b.website = website.match(/https?:\/\/[^\s]+|www\.[^\s]+/)?.[0] ?? ''
-    if (b.phone || b.email || b.website) {
-      const nameLine = lines.find((l) => l !== phone && l !== email && l !== website)
-      if (nameLine) b.name = nameLine.slice(0, 50)
+    if (headlineRaw) b.headline = headlineRaw.replace(/^(求职意向|应聘职位|目标职位|期望职位|职位|职业)[:：]?\s*/i, '').slice(0, 60)
+    if (phone) b.phone = phone
+    if (email) b.email = email
+    if (website) b.website = website
+    if (birth) {
+      const m = birth.match(/(\d{4})[年./-](\d{1,2})\s*月?/)
+      if (m) b.birthDate = `${m[1]}-${m[2].padStart(2, '0')}`
+    }
+    if (addr) b.address = addr.replace(/^(现居|居住地|地址|现住)[:：]?\s*/i, '').slice(0, 80)
+    if (status) b.employmentStatus = status.match(/(在职|离职|待业|已离职|应届|退休)/)?.[0] ?? ''
+    // 2026-08-10 导入标签全量：通用"标签: 值"行识别——未被固定字段命中的 label:value 行 → customFields
+    // （用户自定义标签如"年龄/QQ/籍贯/婚育"等任意标签对；label ≤12 字符、冒号分隔；
+    //  已知 6 类 label 已走固定字段 + 标准 icon，此处只收未知标签，避免重复显示）
+    // 2026-08-10 修复：phone/email/website/addr 为 token/片段——按"行包含命中值"排除
+    const fixedHits = new Set<string>()
+    for (const l of lines) {
+      const hit =
+        (phone && l.includes(phone)) ||
+        (email && l.includes(email)) ||
+        (website && l.includes(website)) ||
+        (addr && l.includes(addr)) ||
+        l === birth ||
+        l === status ||
+        l === headline ||
+        l === headlineRaw
+      if (hit) fixedHits.add(l)
+    }
+    const customs: NonNullable<ImportMap['basics']>['customFields'] = []
+    // 2026-08-10：knownLabels 仅含"固定映射集"（有专门字段）；籍贯/年龄/实习天数等自定义标签保留入库
+    const knownLabels = new Set(['姓名', '电话', '手机', '邮箱', '邮件', '地址', '网址', '网站', '生日', '出生', '在职', '职业', '职位'])
+    // 空格分隔候选的动词/介词前缀（"优化 项目…"是描述行）
+    const verbPrefix = /^(基于|采用|使用|支持|提供|优化|设计|主导|负责|参与|实现|维护|开发|搭建|推动|管理|通过|作为|具备|熟悉|掌握|精通|了解|协助|组织|协调|撰写|制定|集成)/
+    for (const l of lines) {
+      if (fixedHits.has(l)) continue
+      // 2026-08-10：候选对规则 ① 冒号行
+      const m = l.match(/^([\u4e00-\u9fa5A-Za-z][\u4e00-\u9fa5A-Za-z0-9··]{0,10})[:：]\s*(.+)$/)
+      if (m) {
+        const label = m[1].trim()
+        const value = m[2].trim()
+        if (label && value) customs.push({ label: label.slice(0, 32), value: value.slice(0, 256) })
+        continue
+      }
+      // 2026-08-10：候选对规则 ② 空格分隔的短标签行（"实习天数 3"式，1+ 空格；不绑定固定字段）
+      const m2 = l.match(/^([\u4e00-\u9fa5A-Za-z]{1,8})\s+(\S.*)$/)
+      if (m2) {
+        const label = m2[1].trim()
+        const value = m2[2].trim()
+        // 固定字段名直接映射（不进 customFields 防重复）；动词开头/值类行跳过
+        if (label && value && !knownLabels.has(label) && !verbPrefix.test(label) && !isValueOnly(value)) customs.push({ label: label.slice(0, 32), value: value.slice(0, 256) })
+      }
+    }
+    // 2026-08-10：候选对规则 ③ 坐标两列候选（pdf.ts extractPdfLines 产出）——左短右长，全部进 customFields
+    for (const p of pairs ?? []) {
+      const label = p.label.trim().slice(0, 32)
+      const value = p.value.trim().slice(0, 256)
+      if (!label || !value || knownLabels.has(label) || isValueOnly(value)) continue
+      // 与固定字段/既有候选去重
+      if ((b.phone && value.includes(b.phone)) || (b.email && value.includes(b.email)) || (b.website && value.includes(b.website)) || (b.address && value.includes(b.address))) continue
+      if (customs.some((c) => c.label === label && c.value === value)) continue
+      customs.push({ label, value })
+    }
+    if (customs.length > 0) b.customFields = customs
+    if (b.phone || b.email || b.website || b.birthDate || b.address || (b.customFields && b.customFields.length > 0)) {
+      const nameLine = lines.find((l) => !fixedHits.has(l) && l.trim().length > 0)
+      if (nameLine) {
+        // 2026-08-10："姓名 张三"/"姓名：张三"式行剥离前缀取真实姓名
+        const nameClean = nameLine.replace(/^姓名[:：\s]+/i, '').trim()
+        b.name = (nameClean || nameLine).slice(0, 50)
+      }
       map.basics = b
     }
   }

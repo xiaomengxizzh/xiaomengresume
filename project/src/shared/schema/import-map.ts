@@ -38,8 +38,23 @@ export const ImportMapSchema = z.object({
       location: z.string().optional(),
       website: z.string().optional(),
       headline: z.string().optional(),
+      birthDate: z.string().optional(),
+      /** 2026-08-09 T3：在职状态（在投/离职等） */
+      employmentStatus: z.string().optional(),
       /** 个人简介（纯文本，映射到 basics.profile） */
-      profile: z.string().optional()
+      profile: z.string().optional(),
+      /** 2026-08-10 导入标签全量：用户自定义基本信息标签（任意"标签:值"对，A 档模型直接输出；
+       *  B 档本地规则识别未知 label 行。label ≤32、value ≤256 防脏数据（D7）） */
+      customFields: z
+        .array(
+          z.object({
+            label: z.string().min(1).max(32),
+            value: z.string().max(256),
+            /** 已知标签可附 icon（phone/mail/pin/globe/calendar/briefcase 等）；未知留空 → 渲染端兜底 pin */
+            icon: z.string().max(32).optional()
+          })
+        )
+        .optional()
     })
     .optional(),
   /** 自我评价（纯文本，映射到 summary.content） */
@@ -234,8 +249,22 @@ export function importMapToResume(map: ImportMap): Resume {
     if (website) r.basics.website = website
     const headline = clean(b.headline)
     if (headline) r.basics.headline = headline
+    // 2026-08-10 修复：birthDate/employmentStatus 声明了但此前漏写（仅增不改）
+    const birthDate = clean(b.birthDate)
+    if (birthDate) r.basics.birthDate = birthDate
+    const employmentStatus = clean(b.employmentStatus)
+    if (employmentStatus) r.basics.employmentStatus = employmentStatus
     const profile = clean(b.profile)
     if (profile) r.basics.profile = textToRichText(profile)
+
+    // 2026-08-10 导入标签全量：用户自定义标签（未知 label 对）直写 basics.customFields；
+    // 去重：value 与固定字段（phone/email/address/location/website/birthDate/employmentStatus）重复的剔除，
+    // 避免预览/导出 infoItems 重复显示（已知 6 类 label 已走固定字段 + 标准 icon）
+    const fixedValues = new Set([r.basics.phone, r.basics.email, r.basics.address, r.basics.location, r.basics.website, r.basics.birthDate, r.basics.employmentStatus].filter((v): v is string => !!v))
+    const customFields = (b.customFields ?? [])
+      .filter((cf) => cf.value && cf.value.trim().length > 0 && !fixedValues.has(cf.value.trim()))
+      .map((cf) => ({ id: crypto.randomUUID(), label: clean(cf.label) || cf.label, value: cf.value.trim(), ...(cf.icon ? { icon: cf.icon } : {}) }))
+    if (customFields.length > 0) r.basics.customFields = customFields
   }
 
   // summary（纯文本 → content）

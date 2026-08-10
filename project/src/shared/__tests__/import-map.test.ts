@@ -113,4 +113,28 @@ describe('importMapToResume', () => {
     expect(SKILL_LEVELS).toEqual(['了解', '熟练', '精通'])
     expect(LANGUAGE_PROFICIENCIES).toEqual(['母语', '流利', '熟练', '基础'])
   })
+
+  it('2026-08-10 导入标签全量：customFields 直写 + 与固定字段去重', () => {
+    const r = importMapToResume({
+      basics: {
+        name: '张三',
+        phone: '13800138000',
+        email: 'zhangsan@example.com',
+        birthDate: '1990-01',
+        employmentStatus: '在职',
+        customFields: [
+          { label: '年龄', value: '35' },
+          { label: 'QQ', value: '123456' },
+          { label: '电话', value: '13800138000' }, // 与固定字段重复 → 剔除
+          { label: '邮箱', value: 'zhangsan@example.com' } // 重复 → 剔除
+        ]
+      }
+    })
+    expect(r.basics.customFields).toHaveLength(2)
+    const labels = (r.basics.customFields ?? []).map((c) => c.label)
+    expect(labels).toEqual(['年龄', 'QQ'])
+    // 补写修复：birthDate/employmentStatus 此前漏写
+    expect(r.basics.birthDate).toBe('1990-01')
+    expect(r.basics.employmentStatus).toBe('在职')
+  })
 })

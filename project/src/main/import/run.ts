@@ -11,6 +11,7 @@ import {
   IPC,
   type AiError,
   type AiResult,
+  type ImportBatchResult,
   type ImportDraft,
   type ImportFormat,
   type ImportProgress,
@@ -19,11 +20,12 @@ import {
 import { AiServiceError } from '../ai/config'
 import { ImportError } from './errors'
 import { importJson } from './json'
-import { extractPdfText, extractPdfPhoto, visionPlaceholderDraft, type PdfPhotoResult } from './pdf'
+import { extractPdfLines, extractPdfPhoto, visionPlaceholderDraft, type PdfPhotoResult } from './pdf'
 import { extractDocxText } from './docx'
 import { mapTextToDraft } from './map'
 import { cleanText, splitBySectionAnchors, detectDirtyLayout, rulesToImportMap } from './rules'
 import { importMapToResume } from '../../shared/schema/import-map'
+import { saveResume } from '../files/resume-store'
 
 /** 导入全流程超时兜底（R4 大文件/网络慢兜底；仿 export/run） */
 export const IMPORT_TIMEOUT_MS = 30_000
@@ -89,12 +91,14 @@ export async function rulesDraft(
   text: string,
   fileName: string,
   format: 'pdf' | 'docx',
-  warnings: string[]
+  warnings: string[],
+  pairs?: Array<{ label: string; value: string }>
 ): Promise<ImportDraft> {
   const clean = cleanText(text)
   const sections = splitBySectionAnchors(clean)
   const hints = detectDirtyLayout(clean, sections)
-  const map = rulesToImportMap(sections)
+  // 2026-08-10：坐标两列候选对（pdf extractPdfLines 产出）并入 B 档映射
+  const map = rulesToImportMap(sections, pairs)
   const resume = importMapToResume(map)
   const ws = [...warnings, 'import.warning.localRules']
   if (hints.length > 0) ws.push('import.warning.dirtyLayout')
@@ -130,15 +134,18 @@ export async function runImport(
   let text: string
   let warnings: string[]
   let pdfPhoto: PdfPhotoResult | null = null
+  // 2026-08-10：坐标两列候选对（pdf extractPdfLines 产出；B 档 customFields 兜底）
+  let pairs: Array<{ label: string; value: string }> = []
   if (format === 'pdf') {
     emitProgress(sender, 'parse', 0.3)
-    const r = await extractPdfText(filePath)
+    const r = await extractPdfLines(filePath)
     if (r.needsVision) {
       emitProgress(sender, 'done', 1)
       return visionPlaceholderDraft('pdf', fileName, r.text, r.warnings)
     }
     text = r.text
     warnings = r.warnings
+    pairs = r.pairs
     // 2026-08-09：提取 PDF 头像（文本型 PDF；扫描件走 M4b vision 不在此处理）
     pdfPhoto = await extractPdfPhoto(filePath)
   } else {
@@ -153,8 +160,12 @@ export async function runImport(
   const applyPhoto = (draft: ImportDraft): ImportDraft => {
     if (pdfPhoto && !draft.resume.basics.photo) {
       draft.resume.basics.photo = pdfPhoto.dataUrl
-      draft.resume.basics.photoWidth = pdfPhoto.width
-      draft.resume.basics.photoHeight = pdfPhoto.height
+      // 2026-08-09 T2 修复：照片渲染尺寸等比缩放到模板基准宽 110（CLASSIC_PHOTO 110×110，
+      // PDF 端 ×0.75 换算）——原直接写提取图像原始像素尺寸，大图导入后占满整张 A4
+      const MAX_PHOTO_W = 110
+      const scale = pdfPhoto.width > MAX_PHOTO_W ? MAX_PHOTO_W / pdfPhoto.width : 1
+      draft.resume.basics.photoWidth = Math.max(40, Math.round(pdfPhoto.width * scale))
+      draft.resume.basics.photoHeight = Math.max(40, Math.round(pdfPhoto.height * scale))
     }
     return draft
   }
@@ -165,7 +176,7 @@ export async function runImport(
   } catch (err) {
     // B 档兜底：任何 A 档失败（NO_PROVIDER/网络/脏输出）都降级本地规则，不阻断导入
     console.warn(`[import] A 档映射失败，降级 B 档本地规则（${format}）:`, err)
-    const draft = await rulesDraft(text, fileName, format, warnings)
+    const draft = await rulesDraft(text, fileName, format, warnings, pairs)
     emitProgress(sender, 'done', 1)
     return applyPhoto(draft)
   }
@@ -213,6 +224,69 @@ export function registerImportIpc(): void {
       } catch (err) {
         return { ok: false, error: toImportAiError(err) }
       }
+    }
+  )
+
+  // ── 2026-08-09 R8：批量导入（多选 → 逐份解析 → 直接落盘为独立新简历，无需三步核对）──
+  ipcMain.handle(
+    IPC.Import.RunBatch,
+    async (event): Promise<AiResult<ImportBatchResult>> => {
+      const sender = event.sender
+      const win = BrowserWindow.fromWebContents(sender)
+      if (!win) {
+        console.warn('[import] BrowserWindow.fromWebContents 返回 null，sender 非窗口上下文')
+        return { ok: false, error: { code: 'UNKNOWN' } }
+      }
+
+      // 多选：混合格式（pdf/docx/json）统一过滤；image 走 M4b 占位（计入 failed，提示需视觉）
+      let filePaths: string[]
+      try {
+        const r = await dialog.showOpenDialog(win, {
+          title: 'Import resumes (batch)',
+          filters: [
+            { name: 'Resumes', extensions: ['pdf', 'docx', 'json'] },
+            { name: 'PDF', extensions: ['pdf'] },
+            { name: 'Word', extensions: ['docx'] },
+            { name: 'JSON', extensions: ['json'] }
+          ],
+          properties: ['openFile', 'multiSelections']
+        })
+        if (r.canceled || r.filePaths.length === 0) {
+          return { ok: false, error: { code: 'CANCELLED' } }
+        }
+        filePaths = r.filePaths
+      } catch (err) {
+        console.error('[import] showOpenDialog（batch）异常:', err)
+        return { ok: false, error: toImportAiError(err) }
+      }
+
+      const result: ImportBatchResult = { imported: 0, failed: [] }
+      for (let i = 0; i < filePaths.length; i++) {
+        const filePath = filePaths[i]
+        const fileName = path.basename(filePath)
+        const ext = path.extname(filePath).toLowerCase()
+        const format: ImportFormat | undefined = ext === '.pdf' ? 'pdf' : ext === '.docx' ? 'docx' : ext === '.json' ? 'json' : undefined
+        emitProgress(sender, 'parse', (i + 0.3) / filePaths.length)
+        try {
+          if (!format) throw new ImportError('UNSUPPORTED', `unsupported file: ${fileName}`)
+          const draft = await withTimeout(runImport(format, filePath, fileName, sender), IMPORT_TIMEOUT_MS)
+          // 扫描件/图片（M4b 占位）：不落盘，计入失败提示需视觉识别
+          if (draft.needsVision) {
+            result.failed.push({ fileName, code: 'VISION_REQUIRED' })
+            continue
+          }
+          // 直接落盘为独立新简历（标题 = 文件名去扩展名；id = uuid，文件存储）
+          const id = crypto.randomUUID()
+          const resume = { ...draft.resume, title: fileName.replace(/\.[^.]+$/, '') }
+          await saveResume(id, resume)
+          result.imported++
+        } catch (err) {
+          const e = toImportAiError(err)
+          result.failed.push({ fileName, code: e.code, message: e.message })
+        }
+      }
+      emitProgress(sender, 'done', 1)
+      return { ok: true, data: result }
     }
   )
 }

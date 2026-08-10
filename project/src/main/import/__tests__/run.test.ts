@@ -11,11 +11,14 @@ const m = vi.hoisted(() => ({
   dialog: { showOpenDialog: vi.fn() },
   fromWebContents: vi.fn(),
   importJson: vi.fn(),
+  extractPdfLines: vi.fn(),
   extractPdfText: vi.fn(),
   extractPdfPhoto: vi.fn(),
   visionPlaceholderDraft: vi.fn(),
   extractDocxText: vi.fn(),
-  mapTextToDraft: vi.fn()
+  mapTextToDraft: vi.fn(),
+  // R8：批量导入直接落盘
+  saveResume: vi.fn()
 }))
 
 vi.mock('electron', () => ({
@@ -28,12 +31,14 @@ vi.mock('../../ai/config', () => ({ AiServiceError: class AiServiceError extends
 
 vi.mock('../json', () => ({ importJson: (...a: unknown[]) => m.importJson(...a) }))
 vi.mock('../pdf', () => ({
+  extractPdfLines: (...a: unknown[]) => m.extractPdfLines(...a),
   extractPdfText: (...a: unknown[]) => m.extractPdfText(...a),
   extractPdfPhoto: (...a: unknown[]) => m.extractPdfPhoto(...a),
   visionPlaceholderDraft: (...a: unknown[]) => m.visionPlaceholderDraft(...a)
 }))
 vi.mock('../docx', () => ({ extractDocxText: (...a: unknown[]) => m.extractDocxText(...a) }))
 vi.mock('../map', () => ({ mapTextToDraft: (...a: unknown[]) => m.mapTextToDraft(...a) }))
+vi.mock('../../files/resume-store', () => ({ saveResume: (...a: unknown[]) => m.saveResume(...a) }))
 
 import { IPC, type ImportRunArgs } from '../../../shared/ipc-channels'
 import { registerImportIpc, withTimeout, toImportAiError, IMPORT_TIMEOUT_MS } from '../run'
@@ -51,9 +56,11 @@ beforeEach(() => {
   m.importJson.mockResolvedValue(fakeDraft('json'))
   m.mapTextToDraft.mockResolvedValue(fakeDraft('pdf'))
   m.visionPlaceholderDraft.mockReturnValue({ ...fakeDraft('image'), needsVision: true })
+  m.extractPdfLines.mockResolvedValue({ text: 't', effectiveChars: 200, warnings: [], needsVision: false, lines: [], pairs: [] })
   m.extractPdfText.mockResolvedValue({ text: 't', effectiveChars: 200, warnings: [], needsVision: false })
   m.extractDocxText.mockResolvedValue({ text: 't', warnings: [] })
   m.extractPdfPhoto.mockResolvedValue({ dataUrl: 'data:image/png;base64,AAA', width: 90, height: 120 })
+  m.saveResume.mockResolvedValue({})
 })
 
 function getHandler(): (e: unknown, args: ImportRunArgs) => Promise<{
@@ -94,7 +101,7 @@ describe('registerImportIpc（入口分发）', () => {
     const h = getHandler()
     const r = await h({ sender }, { format: 'pdf' } as ImportRunArgs)
     expect(r.ok).toBe(true)
-    expect(m.extractPdfText).toHaveBeenCalled()
+    expect(m.extractPdfLines).toHaveBeenCalled()
     expect(m.mapTextToDraft).toHaveBeenCalled()
   })
 
@@ -119,7 +126,7 @@ describe('registerImportIpc（入口分发）', () => {
   })
 
   it('pdf 扫描件（needsVision）→ 占位草稿，不调 AI', async () => {
-    m.extractPdfText.mockResolvedValue({ text: '小', effectiveChars: 5, warnings: ['w'], needsVision: true })
+    m.extractPdfLines.mockResolvedValue({ text: '小', effectiveChars: 5, warnings: ['w'], needsVision: true, lines: [], pairs: [] })
     m.dialog.showOpenDialog.mockResolvedValue({ canceled: false, filePaths: ['/tmp/scan.pdf'] })
     const h = getHandler()
     const r = await h({ sender }, { format: 'pdf' } as ImportRunArgs)
@@ -138,11 +145,13 @@ describe('registerImportIpc（入口分发）', () => {
 
   it('M4a.1：A 档映射失败（无 AI/网络）→ 自动降级 B 档本地规则，不阻断导入', async () => {
     m.mapTextToDraft.mockRejectedValue(new Error('NO_PROVIDER'))
-    m.extractPdfText.mockResolvedValue({
+    m.extractPdfLines.mockResolvedValue({
       text: '张三\n13800138000\n教育经历\n北京大学 本科 2013-2017\n工作经历\n- 某科技 工程师 2020-2023',
       effectiveChars: 200,
       warnings: [],
-      needsVision: false
+      needsVision: false,
+      lines: [],
+      pairs: []
     })
     m.dialog.showOpenDialog.mockResolvedValue({ canceled: false, filePaths: ['/tmp/a.pdf'] })
     const h = getHandler()
@@ -156,11 +165,13 @@ describe('registerImportIpc（入口分发）', () => {
 
   it('M4a.1：B 档检测到脏排版 → dirtyLayout 警告提示切 A 档', async () => {
     m.mapTextToDraft.mockRejectedValue(new Error('NETWORK'))
-    m.extractPdfText.mockResolvedValue({
+    m.extractPdfLines.mockResolvedValue({
       text: '一段无法归类的自由文本\n没有锚点',
       effectiveChars: 50,
       warnings: [],
-      needsVision: false
+      needsVision: false,
+      lines: [],
+      pairs: []
     })
     m.dialog.showOpenDialog.mockResolvedValue({ canceled: false, filePaths: ['/tmp/scan.pdf'] })
     const h = getHandler()
@@ -222,5 +233,46 @@ describe('toImportAiError', () => {
     const e = new Error('aborted')
     e.name = 'AbortError'
     expect(toImportAiError(e)).toEqual({ code: 'CANCELLED' })
+  })
+})
+
+describe('registerImportIpc · import:runBatch（2026-08-09 R8）', () => {
+  function getBatchHandler(): (e: unknown) => Promise<{ ok: boolean; data?: { imported: number; failed: Array<{ fileName: string; code: string }> }; error?: { code: string } }> {
+    registerImportIpc()
+    return m.ipcMain.handle.mock.calls.find((c: unknown[]) => c[0] === IPC.Import.RunBatch)?.[1] as never
+  }
+
+  it('多选 → 逐份按扩展名分派 → saveResume 落盘，返回成功/失败摘要', async () => {
+    m.dialog.showOpenDialog.mockResolvedValue({
+      canceled: false,
+      filePaths: ['C:/r/a.pdf', 'C:/r/b.docx', 'C:/r/c.txt']
+    })
+    const res = await getBatchHandler()({} as never)
+    expect(res.ok).toBe(true)
+    if (!res.ok) return
+    expect(res.data?.imported).toBe(2) // a.pdf（map 档）+ b.docx（docx → map 档）；c.txt 不支持
+    expect(m.saveResume).toHaveBeenCalledTimes(2)
+    // 标题 = 文件名去扩展名
+    const first = m.saveResume.mock.calls[0] as [string, { title?: string }]
+    expect(first[1].title).toBe('a')
+    expect(res.data?.failed.some((f) => f.fileName === 'c.txt')).toBe(true)
+  })
+
+  it('扫描件（needsVision）不落盘，计入 failed', async () => {
+    m.dialog.showOpenDialog.mockResolvedValue({ canceled: false, filePaths: ['C:/r/scan.pdf'] })
+    // 命中 needsVision 分流：pdf 文本过少 → visionPlaceholderDraft（beforeEach 已设 needsVision:true）
+    m.extractPdfLines.mockResolvedValue({ text: '', effectiveChars: 5, warnings: ['import.warning.scanned'], needsVision: true, lines: [], pairs: [] })
+    const res = await getBatchHandler()({} as never)
+    expect(res.ok).toBe(true)
+    if (!res.ok) return
+    expect(res.data?.imported).toBe(0)
+    expect(res.data?.failed.some((f) => f.fileName === 'scan.pdf' && f.code === 'VISION_REQUIRED')).toBe(true)
+    expect(m.saveResume).not.toHaveBeenCalled()
+  })
+
+  it('取消 → CANCELLED', async () => {
+    m.dialog.showOpenDialog.mockResolvedValue({ canceled: true, filePaths: [] })
+    const res = await getBatchHandler()({} as never)
+    expect(res).toEqual({ ok: false, error: { code: 'CANCELLED' } })
   })
 })
