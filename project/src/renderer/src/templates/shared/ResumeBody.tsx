@@ -62,6 +62,9 @@ export function ResumeBody({ variant, resume: externalResume }: { variant: Templ
     fontSize: baseFont,
     lineHeight,
     padding: `${pagePad}px ${pagePad + (variant === 'classic' ? 24 : 20)}px`,
+    // B 档（2026-08-10）：分页时每个分页框都应用 padding——默认 box-decoration-break: slice
+    // 只在首页框应用垂直 padding，页 2 起顶部贴边（实测 y0≈2pt）；clone 使每页顶底各留边距
+    boxDecorationBreak: 'clone',
     ['--rm-section-gap' as string]: `${sectionGap}px`,
     ['--rm-accent' as string]: layout?.themeColor ?? '#475569',
     // 2026-08-10：预览简历纸显式使用 system 字体栈（DengXian 优先，与 PDF 端 system→Deng 对齐），
@@ -127,6 +130,11 @@ export function ResumeBody({ variant, resume: externalResume }: { variant: Templ
       { id: 'web', icon: 'globe', label: '', value: basics.website ?? '' }
     ].filter((it) => it.value.length > 0)
   }
+  // B 档对齐（2026-08-10）：与 PDF 端 contactItems 同款按 value 去重——customFields 与
+  // infoItems 可能同值（示例简历 website 两处同 URL），防网格重复渲染；顺带过滤空值项。
+  infoItems = infoItems
+    .filter((it) => it.value && it.value.trim().length > 0)
+    .filter((it, i, arr) => arr.findIndex((x) => x.value === it.value) === i)
 
   const DEFAULT_SECTION_ORDER = ['education', 'work', 'projects', 'skills', 'certificates', 'languages']
   const orderedIds = resume.layout?.sectionOrder?.length

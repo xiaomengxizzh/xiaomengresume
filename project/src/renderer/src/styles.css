@@ -1099,7 +1099,9 @@ body {
 @media print {
   @page {
     size: A4;
-    margin: 15mm;
+    /* 2026-08-10 B 档（D1 拍板）：边距全权交模板 pagePadding（与预览一致），
+       原 margin 15mm 与模板 padding 叠加致导出边距 ≈30mm ≠ 预览 ≈8.5mm */
+    margin: 0;
   }
   /* 条目/区块不跨页硬截（中文字段跨页不截断） */
   .resume-section,
@@ -1113,9 +1115,10 @@ body {
   body {
     background: #fff !important;
   }
-  /* M2 D13「仅第一页」：打印窗口注入 overflow 截断，由导出管线动态加类 */
-  .print-first-page-only .preview-paper-body {
-    max-height: 267mm; /* A4 297mm - 上下边距 15mm×2 */
+  /* M2 D13「仅第一页」：export 模式模板根截断（原 .preview-paper-body 为预览容器类，
+     export 模式无此节点致截断失效；B 档改 .export-root + margin 0 后整页高 297mm） */
+  .print-first-page-only .export-root {
+    max-height: 297mm;
     overflow: hidden;
   }
 }
