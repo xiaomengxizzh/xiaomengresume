@@ -1,13 +1,13 @@
 /**
- * export/run.ts —— M2 F5 导出管线（2026-08-08 重构：纯代码生成路线）
- * textPdf：@react-pdf/renderer 纯代码矢量生成（文字可选、零 GPU——任何环境可跑）。
+ * export/run.ts —— M2 F5 导出管线（2026-08-10 B 档迁移修订）
+ * textPdf：隐藏窗口加载 export 模式真实模板 → printToPDF（单引擎，导出=预览）。
  * json：ResumeSchema 序列化含 schemaVersion 落盘。
- * 「仅第一页」（D13）：pdf-lib 裁剪（旧 CSS 截断已随 printToPDF 退役）。
+ * 「仅第一页」（D13）：export 模式 print-first-page-only CSS 截断。
  * 目标目录优先级：folderPath > settings.export.lastFolder > storage.folderPath > 下载目录。
  *
- * 历史（2026-08-08 评审定案）：旧 textPdf 走「隐藏窗口 + loadURL + printToPDF」，
- * 依赖 GPU 合成——无 GPU 机器（RDP/VM/Linux 无显示/混合显卡）printToPDF 永不 resolve
- * （实测 FATAL/timeout）。print/pdf.ts（print:pdf 冒烟通道）保留未删，供冒烟与 imagePdf v1.1。
+ * 历史修订（2026-08-10 实证）：2026-08-08 定案"printToPDF 依赖 GPU 合成、无 GPU 机器 100% 失败"
+ * 经网络调研（Chromium PrintCompositor = CPU Skia，无 GPU 依赖）+ 本地实测（Electron 43.3.0
+ * disableHardwareAcceleration 下 printToPDF 1.9s 正常完成）推翻；@react-pdf 纯代码（双引擎）退役。
  */
 import { app, ipcMain } from 'electron'
 import * as path from 'node:path'
@@ -22,7 +22,7 @@ import {
 import { ResumeSchema } from '../../shared/schema/resume'
 import type { Settings } from '../../shared/schema/settings'
 import { openResume } from '../files/resume-store'
-import { buildTextPdf } from './pdf/build'
+import { printAppToPdf } from '../print/pdf'
 
 const store = new Store<Settings>()
 
@@ -102,47 +102,23 @@ export function registerExportIpc(): void {
         }
 
         if (format === 'textPdf') {
-          // 2026-08-08 重构：文字版 PDF = @react-pdf/renderer 纯代码生成（矢量、文字可选、零 GPU）。
-          // 旧路径（隐藏窗口 + printToPDF）已退役：printToPDF 依赖 GPU 合成，无 GPU 机器（RDP/VM/Linux
-          // 无显示/混合显卡）100% 失败（实测 FATAL/timeout）。保留 exportWindow/print/pdf.ts 供
-          // print:pdf 冒烟与 imagePdf v1.1 使用，textPdf 不再走该链路。
+          // 2026-08-10 B 档：隐藏窗口加载 export 模式真实模板 → printToPDF（单引擎，导出=预览）。
+          // 原 @react-pdf 纯代码（2026-08-08 定案）依据"printToPDF 依赖 GPU"经实证推翻，
+          // 见本文件头注释；print/pdf.ts printAppToPdf 内含就绪轮询/字体/超时/失败重建。
           emitProgress(sender, 'render', 0.1)
           const resumeId = args.resumeId
           if (!resumeId) return { canceled: false, error: 'export: missing resumeId' }
-          // 预读简历校验存在性 + 取 layout/语言/隐私（主进程生成，无需打印窗口）
+          // 预读简历校验存在性 + 取文件名（简历不存在快速失败，避免打印窗口空转）
           const raw = await readResumeOrThrow(resumeId)
           const parsed = ResumeSchema.parse(raw)
 
           const language = (store.get('language') ?? 'zh-CN') as 'zh-CN' | 'en'
           const privacyMode = args.privacyMode ?? false
-          // P1 修复（2026-08-08）：主进程侧超时兜底——renderToBuffer 挂起（超大简历 + CJK 字体内嵌）
-          // 时拒绝并**不写盘**。原实现渲染端 30s race 只解 UI 冻结，主进程任务继续运行并写文件
-          // （僵尸写盘），超时后再次导出并发双写同一路径。
-          const buildPromise = buildTextPdf(parsed, {
-            language,
+          const { data: pdfData, pageCount } = await printAppToPdf(resumeId, {
+            pages: pages === 'first' ? 'first' : 'all',
             privacyMode,
-            pages: pages === 'first' ? 'first' : 'all'
+            language
           })
-          const BUILD_TIMEOUT_MS = 30_000
-          let timer: ReturnType<typeof setTimeout> | null = null
-          let pdfData: Buffer
-          let warnings: string[]
-          // 2026-08-10：真实页数需透传至返回处（try 块外）——改为块外声明
-          let pageCount = 1
-          try {
-            const buildResult = await Promise.race([
-              buildPromise,
-              new Promise<never>((_, reject) => {
-                timer = setTimeout(() => reject(new Error('export: pdf build timed out (>30s)')), BUILD_TIMEOUT_MS)
-              })
-            ])
-            pdfData = buildResult.buffer
-            warnings = buildResult.warnings
-            pageCount = buildResult.pageCount
-          } finally {
-            if (timer) clearTimeout(timer)
-          }
-          for (const w of warnings) console.warn(`[Export] ${w}`)
           emitProgress(sender, 'write', 0.9)
 
           const dir = path.resolve(resolveExportDir(folderPath))
@@ -154,7 +130,7 @@ export function registerExportIpc(): void {
           await fs.writeFile(filePath, pdfData)
           rememberLastFolder(dir)
           emitProgress(sender, 'write', 1)
-          // 2026-08-10：透传真实页数（导出对话框展示，替代估算）
+          // 真实页数（pdf-lib 解析导出缓冲；导出对话框展示）
           return { canceled: false, filePath, pageCount }
         }
 

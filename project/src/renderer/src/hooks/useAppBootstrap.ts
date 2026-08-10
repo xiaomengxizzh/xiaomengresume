@@ -21,6 +21,11 @@ export function useAppBootstrap(): void {
           if (resumeId) {
             const resume = await window.electronAPI.resumes.open(resumeId)
             useResumeStore.getState().loadResume(resumeId, resume)
+            // B 档（2026-08-10）：导出窗口为独立渲染进程，隐私状态经 URL 传参注入 store
+            //（模板 data-redact 消费 store.privacyMode）；语言经 i18n/index.ts 初始化处理。
+            if (params.get('privacyMode') === '1') {
+              useResumeStore.setState({ privacyMode: true })
+            }
           }
           return
         }

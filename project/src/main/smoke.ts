@@ -10,7 +10,8 @@ import type { Settings } from '../shared/schema/settings'
  * 走真实链路：renderer(preload electronAPI) → IPC → main handler
  * 验证：① 窗口打开 ② IPC 通信 ③ 中文 PDF 导出 ④ AI 流式 ⑤ M1 保存链路（三件套）⑥ 内置示例链路
  * 结果 JSON 打到 stdout，进程自动退出；供沙箱/CI/用户本机一键验收。
- * 沙箱假阳性：printToPDF 依赖 GPU 合成在沙箱挂起（G.3，用户本机正常），以本机验收为准。
+ * 2026-08-10 实证修订：printToPDF 无 GPU 挂起定案（2026-08-08）已推翻——Chromium PDF 合成 = CPU
+ * Skia（无 GPU 依赖），Electron 43.3.0 disableHardwareAcceleration 下实测正常完成；沙箱可用 xvfb 兜底。
  */
 
 /** 单步执行 JS，带超时，避免渲染进程未就绪时挂死 */
