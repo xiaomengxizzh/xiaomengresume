@@ -121,4 +121,34 @@ describe('TagsBlock combobox（回归测试（2026-08-10 用户反馈修复）�
     expect(labels).not.toContain('电话')
     expect(labels[0]).toBe('我的自定义')
   })
+
+  it('D：输入文字 → 替换图案（icon 清除，简历标签标题变文字）', async () => {
+    const { container } = render(<EditorView />)
+    await waitFor(() => expect(comboInputs(container).length).toBeGreaterThan(0))
+    const inp = comboInputs(container)[0]
+    fireEvent.change(inp, { target: { value: '宠物' } })
+    await act(async () => {})
+    const f0 = (useResumeStore.getState().resume.basics.customFields ?? [])[0]
+    expect(f0.label).toBe('宠物') // 简历标签标题显示文字
+    expect(f0.icon ?? '').toBe('') // 图案被清除（文字标签）
+  })
+
+  it('E：先输入文字再选图案 → 图案替换文字（label = 图案名）', async () => {
+    const { container } = render(<EditorView />)
+    await waitFor(() => expect(comboInputs(container).length).toBeGreaterThan(0))
+    const inp = comboInputs(container)[0]
+    fireEvent.change(inp, { target: { value: '宠物' } })
+    await act(async () => {})
+    // 选图案"邮箱" → 文字被替换
+    const cell = comboInputs(container)[0].closest('.grid > div') as HTMLElement
+    const arrow = [...cell.querySelectorAll('button')].find((b) => b.textContent?.trim() === '▾') as HTMLButtonElement
+    fireEvent.click(arrow)
+    const panel = arrow.closest('.relative')?.querySelector('.absolute') as HTMLElement
+    const mailBtn = [...panel.querySelectorAll('button')].find((b) => b.textContent?.includes('邮箱'))
+    fireEvent.click(mailBtn as HTMLButtonElement)
+    await act(async () => {})
+    const f0 = (useResumeStore.getState().resume.basics.customFields ?? [])[0]
+    expect(f0.label).toBe('邮箱') // 图案替换文字
+    expect(f0.icon).toBe('mail')
+  })
 })

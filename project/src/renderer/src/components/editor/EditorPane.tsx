@@ -478,13 +478,14 @@ function IconCombo({
                   label={f?.label ?? ''}
                   onIconChange={(v) => {
                     setTag(i, { icon: v })
-                    // 2026-08-10 修复：有值格切换图案时 label 同步为图案名（当前 label 为默认名/空时）——
-                    // 原只改 icon 不改 label 致"无法切换图案"（实测 label 停留旧名）
-                    if (f && (!f.label || f.label === labelForIcon(f.icon ?? ''))) {
-                      setTag(i, { label: labelForIcon(v) })
-                    }
+                    // 2026-08-10 需求：主动选图案 → 替换文字（label = 图案名，文字/图案互斥）
+                    if (f) setTag(i, { label: labelForIcon(v) })
                   }}
-                  onLabelChange={(v) => setTag(i, { label: v })}
+                  onLabelChange={(v) => {
+                    setTag(i, { label: v })
+                    // 2026-08-10 需求：输入文字 → 替换图案（文字标签无图案；输入非空才清）
+                    if (v && f?.icon) setTag(i, { icon: '' })
+                  }}
                 />
                 <button
                   type="button"
