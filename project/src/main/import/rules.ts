@@ -228,18 +228,25 @@ export function rulesToImportMap(sections: ParsedSection[], pairs?: Array<{ labe
     const phone = tokens.map((t) => t.match(/1[3-9]\d{9}|0\d{2,3}-\d{7,8}/)?.[0]).find(Boolean)
     const email = tokens.map((t) => t.match(/[\w.-]+@[\w.-]+\.\w+/)?.[0]).find(Boolean)
     const website = tokens.map((t) => t.match(/https?:\/\/[^\s]+|www\.[^\s]+/)?.[0]).find(Boolean)
-    // 地址：从任一行提取中文地址片段（"XX省/市/区/路…"）；不含前缀要求
-    const addr = (() => {
+    // 地址/位置分类（2026-08-10 修复）：含详细门牌（路/街/号/大厦/栋/大道/广场）→ address；
+    // 仅省市区县级（material 示例"北京市朝阳区"[json 原始语义 = location]）→ location——
+    // 原统一识别为 address 致 basics.location 空 → 编辑器 TagsBlock"位置"格丢失
+    const addrMatch = (() => {
       for (const l of lines) {
-        const m = l.match(/([\u4e00-\u9fa5]{2,}(?:省|市|区|县|路|街|号|大厦|栋)[^\s]*)/)
-        if (m) return m[1]
+        const m = l.match(/([\u4e00-\u9fa5]{2,}(?:省|市|区|县|路|街|号|大厦|栋|大道|广场)[^\s]*)/)
+        if (m) return { raw: m[1], line: l }
       }
       return undefined
     })()
+    const isDetailedAddr = (s: string): boolean => /(路|街|号|大厦|栋|大道|广场)/.test(s)
+    const address = addrMatch && isDetailedAddr(addrMatch.raw) ? addrMatch.raw : undefined
+    const location = addrMatch ? addrMatch.raw : undefined
     // 状态：行内关键词（在职/离职等）
     const status = lines.find((l) => /(在职|离职|待业|已离职|应届|退休)/.test(l))
-    // 生日：年月行；排除状态行（"离职 2025/01" 会被误捕为生日——2026-08-10 修复）
-    const birth = lines.find((l) => /(\d{4})[年./-](\d{1,2})\s*月?/.test(l) && !/^\d{4}-\d{1,2}$/.test(l) && l !== status && !/(在职|离职|待业|已离职|应届|退休)/.test(l))
+    // 生日：行内年月（2026-08-10 修正：material 示例"离职 2025/01"的 2025/01 即生日[json 证实]，
+    // 原"排除含状态词行/纯日期行"误伤真生日——去掉整行排除，basics 段含年月格式行即生日；
+    // 真离职日期行误捕风险由三步核对向导兜底）
+    const birth = lines.find((l) => /(\d{4})[年./-](\d{1,2})\s*月?/.test(l))
     // 2026-08-09 T2：职业（headline）——前缀匹配（求职意向/应聘职位等）
     const headline = lines.find((l) => /(求职意向|应聘职位|目标职位|期望职位|职位[:：]|职业[:：])/.test(l))
     // 2026-08-10 修复：裸职业行 fallback——basics 段第 2 行（第 1 行=姓名），若为干净短文本
@@ -261,19 +268,20 @@ export function rulesToImportMap(sections: ParsedSection[], pairs?: Array<{ labe
       const m = birth.match(/(\d{4})[年./-](\d{1,2})\s*月?/)
       if (m) b.birthDate = `${m[1]}-${m[2].padStart(2, '0')}`
     }
-    if (addr) b.address = addr.replace(/^(现居|居住地|地址|现住)[:：]?\s*/i, '').slice(0, 80)
+    if (addrMatch) b.address = address?.replace(/^(现居|居住地|地址|现住)[:：]?\s*/i, '').slice(0, 80)
+    if (location) b.location = location.replace(/^(现居|居住地|地址|现住|所在地)[:：]?\s*/i, '').slice(0, 80)
     if (status) b.employmentStatus = status.match(/(在职|离职|待业|已离职|应届|退休)/)?.[0] ?? ''
     // 2026-08-10 导入标签全量：通用"标签: 值"行识别——未被固定字段命中的 label:value 行 → customFields
     // （用户自定义标签如"年龄/QQ/籍贯/婚育"等任意标签对；label ≤12 字符、冒号分隔；
     //  已知 6 类 label 已走固定字段 + 标准 icon，此处只收未知标签，避免重复显示）
-    // 2026-08-10 修复：phone/email/website/addr 为 token/片段——按"行包含命中值"排除
+    // 2026-08-10 修复：phone/email/website/addr/location 为 token/片段——按"行包含命中值"排除
     const fixedHits = new Set<string>()
     for (const l of lines) {
       const hit =
         (phone && l.includes(phone)) ||
         (email && l.includes(email)) ||
         (website && l.includes(website)) ||
-        (addr && l.includes(addr)) ||
+        (location && l.includes(location)) ||
         l === birth ||
         l === status ||
         l === headline ||
@@ -315,7 +323,7 @@ export function rulesToImportMap(sections: ParsedSection[], pairs?: Array<{ labe
       customs.push({ label, value })
     }
     if (customs.length > 0) b.customFields = customs
-    if (b.phone || b.email || b.website || b.birthDate || b.address || (b.customFields && b.customFields.length > 0)) {
+    if (b.phone || b.email || b.website || b.birthDate || b.address || b.location || (b.customFields && b.customFields.length > 0)) {
       const nameLine = lines.find((l) => !fixedHits.has(l) && l.trim().length > 0)
       if (nameLine) {
         // 2026-08-10："姓名 张三"/"姓名：张三"式行剥离前缀取真实姓名
