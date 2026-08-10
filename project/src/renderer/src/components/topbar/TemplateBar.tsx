@@ -40,9 +40,13 @@ export function TemplateBar(): React.JSX.Element {
         </Select>
       </label>
 
-      {/* 主题色：推荐色板（直接选）+ 自定义调色板（高级选项） */}
-      <label className="flex items-center gap-1.5 text-xs text-foreground/70" title={t('editor.themeColor')}>
-        {t('editor.themeColor')}
+      {/* 主题色：推荐色板（直接选）+ 自定义调色板（高级选项）
+          2026-08-09 修复：swatch 移出 label——button 嵌套在 label 内属无效 HTML，
+          浏览器吞掉 label 区域点击导致色板 swatch 点击无反应（用户反馈「样式按钮点击无反应」） */}
+      <div className="flex items-center gap-1.5 text-xs text-foreground/70">
+        <span className="shrink-0" title={t('editor.themeColor')}>
+          {t('editor.themeColor')}
+        </span>
         <span className="theme-swatches">
           {THEME_COLOR_PRESETS.map((c) => (
             <button
@@ -62,7 +66,7 @@ export function TemplateBar(): React.JSX.Element {
             onChange={(e) => setTheme(e.target.value)}
           />
         </span>
-      </label>
+      </div>
 
       <label className="flex items-center gap-1.5 text-xs text-foreground/70">
         {t('editor.fontLabel')}

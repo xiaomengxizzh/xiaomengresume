@@ -1,5 +1,5 @@
 /**
- * pdf/fonts.ts —— 文字版 PDF 字体解析（2026-08-08 纯代码生成重构）
+ * pdf/fonts.ts —— 文字版 PDF 字体解析（2026-08-08 纯代码生成重构；2026-08-10 字体体系修复批）
  * FONT_OPTIONS（src/shared/constants/fonts.ts）是 CSS 字体栈白名单；
  * 纯代码 PDF 需要真实字体文件 → 这里把 id 映射到系统字体文件路径（跨平台探测），
  * 注册 @react-pdf/renderer 用。
@@ -8,23 +8,30 @@
  * - @react-pdf/font 的 Font.register src 只接受【字符串路径】——传 {data, format}
  *   对象会在 isDataUrl 处炸（dataUrl.indexOf is not a function）。
  * - **TTC（TrueType Collection）明确不支持**：fontkit.open 后 'fonts' in data →
- *   throw 'Font collection is not supported' → 必须回退 .ttf 单字体（simhei.ttf 覆盖中文+粗体）。
+ *   throw 'Font collection is not supported' → 必须回退 .ttf 单字体。
  * - 字体缺失/读取失败 → 不抛错，返回警告（Helvetica 兜底，中文会乱码但导出不崩）。
+ *
+ * 2026-08-10 修复（对齐最终分析计划 P0-1）：
+ * - system 默认族改用【等线 Deng/Dengb】（Windows 自带 TTF，normal+bold 两文件 → 真加粗；
+ *   预览端 FONT_OPTIONS.system 同步为 DengXian 优先 → 两端字形+字重一致）。
+ * - 每个字体 id 注册独立 family（`zh-<id>` / `en-<id>`），支持按 section 逐区字体
+ *   （getSectionFontFamily）；中西文混排经 template root `fontFamily: ['en-…','zh-…']` 数组回退。
+ * - en 族（times/arial/georgia）真实消费（此前注册零引用 → 西文数字走 Helvetica/SimHei）。
  */
 import { Font } from '@react-pdf/renderer'
 import { promises as fs } from 'node:fs'
 import * as path from 'node:path'
 import type { Layout } from '@shared/schema/resume'
 
-/** 字体文件候选列表：优先 .ttf（TTC 不支持），.ttc 兜底不启用（探测用） */
+/** 字体文件候选列表（.ttf 单字体；TTC 不支持） */
 interface FontCandidate {
   id: string
-  /** 注册族名（中文=zh，西文=en；组件按需取） */
-  family: string
-  /** 系统字体文件名候选（按优先级；.ttf 在前，.ttc 仅作回退探测） */
-  files: string[]
-  /** 是否用于中文文本（fallback 到 simhei） */
+  /** 族基名（注册族 = `${isCjk ? 'zh' : 'en'}-${id}`） */
   isCjk: boolean
+  /** 常规字重文件候选（按优先级） */
+  files: string[]
+  /** 粗体字重文件候选（缺失时回退常规文件，@react-pdf 无 faux bold） */
+  boldFiles?: string[]
 }
 
 const FONT_DIRS = [
@@ -37,32 +44,38 @@ const FONT_DIRS = [
 
 /** FONT_OPTIONS id → 系统字体文件映射（Windows 优先；.ttf 单字体在前） */
 const CANDIDATES: FontCandidate[] = [
-  { id: 'system', family: 'zh', files: ['simhei.ttf', 'msyh.ttf', 'PingFang.ttc', 'NotoSansCJK-Regular.ttc'], isCjk: true },
-  { id: 'songti', family: 'zh', files: ['simsun.ttf', 'STSong.ttf', 'NotoSerifCJK-Regular.ttc'], isCjk: true },
-  { id: 'heiti', family: 'zh', files: ['simhei.ttf', 'msyh.ttf', 'STHeiti.ttf', 'NotoSansCJK-Regular.ttc'], isCjk: true },
-  { id: 'yahei', family: 'zh', files: ['msyh.ttf', 'simhei.ttf', 'PingFang.ttc'], isCjk: true },
-  { id: 'kaiti', family: 'zh', files: ['simkai.ttf', 'Kaiti.ttc', 'NotoSansCJK-Regular.ttc'], isCjk: true },
-  { id: 'fangsong', family: 'zh', files: ['simfang.ttf', 'STFangsong.ttf', 'NotoSerifCJK-Regular.ttc'], isCjk: true },
-  { id: 'times', family: 'en', files: ['times.ttf', 'LiberationSerif-Regular.ttf'], isCjk: false },
-  { id: 'arial', family: 'en', files: ['arial.ttf', 'LiberationSans-Regular.ttf'], isCjk: false },
-  { id: 'georgia', family: 'en', files: ['georgia.ttf'], isCjk: false }
+  // 2026-08-10：system 默认 = 等线（Deng/Dengb，Windows 10+ 自带 TTF，真加粗）
+  { id: 'system', isCjk: true, files: ['Deng.ttf', 'simhei.ttf', 'msyh.ttf'], boldFiles: ['Dengb.ttf'] },
+  { id: 'songti', isCjk: true, files: ['simsun.ttf', 'STSong.ttf'] },
+  { id: 'heiti', isCjk: true, files: ['simhei.ttf', 'msyh.ttf'] },
+  { id: 'yahei', isCjk: true, files: ['msyh.ttf', 'simhei.ttf'] },
+  { id: 'kaiti', isCjk: true, files: ['simkai.ttf'] },
+  { id: 'fangsong', isCjk: true, files: ['simfang.ttf'] },
+  { id: 'times', isCjk: false, files: ['times.ttf'] },
+  { id: 'arial', isCjk: false, files: ['arial.ttf'] },
+  { id: 'georgia', isCjk: false, files: ['georgia.ttf'] }
 ]
 
-/** 黑体兜底候选（中文+粗体；TTC 不行就用它） */
+/** 黑体兜底候选（中文 fallback；TTC 不行就用它） */
 const FALLBACK_HEI = CANDIDATES.find((c) => c.id === 'heiti')!
 
-/** 已注册字体指纹（cjk|en 字体 id）；同指纹跳过，变化时 Font.clear() 重注册。
- *  P2 修复：原 `registered` 布尔永不复位——首次导出锁定字体，用户改字体配置后再导出不生效。 */
+/** 注册族名：zh-<id> / en-<id>（2026-08-10 起按 id 独立注册，支持逐区字体） */
+export function familyFor(id: string): string {
+  const c = CANDIDATES.find((x) => x.id === id) ?? FALLBACK_HEI
+  return `${c.isCjk ? 'zh' : 'en'}-${id}`
+}
+
+/** 已注册指纹（固定：字体清单级一次性注册；同指纹跳过，_reset 清） */
+const REG_FINGERPRINT = 'v2-all'
 let registeredFingerprint: string | null = null
 
-/** 只移除本项目注册的 family（'zh'/'en'），保留 @react-pdf 内置 Helvetica 等。
- *  FontStore.clear() 会连内置 family 一起清空（不可用）；fontFamilies 标私有但运行时公共
- *  （与 pdf-lib Info dict 同类先例，见 build.ts cropFirstPage 注释）。 */
+/** 只移除本项目注册的 family（zh- 前缀 / en- 前缀族），保留 @react-pdf 内置 Helvetica 等。 */
 function clearPdfFamilies(): void {
   const store = Font as unknown as { fontFamilies?: Record<string, unknown> }
   if (store.fontFamilies) {
-    delete store.fontFamilies['zh']
-    delete store.fontFamilies['en']
+    for (const k of Object.keys(store.fontFamilies)) {
+      if (k.startsWith('zh-') || k.startsWith('en-')) delete store.fontFamilies[k]
+    }
   }
 }
 
@@ -72,26 +85,10 @@ export interface FontRegistrationWarnings {
 }
 
 /** 查找第一个存在的 .ttf（跳过 .ttc —— fontkit 不支持字体集合） */
-async function findTtfFile(candidate: FontCandidate): Promise<string | null> {
+async function findTtfFile(files: string[]): Promise<string | null> {
   for (const dir of FONT_DIRS) {
-    for (const file of candidate.files) {
+    for (const file of files) {
       if (!file.toLowerCase().endsWith('.ttf')) continue // 跳过 TTC/OTF，仅单字体 TTF
-      const p = path.join(dir, file)
-      try {
-        await fs.access(p)
-        return p
-      } catch {
-        /* 下一个 */
-      }
-    }
-  }
-  return null
-}
-
-/** 字体文件是否存在（任意扩展名；仅用于诊断 warning 文案） */
-async function findAnyFontFile(candidate: FontCandidate): Promise<string | null> {
-  for (const dir of FONT_DIRS) {
-    for (const file of candidate.files) {
       const p = path.join(dir, file)
       try {
         await fs.access(p)
@@ -111,44 +108,42 @@ async function findAnyFontFile(candidate: FontCandidate): Promise<string | null>
  */
 export async function registerPdfFonts(layout: Layout | undefined): Promise<FontRegistrationWarnings> {
   const warnings: string[] = []
-  const resolved = resolveFontIds(layout)
-  const fingerprint = `${resolved.cjk}|${resolved.en}`
-  if (registeredFingerprint === fingerprint) {
+  if (registeredFingerprint === REG_FINGERPRINT) {
     return { warnings, usedCjkFont: 'already-registered' }
   }
-  // 字体选择变化（或首次）：移除本项目已注册的 family 再按新配置注册
-  // （FontStore.register 对同名 family 是追加 sources，必须移除才能覆盖）
   clearPdfFamilies()
-  registeredFingerprint = fingerprint
+  registeredFingerprint = REG_FINGERPRINT
 
-  const cjkCandidate = CANDIDATES.find((c) => c.id === resolved.cjk) ?? FALLBACK_HEI
-  const enCandidate = CANDIDATES.find((c) => c.id === resolved.en) ?? CANDIDATES.find((c) => c.id === 'times')!
+  // system 默认解析（zh-system / en-arial；兼容既有 resolveFontIds 语义）
+  const cjkId = resolveFontIds(layout).cjk
 
-  // 中文族：优先目标字体 .ttf，找不到回退黑体（simhei.ttf 覆盖中文+粗体）
-  const cjkFile = (await findTtfFile(cjkCandidate)) ?? (await findTtfFile(FALLBACK_HEI))
-  const enFile = (await findTtfFile(enCandidate)) ?? (await findTtfFile(CANDIDATES.find((c) => c.id === 'times')!))
-
-  if (cjkFile) {
+  // 注册全部可用候选族（normal + bold 两文件；bold 缺失回退 normal）
+  for (const c of CANDIDATES) {
+    const normal = await findTtfFile(c.files)
+    if (!normal) {
+      if (c.id === 'system' || c.id === 'heiti') {
+        // 黑体体系缺失才有告警；其余族（songti 等无 TTF）静默回退
+        warnings.push(`no ${c.id} .ttf on system → fallback heiti`)
+      }
+      continue
+    }
+    const bold = c.boldFiles ? await findTtfFile(c.boldFiles) : null
+    const family = familyFor(c.id)
     try {
-      Font.register({ family: 'zh', fonts: [{ src: cjkFile, fontWeight: 'normal' }, { src: cjkFile, fontWeight: 'bold' }] })
+      Font.register({
+        family,
+        fonts: [
+          { src: normal, fontWeight: 'normal' },
+          { src: bold ?? normal, fontWeight: 'bold' }
+        ]
+      })
     } catch (err) {
-      warnings.push(`cjk font register failed: ${String(err)}`)
-    }
-  } else {
-    // TTC 存在但无 .ttf 可用的诊断（如只有 msyh.ttc 的环境）
-    const ttc = await findAnyFontFile(cjkCandidate)
-    warnings.push(ttc ? `only TTC font available (${path.basename(ttc)}), fontkit unsupported → cjk fallback Helvetica` : 'no cjk font found on system')
-  }
-
-  if (enFile) {
-    try {
-      Font.register({ family: 'en', fonts: [{ src: enFile, fontWeight: 'normal' }, { src: enFile, fontWeight: 'bold' }] })
-    } catch {
-      /* 西文缺省不阻塞 */
+      warnings.push(`font register ${family} failed: ${String(err)}`)
     }
   }
 
-  return { warnings, usedCjkFont: cjkFile ? path.basename(cjkFile) : 'none' }
+  const used = familyFor(cjkId)
+  return { warnings, usedCjkFont: used }
 }
 
 /** 从 layout 解析中文/西文字体 id（sectionFonts.basics 优先，回落 resumeFont，再回落 system） */
@@ -160,8 +155,23 @@ function resolveFontIds(layout: Layout | undefined): { cjk: string; en: string }
     return id && id !== 'system' ? id : undefined
   }
   const cjk = pick('basics') ?? pick(undefined) ?? 'system'
-  const en = pick('basics') ?? pick(undefined) ?? 'times'
+  // 2026-08-10：en 默认 arial（无衬线，对齐预览西文观感；原 times 衬线与预览 Segoe UI 不符）
+  const en = pick('basics') ?? pick(undefined) ?? 'arial'
   return { cjk, en }
+}
+
+/**
+ * 2026-08-10 新增：按 section 解析注册族名（逐区字体，对齐预览 fontFor(section)）。
+ * - sectionFonts[section] 命中 → 对应 `zh-<id>`（西文族 id 视为无效中文族 → 回退 zh-system）
+ * - 未命中 → 全局 cjk 解析结果
+ * 注：中文内容必须落在 zh-* 族（en-* 族无中文字形）；西文数字由 template root fontFamily 数组兜底。
+ */
+export function getSectionFontFamily(section: string, layout: Layout | undefined): string {
+  const cjkId = resolveFontIds(layout).cjk
+  const sid = layout?.sectionFonts?.[section]
+  const id = sid && sid !== 'system' ? sid : cjkId
+  const c = CANDIDATES.find((x) => x.id === id)
+  return c && c.isCjk ? familyFor(id) : familyFor(cjkId)
 }
 
 /** 测试辅助：重置注册状态 */

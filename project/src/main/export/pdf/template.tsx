@@ -21,37 +21,21 @@
  */
 import React from 'react'
 import { Document, Page, StyleSheet, Text, View, Image, Svg, Path, Circle, Rect } from '@react-pdf/renderer'
-import type { Resume, Layout } from '@shared/schema/resume'
+import type { Resume } from '@shared/schema/resume'
 import type { Language } from '@shared/schema/settings'
 import type { Style } from '@react-pdf/types'
 import type { PdfParagraph } from './richtext'
 import { richTextToPdfParagraphs } from './richtext'
 import { fmtDate } from './dates'
+import { getSectionFontFamily } from './fonts'
+// 2026-08-10 架构收敛批：排版逻辑值单一事实源（与预览端同源引用）
+import { TEMPLATE_PRESETS, lv, titleStyleLogic, sectionSpacingLogic, entrySpacingLogic, TYPE_SCALE, emPx, CONTACT_GRID_LOGIC, contactFontSize, truncateContactValue, LIST_MARK_LOGIC, INFO_ICON_ELEMENTS, type TemplatePreset } from '@shared/templates/layout'
 
-/** 排版预设键（与 renderer/src/templates/shared/preset.ts PresetKey 对齐） */
-type PresetKey = 'baseFontSize' | 'lineHeight' | 'pagePadding' | 'paragraphSpacing' | 'sectionSpacing' | 'headerSize'
-interface TemplatePreset {
-  baseFontSize: number
-  lineHeight: number
-  pagePadding: number
-  paragraphSpacing: number
-  sectionSpacing: number
-  headerSize: number
-}
 
-/** 三套模板预设（1:1 复制 renderer/src/templates/registry.ts PRESETS，变更须同步） */
-const PRESETS: Record<string, TemplatePreset> = {
-  classic: { baseFontSize: 16, lineHeight: 1.8, pagePadding: 32, paragraphSpacing: 12, sectionSpacing: 16, headerSize: 18 },
-  modern: { baseFontSize: 16, lineHeight: 1.6, pagePadding: 36, paragraphSpacing: 14, sectionSpacing: 20, headerSize: 17 },
-  compact: { baseFontSize: 15, lineHeight: 1.4, pagePadding: 26, paragraphSpacing: 10, sectionSpacing: 12, headerSize: 15 }
-}
+// 2026-08-10：模板预设单一事实源 = shared TEMPLATE_PRESETS（不再本地拷贝）
+const PRESETS: Record<string, TemplatePreset> = TEMPLATE_PRESETS as Record<string, TemplatePreset>
 
-/** layout 覆盖链取值（同 renderer preset.ts lv()：layout > 模板预设） */
-function lv(layout: Layout | undefined, key: PresetKey, preset: TemplatePreset): number {
-  const v = layout?.[key]
-  return typeof v === 'number' ? v : preset[key]
-}
-
+// lv() 收敛自 shared/templates/layout.ts
 /** px → pt（PDF 1pt = 1/72in；CSS 96dpi 下 1px = 0.75pt。
  *  2026-08-08 修复 P1：@react-pdf 无单位数值按 pt 处理，原直写 px 值致导出比预览大 33%。） */
 const pt = (px: number): number => px * 0.75
@@ -85,27 +69,38 @@ const redactValue = (v: string | undefined, privacyMode: boolean): string =>
 // 与 ResumeBody 同值（em 换算：baseFontSize=16 → 0.95em≈15.2px, 0.92em≈14.7px, 0.85em≈13.6px）。
 function makeStyles(preset: TemplatePreset, accent: string, variant: TitleVariant) {
   const { baseFontSize, lineHeight, pagePadding, paragraphSpacing, sectionSpacing, headerSize } = preset
+  // 2026-08-10：样式变体 → 模板 id 反向映射（TYPE_SCALE.namePx/headlinePx 按模板 id 索引）
+  const tplId = variant === 'underline' ? 'classic' : variant === 'accent-bar' ? 'modern' : 'compact'
   const sectionTitleBase: Style = {
     fontSize: pt(headerSize),
     fontWeight: 600,
     color: '#444'
   }
-  const sectionTitle: Style =
-    variant === 'accent-bar'
-      ? { ...sectionTitleBase, letterSpacing: 0.5, color: '#333', borderLeftWidth: 3, borderLeftColor: accent, borderLeftStyle: 'solid', paddingLeft: 6, paddingBottom: 1.5, marginBottom: pt(10), textTransform: 'none' }
-      : variant === 'compact'
-        ? { ...sectionTitleBase, fontWeight: 700, letterSpacing: 0.3, color: '#333', paddingBottom: 1.5, marginBottom: pt(6), textTransform: 'none' }
-        : { ...sectionTitleBase, letterSpacing: 1, color: accent, borderBottomWidth: 2, borderBottomColor: accent, borderBottomStyle: 'solid', paddingBottom: pt(4), marginBottom: pt(10), textTransform: 'uppercase' }
+  // 2026-08-10：节标题逻辑值 = shared titleStyleLogic（letterSpacing/border/padding 统一 pt 换算，消除裸值 +33%）
+  const tl = titleStyleLogic(variant)
+  const sectionTitle: Style = {
+    ...sectionTitleBase,
+    fontWeight: tl.fontWeight,
+    letterSpacing: pt(tl.letterSpacing),
+    color: tl.color === 'accent' ? accent : '#333',
+    textTransform: tl.textTransform,
+    paddingBottom: pt(tl.paddingBottom),
+    marginBottom: pt(tl.marginBottom),
+    ...(tl.borderBottom ? { borderBottomWidth: pt(tl.borderBottom.width), borderBottomColor: accent, borderBottomStyle: 'solid' as const } : {}),
+    ...(tl.borderLeft ? { borderLeftWidth: pt(tl.borderLeft.width), borderLeftColor: accent, borderLeftStyle: 'solid' as const, paddingLeft: pt(tl.borderLeft.paddingLeft) } : {})
+  }
 
   return StyleSheet.create({
     page: {
       paddingTop: pt(pagePadding),
       paddingBottom: pt(pagePadding),
-      paddingHorizontal: pt(pagePadding + (variant === 'compact' ? 20 : 24)),
+      // 2026-08-10 P1-7：modern 横向 padding 对齐预览（classic +24，modern/compact +20）
+      paddingHorizontal: pt(pagePadding + (variant === 'underline' ? 24 : 20)),
       fontSize: pt(baseFontSize),
       lineHeight,
       color: '#333',
-      fontFamily: 'zh'
+      // 2026-08-10 P0-1：中西文混排——西文/数字优先 en-arial，中文回退 zh-system（等线）
+      fontFamily: ['en-arial', 'zh-system']
     },
     // 头部：flex 行；左头像+名字 | 右联系方式
     header: {
@@ -119,18 +114,19 @@ function makeStyles(preset: TemplatePreset, accent: string, variant: TitleVarian
     },
     photo: {
       objectFit: 'cover',
-      flexShrink: 0,
-      marginRight: pt(24)
+      flexShrink: 0
+      // 2026-08-10 P0-2：删除 marginRight（与 header gap 叠加致照片→姓名间距 48pt vs 预览 24px）
     },
     name: {
-      fontSize: pt(30), // ResumeBody classic name 30px
+      // 2026-08-10：姓名字号 = TYPE_SCALE（按模板 id 索引；variant 样式变体 → 模板 id 反向映射）
+      fontSize: pt(TYPE_SCALE.namePx[tplId]),
       fontWeight: 700,
       color: '#111827',
       lineHeight: 1.2,
       marginBottom: pt(2)
     },
     headline: {
-      fontSize: pt(18), // ResumeBody classic headline 18px
+      fontSize: pt(TYPE_SCALE.headlinePx[tplId]),
       color: '#666',
       opacity: 0.75,
       lineHeight: 1.4
@@ -138,33 +134,46 @@ function makeStyles(preset: TemplatePreset, accent: string, variant: TitleVarian
     contactGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      flexGrow: 1,
-      justifyContent: 'flex-end',
-      rowGap: pt(7),
-      columnGap: pt(20)
+      // 2026-08-10：与姓名块加缓冲间距（视觉复核：图标与姓名末字过近；header gap 已生效仍补 8pt）
+      marginLeft: pt(8),
+      // 2026-08-10 修复：列宽对齐预览 grid auto auto——contactItem 定宽 48% 保证两列严格对齐
+      // （原 44% 相对 auto 宽父级百分比，Yoga 解析不定致列漂移）；maxWidth 防长值挤压 identity 块
+      maxWidth: '58%',
+      // R5：紧跟姓名右侧（不再 flexGrow 推到行尾），与预览端去掉 marginLeft:auto 对齐
+      justifyContent: 'flex-start',
+      rowGap: pt(CONTACT_GRID_LOGIC.gapY),
+      columnGap: pt(CONTACT_GRID_LOGIC.gapX)
     },
     contactItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      width: '44%' // P1 修复：2 列规整换行（对齐预览端 grid auto auto 两列）
+      width: '48%' // 2026-08-10：两列等宽对齐（原 44% 不定）
     },
     contactText: {
-      fontSize: pt(12), // 略小于 web 的 16（PDF 渲染密度高；视觉对齐）
+      fontSize: pt(CONTACT_GRID_LOGIC.fontSizeTiers[0]), // 基准 = 首档（每项按长度降档覆盖）
       color: '#444',
       marginLeft: pt(5)
     },
     profile: {
       marginTop: pt(12)
     },
-    // section 容器
+    profileText: {
+      fontSize: pt(baseFontSize), // F6：对齐预览 profile 继承 base
+      lineHeight,
+      marginBottom: pt(paragraphSpacing)
+    },
+    // section 容器（2026-08-10 收敛：间距逻辑 = shared sectionSpacingLogic(gap)——
+    // margin=gap + padding=6px + 线=1px，与预览 SectionBlock 同函数，消除末尾留白过大与两端不一致）
     section: {
-      marginTop: pt(sectionSpacing),
-      marginBottom: pt(4)
+      marginBottom: pt(sectionSpacingLogic(sectionSpacing).margin),
+      borderBottomWidth: pt(sectionSpacingLogic(sectionSpacing).line),
+      borderBottomColor: '#e8e8e8',
+      paddingBottom: pt(sectionSpacingLogic(sectionSpacing).padding)
     },
     sectionTitle: sectionTitle,
-    // 条目容器（marginBottom 10px ResumeBody L186）
+    // 条目容器（F2：间距 = shared entrySpacingLogic；默认 edu 10px，work/projects 由 renderer 覆盖 12px）
     entry: {
-      marginBottom: pt(10)
+      marginBottom: pt(entrySpacingLogic('education'))
     },
     // 条目头（ResumeBody entryHead：左标题右日期）
     entryRow: {
@@ -173,28 +182,30 @@ function makeStyles(preset: TemplatePreset, accent: string, variant: TitleVarian
       alignItems: 'baseline'
     },
     entryTitle: {
-      fontSize: pt(15.2), // 0.95em × 16 ≈ 15.2
+      fontSize: pt(emPx(baseFontSize, TYPE_SCALE.entryHeadEm)),
       fontWeight: 700,
       color: '#222'
     },
     entryDate: {
-      fontSize: pt(13), // 略小于 web 的 0.95em（PDF 渲染密度高）
+      fontSize: pt(emPx(baseFontSize, TYPE_SCALE.entryDateEm)), // D10：对齐预览 0.95em
       color: '#666'
     },
     entrySub: {
-      fontSize: pt(13.6), // 0.85em × 16
+      fontSize: pt(emPx(baseFontSize, TYPE_SCALE.entrySubEm)),
       color: '#666',
       opacity: 0.8,
       marginTop: pt(1)
     },
-    // 描述段落（ResumeBody pStyle：fontSize 0.92em lineHeight 1.5 marginBottom 12px）
+    // 描述段落（TYPE_SCALE.descEm；profile 用 profileText 继承 base）
     desc: {
-      fontSize: pt(14.7), // 0.92em × 16
+      fontSize: pt(emPx(baseFontSize, TYPE_SCALE.descEm)),
       lineHeight,
       marginBottom: pt(paragraphSpacing)
     },
     skillItem: {
-      fontSize: pt(14.7),
+      fontSize: pt(emPx(baseFontSize, TYPE_SCALE.skillEm)),
+      // F7：缩进对齐预览 skills ul（LIST_MARK_LOGIC.indent）
+      marginLeft: pt(LIST_MARK_LOGIC.indent),
       marginBottom: pt(2)
     },
     certRow: {
@@ -203,14 +214,14 @@ function makeStyles(preset: TemplatePreset, accent: string, variant: TitleVarian
       marginBottom: pt(4)
     },
     certName: {
-      fontSize: pt(14.7)
+      fontSize: pt(emPx(baseFontSize, TYPE_SCALE.certEm))
     },
     certDate: {
-      fontSize: pt(13),
+      fontSize: pt(emPx(baseFontSize, TYPE_SCALE.certEm)),
       color: '#666'
     },
     langItem: {
-      fontSize: pt(14.7),
+      fontSize: pt(emPx(baseFontSize, TYPE_SCALE.langEm)),
       marginBottom: pt(2)
     },
     flex1: {
@@ -221,12 +232,13 @@ function makeStyles(preset: TemplatePreset, accent: string, variant: TitleVarian
 
 type PdfStyles = ReturnType<typeof makeStyles>
 
-/** 段落 → 文本节点列表（bold/italic/strike/link 用嵌套 Text 内联样式；P2：补 italic/strike/link） */
-const renderParagraphs = (paragraphs: PdfParagraph[], styles: PdfStyles): React.JSX.Element[] =>
+/** 段落 → 文本节点列表（bold/italic/strike/link 用嵌套 Text 内联样式；P2：补 italic/strike/link）
+ *  textStyle：段落容器样式覆盖（profile 用 base 字号，其余默认 styles.desc） */
+const renderParagraphs = (paragraphs: PdfParagraph[], styles: PdfStyles, accent: string, textStyle?: Style): React.JSX.Element[] =>
   paragraphs.map((p, i) => {
-    const prefix = p.list === 'bullet' ? '• ' : p.list === 'ordered' ? `${p.order}. ` : ''
+    const prefix = p.list === 'bullet' ? LIST_MARK_LOGIC.bullet : p.list === 'ordered' ? LIST_MARK_LOGIC.ordered(p.order ?? 1) : ''
     return (
-      <Text key={i} style={styles.desc}>
+      <Text key={i} style={textStyle ?? styles.desc}>
         {prefix}
         {p.runs.map((r, j) => {
           const extra: Style = {}
@@ -234,7 +246,8 @@ const renderParagraphs = (paragraphs: PdfParagraph[], styles: PdfStyles): React.
           if (r.italic) extra.fontStyle = 'italic'
           if (r.strike) extra.textDecoration = 'line-through'
           if (r.link) {
-            extra.color = '#475569'
+            // 2026-08-10 P1-4：链接色随主题色（原硬编码 #475569，⑰ 只修了图标漏了链接）
+            extra.color = accent
             extra.textDecoration = 'underline'
           }
           const needNest = Object.keys(extra).length > 0
@@ -266,56 +279,28 @@ const EntrySub = ({ children, styles }: { children: string; styles: PdfStyles })
   <Text style={styles.entrySub}>{children}</Text>
 )
 
-/** 联系信息线性图标（v2.3：对齐预览 InfoIcons lucide 风格，path 与 renderer InfoIcons.tsx 同源）
- *  v2.4：@react-pdf 4.6.0 修复组件封装 Svg 多实例渲染丢失（4.5.1 需内联三元规避），
- *  恢复组件封装 + accent 动态色（消除偏差 ⑰：图标随自定义 themeColor）。 */
+/** 联系信息线性图标（2026-08-10 架构收敛批：SVG 元素数据单一事实源 = shared INFO_ICON_ELEMENTS，
+ * 与预览 InfoIcons 同源引用——杜绝双份 path 漂移；尺寸 = CONTACT_GRID_LOGIC.iconSize（D8 折中 12px）。） */
 const PdfIcon = ({ id, color }: { id: string; color: string }): React.JSX.Element | null => {
-  const s = { stroke: color, strokeWidth: 1.6, fill: 'none' }
-  switch (id) {
-    case 'mail':
-      return (
-        <Svg width={9} height={9} viewBox="0 0 24 24">
-          <Rect x={3} y={5} width={18} height={14} rx={2} {...s} />
-          <Path d="m3 7 9 6 9-6" {...s} />
-        </Svg>
-      )
-    case 'phone':
-      return (
-        <Svg width={9} height={9} viewBox="0 0 24 24">
-          <Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" {...s} />
-        </Svg>
-      )
-    case 'pin':
-      return (
-        <Svg width={9} height={9} viewBox="0 0 24 24">
-          <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" {...s} />
-          <Circle cx={12} cy={10} r={3} {...s} />
-        </Svg>
-      )
-    case 'globe':
-      return (
-        <Svg width={9} height={9} viewBox="0 0 24 24">
-          <Circle cx={12} cy={12} r={10} {...s} />
-          <Path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20" {...s} />
-        </Svg>
-      )
-    case 'briefcase':
-      return (
-        <Svg width={9} height={9} viewBox="0 0 24 24">
-          <Rect x={2} y={7} width={20} height={14} rx={2} {...s} />
-          <Path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" {...s} />
-        </Svg>
-      )
-    case 'calendar':
-      return (
-        <Svg width={9} height={9} viewBox="0 0 24 24">
-          <Rect x={3} y={4} width={18} height={18} rx={2} {...s} />
-          <Path d="M16 2v4M8 2v4M3 10h18" {...s} />
-        </Svg>
-      )
-    default:
-      return null
-  }
+  const els = INFO_ICON_ELEMENTS[id]
+  if (!els || els.length === 0) return null
+  const stroke = { stroke: color, strokeWidth: 1.6, fill: 'none' }
+  const size = pt(CONTACT_GRID_LOGIC.iconSize)
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      {els.map((el, i) => {
+        if (el.kind === 'rect') {
+          const p = el.props as { x: number; y: number; width: number; height: number; rx?: number }
+          return <Rect key={i} x={p.x} y={p.y} width={p.width} height={p.height} rx={p.rx} {...stroke} />
+        }
+        if (el.kind === 'circle') {
+          const p = el.props as { cx: number; cy: number; r: number }
+          return <Circle key={i} cx={p.cx} cy={p.cy} r={p.r} {...stroke} />
+        }
+        return <Path key={i} d={el.props.d as string} {...stroke} />
+      })}
+    </Svg>
+  )
 }
 
 export interface ResumePdfProps {
@@ -326,10 +311,30 @@ export interface ResumePdfProps {
   photoSrc?: string | null
 }
 
+/**
+ * R5：标签内容过长缩小字体（pt 值，与预览端 ResumeBody infoFontSize 同规则：
+ * ≤14 字符 16px=12pt → ≤24 字符 13px=9.75pt → 更长 11px=8.25pt）。
+ * 2026-08-10 P0-3：返回值即 pt（调用处不再套 pt()——原双重换算致字号缩小 25-35%）。
+ */
+/**
+ * 2026-08-10 修复：标签字号档位/长值截断单一事实源 = shared CONTACT_GRID_LOGIC。
+ * contactFontSize 返回 px 逻辑值 → ×0.75 换算为 pt（此前误用 emPx 导致 px 值当 pt → 放大 33%）。
+ */
+function infoFontSizePt(text: string): number {
+  return contactFontSize(text) * 0.75
+}
+
+function truncateValue(v: string): string {
+  return truncateContactValue(v)
+}
+
 export function ResumePdfDocument({ resume, language, privacyMode, photoSrc }: ResumePdfProps): React.JSX.Element {
   const b = resume.basics
   const titles = SECTION_TITLES[language] ?? SECTION_TITLES['zh-CN']
   const redact = (v: string | undefined): string => redactValue(v, privacyMode)
+
+  // R6：基本信息三透明模块排序（编辑区 basicsOrder 驱动头部三块排列；缺省经典顺序，与预览端一致）
+  const basicsOrder = (resume.layout?.basicsOrder?.length ? resume.layout.basicsOrder : ['photo', 'identity', 'tags']) as Array<'photo' | 'identity' | 'tags'>
 
   // P1 修复：从 layout 取模板预设/主题色/标题变体（原硬编码 classic + #475569）
   const layout = resume.layout
@@ -352,9 +357,11 @@ export function ResumePdfDocument({ resume, language, privacyMode, photoSrc }: R
   const name = redact(b.name)
   const displayName = name || (privacyMode ? REDACT : '')
 
-  // 头像（ResumeBody：photoWidth/photoHeight，缺省 90×120；px → pt 换算）
-  const photoW = ((b.photoWidth ?? 90) * 0.75) || 0
-  const photoH = ((b.photoHeight ?? 120) * 0.75) || 0
+  // 头像（ResumeBody：photoWidth/photoHeight，缺省 110×110 —— 2026-08-10 P1-2 对齐预览 CLASSIC_PHOTO；
+  // px → pt 换算）
+  // 2026-08-09 T2：渲染尺寸兜底 clamp（导入已等比缩放至基准宽 110；上限 180px → 135pt / 240px → 180pt）
+  const photoW = Math.min(((b.photoWidth ?? 110) * 0.75) || 0, 135)
+  const photoH = Math.min(((b.photoHeight ?? 110) * 0.75) || 0, 180)
 
   // 联系信息两列（对齐预览 ResumeBody infoItems 区 + material/简历示例1.pdf 参考：
   // 右侧 3 行 × 2 列 = [离职,生日] / [邮箱,电话] / [地址,网址]）
@@ -363,21 +370,27 @@ export function ResumePdfDocument({ resume, language, privacyMode, photoSrc }: R
   // 对打码值去重会误删占位条目）。customFields 不进头部区（预览 infoItems 区亦不含，防两处不一致）。
   // v2.3 修复：infoItems 分支保留 icon 字段（预览端 InfoIcon 用 it.icon；原丢 icon 致 PDF 图标缺失）。
   const FIELD_ICON: Record<string, string> = { emp: 'briefcase', birth: 'calendar', mail: 'mail', phone: 'phone', loc: 'pin', web: 'globe' }
-  const contactItems = (
-    b.infoItems && b.infoItems.length > 0
-      ? b.infoItems.map((it) => ({ id: it.id, icon: it.icon ?? FIELD_ICON[it.id] ?? '', value: it.value }))
-      : [
-          { id: 'emp', icon: FIELD_ICON.emp, value: b.employmentStatus },
-          { id: 'birth', icon: FIELD_ICON.birth, value: b.birthDate },
-          { id: 'mail', icon: FIELD_ICON.mail, value: b.email },
-          { id: 'phone', icon: FIELD_ICON.phone, value: b.phone },
-          { id: 'loc', icon: FIELD_ICON.loc, value: b.location },
-          { id: 'web', icon: FIELD_ICON.web, value: b.website }
-        ]
-  )
+  // 2026-08-09 T2：标签（customFields，含 icon）并入联系信息——PDF 导出同步显示；均空回退旧字段 6 项
+  let contactItemsRaw = [
+    ...(b.infoItems ?? []).map((it) => ({ id: it.id, icon: it.icon ?? FIELD_ICON[it.id] ?? '', value: it.value })),
+    ...(b.customFields ?? [])
+      .filter((cf) => cf.value)
+      .map((cf) => ({ id: cf.id, icon: cf.icon || 'pin', value: cf.value }))
+  ]
+  if (contactItemsRaw.length === 0) {
+    contactItemsRaw = [
+      { id: 'emp', icon: FIELD_ICON.emp, value: b.employmentStatus ?? '' },
+      { id: 'birth', icon: FIELD_ICON.birth, value: b.birthDate ?? '' },
+      { id: 'mail', icon: FIELD_ICON.mail, value: b.email ?? '' },
+      { id: 'phone', icon: FIELD_ICON.phone, value: b.phone ?? '' },
+      { id: 'loc', icon: FIELD_ICON.loc, value: b.location ?? '' },
+      { id: 'web', icon: FIELD_ICON.web, value: b.website ?? '' }
+    ]
+  }
+  const contactItems = contactItemsRaw
     .filter((it) => it.value && it.value.trim().length > 0)
     .filter((it, i, arr) => arr.findIndex((x) => x.value === it.value) === i)
-    .map((it) => ({ id: it.id, icon: it.icon, value: redact(it.value) }))
+    .map((it) => ({ id: it.id, icon: it.icon, value: truncateValue(redact(it.value)) }))
     .filter((it) => it.value.length > 0)
 
         const DEFAULT_SECTION_ORDER = ['education', 'work', 'projects', 'skills', 'certificates', 'languages']
@@ -388,9 +401,9 @@ export function ResumePdfDocument({ resume, language, privacyMode, photoSrc }: R
           const cs = resume.customSections?.find((c) => c.id === id)
           if (!cs) return null
           return (
-            <View style={styles.section}>
+            <View style={[styles.section, { fontFamily: getSectionFontFamily(id, layout) }]}>
               <SectionTitle title={cs.title || ''} styles={styles} />
-              {cs.content ? renderParagraphs(richTextToPdfParagraphs(cs.content), styles) : null}
+              {cs.content ? renderParagraphs(richTextToPdfParagraphs(cs.content), styles, accent) : null}
             </View>
           )
         }
@@ -398,15 +411,15 @@ export function ResumePdfDocument({ resume, language, privacyMode, photoSrc }: R
           education: () => (
             <>
           {resume.education.filter((e) => e.visible !== false).length > 0 ? (
-            <View style={styles.section}>
+            <View style={[styles.section, { fontFamily: getSectionFontFamily('education', layout) }]}>
               <SectionTitle title={titles.education} styles={styles} />
               {resume.education
                 .filter((e) => e.visible !== false)
                 .map((e) => (
-                  <View key={e.id} style={styles.entry}>
+                  <View key={e.id} style={styles.entry} wrap={false}>
                     <EntryHead left={e.school || ''} right={[fmtDate(e.startDate), e.endDate ? fmtDate(e.endDate) : ''].filter(Boolean).join(' – ')} styles={styles} />
                     {e.degree || e.major ? <EntrySub styles={styles}>{[e.degree, e.major].filter(Boolean).join(' · ')}</EntrySub> : null}
-                    {e.description ? renderParagraphs(richTextToPdfParagraphs(e.description), styles) : null}
+                    {e.description ? renderParagraphs(richTextToPdfParagraphs(e.description), styles, accent) : null}
                   </View>
                 ))}
             </View>
@@ -417,19 +430,19 @@ export function ResumePdfDocument({ resume, language, privacyMode, photoSrc }: R
           work: () => (
             <>
           {resume.work.filter((w) => w.visible !== false).length > 0 ? (
-            <View style={styles.section}>
+            <View style={[styles.section, { fontFamily: getSectionFontFamily('work', layout) }]}>
               <SectionTitle title={titles.work} styles={styles} />
               {resume.work
                 .filter((w) => w.visible !== false)
                 .map((w) => (
-                  <View key={w.id} style={styles.entry}>
+                  <View key={w.id} style={[styles.entry, { marginBottom: pt(entrySpacingLogic('work')) }]} wrap={false}>
                     <EntryHead
                       left={w.company || ''}
                       right={[fmtDate(w.startDate), w.current ? (language === 'zh-CN' ? '至今' : 'Present') : w.endDate ? fmtDate(w.endDate) : ''].filter(Boolean).join(' – ')}
                       styles={styles}
                     />
                     {w.title ? <EntrySub styles={styles}>{w.title}</EntrySub> : null}
-                    {w.summary ? renderParagraphs(richTextToPdfParagraphs(w.summary), styles) : null}
+                    {w.summary ? renderParagraphs(richTextToPdfParagraphs(w.summary), styles, accent) : null}
                   </View>
                 ))}
             </View>
@@ -440,15 +453,15 @@ export function ResumePdfDocument({ resume, language, privacyMode, photoSrc }: R
           projects: () => (
             <>
           {resume.projects.filter((p) => p.visible !== false).length > 0 ? (
-            <View style={styles.section}>
+            <View style={[styles.section, { fontFamily: getSectionFontFamily('projects', layout) }]}>
               <SectionTitle title={titles.projects} styles={styles} />
               {resume.projects
                 .filter((p) => p.visible !== false)
                 .map((p) => (
-                  <View key={p.id} style={styles.entry}>
+                  <View key={p.id} style={[styles.entry, { marginBottom: pt(entrySpacingLogic('projects')) }]} wrap={false}>
                     <EntryHead left={p.name || ''} right={[fmtDate(p.startDate), p.endDate ? fmtDate(p.endDate) : ''].filter(Boolean).join(' – ')} styles={styles} />
                     {p.role || p.organization ? <EntrySub styles={styles}>{[p.role, p.organization].filter(Boolean).join(' · ')}</EntrySub> : null}
-                    {p.description ? renderParagraphs(richTextToPdfParagraphs(p.description), styles) : null}
+                    {p.description ? renderParagraphs(richTextToPdfParagraphs(p.description), styles, accent) : null}
                   </View>
                 ))}
             </View>
@@ -459,11 +472,11 @@ export function ResumePdfDocument({ resume, language, privacyMode, photoSrc }: R
           skills: () => (
             <>
           {resume.skills.length > 0 ? (
-            <View style={styles.section}>
+            <View style={[styles.section, { fontFamily: getSectionFontFamily('skills', layout) }]}>
               <SectionTitle title={titles.skills} styles={styles} />
               {resume.skills.map((s) => (
                 <Text key={s.id} style={styles.skillItem}>
-                  • {s.name}
+                  {LIST_MARK_LOGIC.bullet}{s.name}
                   {s.level ? `（${s.level}）` : ''}
                   {s.category ? ` · ${s.category}` : ''}
                 </Text>
@@ -476,7 +489,7 @@ export function ResumePdfDocument({ resume, language, privacyMode, photoSrc }: R
           certificates: () => (
             <>
           {resume.certificates.length > 0 ? (
-            <View style={styles.section}>
+            <View style={[styles.section, { fontFamily: getSectionFontFamily('certificates', layout) }]}>
               <SectionTitle title={titles.certificates} styles={styles} />
               {resume.certificates.map((c) => (
                 <View key={c.id} style={styles.certRow}>
@@ -492,7 +505,7 @@ export function ResumePdfDocument({ resume, language, privacyMode, photoSrc }: R
           languages: () => (
             <>
           {resume.languages.length > 0 ? (
-            <View style={styles.section}>
+            <View style={[styles.section, { fontFamily: getSectionFontFamily('languages', layout) }]}>
               <SectionTitle title={titles.languages} styles={styles} />
               {resume.languages.map((l) => (
                 <Text key={l.id} style={styles.langItem}>
@@ -509,33 +522,54 @@ export function ResumePdfDocument({ resume, language, privacyMode, photoSrc }: R
     <Document title={displayName || 'Resume'} producer={DOC_PRODUCER} creator={DOC_PRODUCER}>
       <Page size="A4" style={styles.page}>
         {/* 头部：左头像+名字+职位 | 右联系信息两列（ResumeBody L120-172） */}
-        {/* M4a 缺口修复：F16 privacyMode 下不渲染头像（与预览端 blur 对齐；@react-pdf 无滤镜能力） */}
+        {/* 2026-08-10 P1-5：隐私模式渲染剪影占位（与预览 blur 显示一致；@react-pdf 无滤镜能力） */}
+        {/* R6：头部三块（图片/姓名与职业/标签信息）按 basicsOrder 顺序渲染，与预览端一致 */}
         <View style={styles.header}>
-          {photoSrc && !privacyMode ? <Image src={photoSrc} style={[styles.photo, { width: photoW, height: photoH }]} /> : null}
-          <View style={styles.headerMain}>
-            {displayName ? <Text style={styles.name}>{displayName}</Text> : null}
-            {b.headline ? <Text style={styles.headline}>{redact(b.headline)}</Text> : null}
-          </View>
-          {contactItems.length > 0 ? (
-            <View style={styles.contactGrid}>
-              {contactItems.map((it) => (
-                <View key={it.id} style={styles.contactItem}>
-                  <PdfIcon id={it.icon} color={accent} />
-                  <Text style={styles.contactText}>{it.value}</Text>
+          {basicsOrder.map((bid) => {
+            if (bid === 'photo') {
+              return photoSrc && !privacyMode ? (
+                <Image key={bid} src={photoSrc} style={[styles.photo, { width: photoW, height: photoH }]} />
+              ) : (
+                /* 2026-08-09 T2：无照片时人形剪影占位（与预览 .photo-placeholder 一致，守「模板=打印」） */
+                <View key={bid} style={[styles.photo, { width: photoW, height: photoH, backgroundColor: '#eceef2', borderWidth: 1, borderColor: '#d8dbe1', borderRadius: 3, alignItems: 'center', justifyContent: 'center' }]}>
+                  <View style={{ width: photoW * 0.34, height: photoW * 0.34, borderRadius: photoW * 0.17, backgroundColor: '#c6cad2' }} />
+                  <View style={{ width: photoW * 0.58, height: photoW * 0.3, borderTopLeftRadius: photoW * 0.29, borderTopRightRadius: photoW * 0.29, backgroundColor: '#c6cad2', marginTop: 2 }} />
                 </View>
-              ))}
-            </View>
-          ) : null}
+              )
+            }
+            if (bid === 'identity') {
+              return (
+                <View key={bid} style={styles.headerMain}>
+                  {displayName ? <Text style={styles.name}>{displayName}</Text> : null}
+                  {b.headline ? <Text style={styles.headline}>{redact(b.headline)}</Text> : null}
+                </View>
+              )
+            }
+            return contactItems.length > 0 ? (
+              <View key={bid} style={styles.contactGrid}>
+                {contactItems.map((it) => (
+                  <View key={it.id} style={styles.contactItem}>
+                    <PdfIcon id={it.icon} color={accent} />
+                    {/* R5：标签内容过长时缩小字体（P0-3：infoFontSizePt 返回值即 pt，不再套 pt()） */}
+                    <Text style={[styles.contactText, { fontSize: infoFontSizePt(it.value) }]}>{it.value}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null
+          })}
         </View>
-        {b.profile ? <View style={styles.profile}>{renderParagraphs(richTextToPdfParagraphs(b.profile), styles)}</View> : null}
+        {b.profile ? <View style={styles.profile}>{renderParagraphs(richTextToPdfParagraphs(b.profile), styles, accent, styles.profileText)}</View> : null}
 
-        {/* 自我评价 */}
-        {resume.summary?.content ? (
-          <View style={styles.section}>
-            <SectionTitle title={titles.summary} styles={styles} />
-            {renderParagraphs(richTextToPdfParagraphs(resume.summary.content), styles)}
-          </View>
-        ) : null}
+        {/* 自我评价（2026-08-10 P1-8：空内容隐藏整节——原空 doc 对象恒 truthy 渲染空标题+大块留白；预览端同步） */}
+        {(() => {
+          const paras = resume.summary?.content ? richTextToPdfParagraphs(resume.summary.content) : []
+          return paras.length > 0 ? (
+            <View style={styles.section}>
+              <SectionTitle title={titles.summary} styles={styles} />
+              {renderParagraphs(paras, styles, accent)}
+            </View>
+          ) : null
+        })()}
 
         {orderedIds.map((id) => sectionRenderers[id]?.() ?? renderCustom(id))}
       </Page>

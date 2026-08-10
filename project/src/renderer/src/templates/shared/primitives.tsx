@@ -1,10 +1,10 @@
 /**
  * templates/shared/primitives.tsx —— 模板共享渲染基元（F4 三套模板共用）
- * 从 ClassicTemplate 抽取：SectionBlock / SecTitle / Placeholder / entryHead / fmtDate / jump。
- * 2026-08-08 D11：store 驱动（无 props）；jump 反查经 useResumeStore。
+ * 2026-08-10 架构收敛批：fmtDate / 区块间距逻辑收敛至 shared/templates/layout.ts（单一事实源）。
  */
 import type { CSSProperties, ReactNode } from 'react'
 import { useResumeStore } from '../../store/useResumeStore'
+import { fmtDate, sectionSpacingLogic } from '@shared/templates/layout'
 
 /** 预览反查：点击模板 section → 左栏定位（F2 M2 字段级由 EditorPane 滚动承接） */
 export function useJump(): (path: string) => void {
@@ -28,6 +28,9 @@ export function SectionBlock({
   hint?: string
   children: ReactNode
 }): React.JSX.Element {
+  // 2026-08-10：间距语义 = gap(margin, CSS var 由 ResumeBody root 注入) + 6px(padding) + 1px 灰线
+  // （padding/line 取 shared sectionSpacingLogic 常量，与 PDF 端同源——消除"模块末尾留白过大"与两端不一致）
+  const sp = sectionSpacingLogic(16)
   return (
     <section
       data-rm-path={path}
@@ -35,8 +38,8 @@ export function SectionBlock({
       onClick={onClick}
       style={{
         marginBottom: 'var(--rm-section-gap, 16px)',
-        paddingBottom: 'var(--rm-section-gap, 16px)',
-        borderBottom: '1px solid #e8e8e8',
+        paddingBottom: `${sp.padding}px`,
+        borderBottom: `${sp.line}px solid #e8e8e8`,
         ...style
       }}
     >
@@ -58,8 +61,4 @@ export function entryHead(left: string, right: string, style: CSSProperties): Re
   )
 }
 
-export function fmtDate(d: string | undefined): string {
-  if (!d) return ''
-  const [y, m] = d.split('-')
-  return m ? `${y}/${m}` : y
-}
+export { fmtDate }

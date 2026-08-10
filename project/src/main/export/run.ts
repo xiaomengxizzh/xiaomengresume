@@ -87,7 +87,7 @@ export function registerExportIpc(): void {
           if (!resumeId) return { canceled: false, error: 'export: missing resumeId' }
           const raw = await readResumeOrThrow(resumeId)
           const parsed = ResumeSchema.parse(raw)
-          const fileName = `${safeFileName(parsed.basics.name || 'resume')}.json`
+          const fileName = `${safeFileName(parsed.title || parsed.basics.name || 'resume')}.json`
           const filePath = path.resolve(dir, fileName)
           // 路径穿越纵深防御：最终路径必须仍在目标目录内（目录参数/文件名注入兜底）
           if (path.relative(dir, filePath).startsWith('..')) return { canceled: false, error: 'export: invalid output path' }
@@ -127,6 +127,8 @@ export function registerExportIpc(): void {
           let timer: ReturnType<typeof setTimeout> | null = null
           let pdfData: Buffer
           let warnings: string[]
+          // 2026-08-10：真实页数需透传至返回处（try 块外）——改为块外声明
+          let pageCount = 1
           try {
             const buildResult = await Promise.race([
               buildPromise,
@@ -136,6 +138,7 @@ export function registerExportIpc(): void {
             ])
             pdfData = buildResult.buffer
             warnings = buildResult.warnings
+            pageCount = buildResult.pageCount
           } finally {
             if (timer) clearTimeout(timer)
           }
@@ -144,14 +147,15 @@ export function registerExportIpc(): void {
 
           const dir = path.resolve(resolveExportDir(folderPath))
           await fs.mkdir(dir, { recursive: true })
-          const fileName = `${safeFileName(parsed.basics.name || 'resume')}.pdf`
+          const fileName = `${safeFileName(parsed.title || parsed.basics.name || 'resume')}.pdf`
           const filePath = path.resolve(dir, fileName)
           // 路径穿越纵深防御（同 JSON 导出）
           if (path.relative(dir, filePath).startsWith('..')) return { canceled: false, error: 'export: invalid output path' }
           await fs.writeFile(filePath, pdfData)
           rememberLastFolder(dir)
           emitProgress(sender, 'write', 1)
-          return { canceled: false, filePath }
+          // 2026-08-10：透传真实页数（导出对话框展示，替代估算）
+          return { canceled: false, filePath, pageCount }
         }
 
         // imagePdf / image：v1.1（pdf-lib 候选，见《技术栈.md》§3.18）

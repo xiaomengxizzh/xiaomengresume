@@ -11,12 +11,11 @@ import { useResumeStore } from '../../store/useResumeStore'
 import { getByPath, parsePath } from '@shared/paths'
 import { SKILL_LEVELS, LANGUAGE_PROFICIENCIES } from '@shared/schema/resume'
 import { FONT_OPTIONS } from '@shared/constants/fonts'
-import { INFO_ICON_IDS, type InfoIconId } from '@shared/constants/info-icons'
 import { Button, Select } from '../ui'
 import { TextField, DateField, SelectField } from '../fields'
 import { TiptapField } from '../tiptap/TiptapField'
-import { InfoIcon } from '../icons/InfoIcons'
 import { LayoutBar } from './LayoutBar'
+import { IconPicker } from './IconPicker'
 import { AiAssistPanel } from './AiAssistPanel'
 
 /* ── M3 F7/F8：字段编辑器注册表 + 白名单 ────────────────────────────────── */
@@ -144,10 +143,16 @@ export function EntryCard({
   showVisibility?: boolean
   children: ReactNode
 }): React.JSX.Element {
+  const { t } = useTranslation()
   return (
     <div className="entry-card">
       <div className="entry-card-header">
         <span className="entry-title">{title || '…'}</span>
+        {visible === false ? (
+          <span className="shrink-0 rounded-full bg-border/50 px-1.5 py-0.5 text-[10px] text-foreground/55">
+            {t('editor.entryHidden')}
+          </span>
+        ) : null}
         <div className="flex shrink-0 items-center gap-0.5">
           {showVisibility ? (
             <Button size="sm" variant="ghost" title={visible === false ? showLabel : hideLabel} onClick={onToggleVisible}>
@@ -196,27 +201,14 @@ function getString(value: unknown): string {
 
 /* ── 各 section 表单 ────────────────────────────────────────────────────── */
 
-function BasicsForm(): React.JSX.Element {
+/* ── 基本信息三透明模块（2026-08-09 R6：图片/姓名与职业/标签信息，主分区内联编辑 + 可拖拽排序） ── */
+
+/** 图片模块（照片选择；canvas 压缩 ≤2MB → dataURL） */
+function PhotoBlock(): React.JSX.Element {
   const { t } = useTranslation()
-  const [customFields] = useField('basics.customFields')
-  const [infoItems] = useField('basics.infoItems')
   const setField = useResumeStore((s) => s.setField)
   const resume = useResumeStore((s) => s.resume)
 
-  const fields: Array<[string, string, 'text' | 'month']> = [
-    ['name', 'editor.field.name', 'text'],
-    ['englishName', 'editor.field.englishName', 'text'],
-    ['headline', 'editor.field.headline', 'text'],
-    ['employmentStatus', 'editor.field.employmentStatus', 'text'],
-    ['birthDate', 'editor.field.birthDate', 'month'],
-    ['phone', 'editor.field.phone', 'text'],
-    ['email', 'editor.field.email', 'text'],
-    ['website', 'editor.field.website', 'text'],
-    ['address', 'editor.field.address', 'text'],
-    ['location', 'editor.field.location', 'text']
-  ]
-
-  // L8（M2）：照片选择 → canvas 压缩 ≤2MB → dataURL（D15，防主存 JSON 膨胀）
   const pickPhoto = (file: File): void => {
     if (!file.type.startsWith('image/')) return
     const reader = new FileReader()
@@ -249,156 +241,172 @@ function BasicsForm(): React.JSX.Element {
   }
 
   return (
-    <SectionCard section="basics" title={t('editor.section.basics')}>
-      <div className="grid grid-cols-1 gap-x-3">
-        {fields.map(([key, labelKey, type]) => (
-          <FieldRow key={key} label={t(labelKey)}>
-            {type === 'month' ? (
-              <DateField value={getString(resume.basics[key as keyof typeof resume.basics])} onCommit={(v) => setField(`basics.${key}`, v)} />
-            ) : (
-              <TextField value={getString(resume.basics[key as keyof typeof resume.basics])} onCommit={(v) => setField(`basics.${key}`, v)} />
-            )}
-          </FieldRow>
-        ))}
-      </div>
+    <div className="flex items-center gap-3">
+      {resume.basics.photo ? (
+        <img
+          src={resume.basics.photo}
+          alt=""
+          className="rounded object-cover"
+          style={{ width: Math.min(resume.basics.photoWidth ?? 48, 96), height: Math.min(resume.basics.photoHeight ?? 64, 128), objectFit: 'cover' }}
+        />
+      ) : null}
+      <label className="inline-flex cursor-pointer select-none items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-border/40">
+        {t('editor.field.photoPick')}
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            if (f) pickPhoto(f)
+            e.target.value = ''
+          }}
+        />
+      </label>
+      {resume.basics.photo ? (
+        <Button size="sm" variant="ghost" onClick={() => setField('basics.photo', '')}>
+          {t('editor.action.remove')}
+        </Button>
+      ) : null}
+    </div>
+  )
+}
 
-      {/* L8（M2）：照片选择（canvas 压缩 ≤2MB → dataURL） */}
-      <div className="mt-2 border-t border-border/70 pt-3">
-        <div className="mb-2 text-xs font-medium text-foreground/70">{t('editor.field.photo')}</div>
-        <div className="flex items-center gap-3">
-          {resume.basics.photo ? (
-            <img
-              src={resume.basics.photo}
-              alt=""
-              className="h-16 w-12 rounded object-cover"
-              style={{ width: resume.basics.photoWidth ?? 48, height: resume.basics.photoHeight ?? 64, objectFit: 'cover' }}
-            />
-          ) : null}
-          <label className="cursor-pointer text-xs text-foreground/70 underline-offset-2 hover:underline">
-            {t('editor.field.photoPick')}
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0]
-                if (f) pickPhoto(f)
-                e.target.value = ''
-              }}
-            />
-          </label>
-          {resume.basics.photo ? (
-            <Button size="sm" variant="ghost" onClick={() => setField('basics.photo', '')}>
-              {t('editor.action.remove')}
-            </Button>
-          ) : null}
-        </div>
-      </div>
+/** 姓名与职业模块（中文名必显 + 职业固定框） */
+function IdentityBlock(): React.JSX.Element {
+  const { t } = useTranslation()
+  const setField = useResumeStore((s) => s.setField)
+  const resume = useResumeStore((s) => s.resume)
+  return (
+    <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-2">
+      <FieldRow label={t('editor.field.name')}>
+        <TextField value={getString(resume.basics.name)} onCommit={(v) => setField('basics.name', v)} />
+      </FieldRow>
+      <FieldRow label={t('editor.field.jobTitle')}>
+        <TextField value={getString(resume.basics.headline)} placeholder={t('editor.field.headline')} onCommit={(v) => setField('basics.headline', v)} />
+      </FieldRow>
+    </div>
+  )
+}
 
-      {/* L8（M2）：infoItems 增删改（icon + label + value，PDF 顶部两列） */}
-      <div className="mt-2 border-t border-border/70 pt-3">
-        <div className="mb-2 text-xs font-medium text-foreground/70">{t('editor.field.infoItemsLabel')}</div>
-        {Array.isArray(infoItems) && infoItems.length > 0 ? (
-          infoItems.map((it, i) => {
-            const item = it as { id: string; icon: InfoIconId; label: string; value: string }
+/** 标签信息模块（固定 6 格；每格选图案 + 自由编辑 label + 内容；旧字段自动注入） */
+function TagsBlock(): React.JSX.Element {
+  const { t } = useTranslation()
+  const [customFields] = useField('basics.customFields')
+  const setField = useResumeStore((s) => s.setField)
+  const resume = useResumeStore((s) => s.resume)
+  const MAX_TAGS = 6
+  const fields = (customFields as Array<{ id: string; label: string; value: string; icon?: string }> | undefined) ?? []
+
+  // 图案选项（label 走 i18n editor.infoIcon.*；2026-08-09 R5 扩至 10 个）
+  const ICON_OPTIONS: Array<{ value: string; label: string }> = [
+    { value: '', label: t('editor.field.tagNoIcon') },
+    { value: 'phone', label: t('editor.infoIcon.phone') },
+    { value: 'mail', label: t('editor.infoIcon.mail') },
+    { value: 'pin', label: t('editor.infoIcon.pin') },
+    { value: 'globe', label: t('editor.infoIcon.globe') },
+    { value: 'calendar', label: t('editor.infoIcon.calendar') },
+    { value: 'briefcase', label: t('editor.infoIcon.briefcase') },
+    { value: 'link', label: t('editor.infoIcon.link') },
+    { value: 'user', label: t('editor.infoIcon.user') },
+    { value: 'star', label: t('editor.infoIcon.star') },
+    { value: 'map', label: t('editor.infoIcon.map') }
+  ]
+  const labelForIcon = (icon: string): string => {
+    const o = ICON_OPTIONS.find((x) => x.value === icon)
+    return o && o.value ? o.label : ''
+  }
+
+  // 旧固定字段自动注入自定义字段（双向绑定；对照示例 6 项 + 图标）
+  useEffect(() => {
+    if (fields.length > 0) return
+    const b = resume.basics
+    const legacy: Array<{ icon: string; label: string; value: string }> = [
+      { icon: 'phone', label: labelForIcon('phone'), value: getString(b.phone) },
+      { icon: 'mail', label: labelForIcon('mail'), value: getString(b.email) },
+      { icon: 'pin', label: labelForIcon('pin'), value: getString(b.location) },
+      { icon: 'globe', label: labelForIcon('globe'), value: getString(b.website) },
+      { icon: 'calendar', label: labelForIcon('calendar'), value: getString(b.birthDate) },
+      { icon: 'briefcase', label: labelForIcon('briefcase'), value: getString(b.employmentStatus) }
+    ].filter((f) => f.value.length > 0)
+    if (legacy.length > 0) {
+      setField(
+        'basics.customFields',
+        legacy.map((f) => ({ id: crypto.randomUUID(), label: f.label, value: f.value, icon: f.icon }))
+      )
+    }
+    // 仅随 resume 加载/变化触发一次（注入后 fields 非空，守卫跳过）
+  }, [resume])
+
+  const setTag = (i: number, patch: { icon?: string; label?: string; value?: string }): void => {
+    const cur = fields[i]
+    if (!cur) {
+      // 空位首次填写：按图标自动设 label
+      const icon = patch.icon ?? ''
+      setField('basics.customFields', [...fields, { id: crypto.randomUUID(), label: patch.label ?? labelForIcon(icon), value: patch.value ?? '', icon }])
+      return
+    }
+    const key = Object.keys(patch)[0]
+    setField(`basics.customFields[${i}].${key}`, Object.values(patch)[0])
+  }
+
+  const removeTag = (i: number): void => {
+    const next = fields.filter((_, idx) => idx !== i)
+    setField('basics.customFields', next)
+  }
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-xs font-medium text-foreground/70">{t('editor.field.customFieldLabel')}</span>
+        <span className="text-[11px] text-foreground/40">
+          {fields.length}/{MAX_TAGS}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+        {Array.from({ length: MAX_TAGS }).map((_, i) => {
+          const f = fields[i]
+          if (!f) {
             return (
-              <div key={item.id} className="mb-2 flex items-center gap-2">
-                <Select
-                  className="!w-28"
-                  value={item.icon}
-                  onChange={(e) => setField(`basics.infoItems[${i}].icon`, e.target.value)}
-                >
-                  {INFO_ICON_IDS.map((iconId) => (
-                    <option key={iconId} value={iconId}>
-                      <InfoIcon id={iconId} size={12} /> {t(`editor.infoIcon.${iconId}`)}
-                    </option>
-                  ))}
-                </Select>
-                <TextField value={item.label} onCommit={(v) => setField(`basics.infoItems[${i}].label`, v)} />
-                <TextField value={item.value} onCommit={(v) => setField(`basics.infoItems[${i}].value`, v)} />
-                <Button
-                  size="sm"
-                  variant="danger"
-                  onClick={() => {
-                    const next = (infoItems as unknown[]).filter((_, idx) => idx !== i)
-                    setField('basics.infoItems', next)
-                  }}
-                >
-                  ✕
-                </Button>
+              <div key={'empty-' + i} className="flex items-center gap-1.5 rounded-lg border border-dashed border-border/70 px-2 py-1.5">
+                <span className="text-[11px] text-foreground/40">{i + 1}</span>
+                {/* 2026-08-10 任务5：图案选择 = IconPicker（SVG 图标按钮组，替代原生 select 纯文本） */}
+                <IconPicker value="" onChange={(v) => setTag(i, { icon: v })} />
+                <span className="text-[11px] text-foreground/40">{t('editor.field.tagEmpty')}</span>
               </div>
             )
-          })
-        ) : (
-          <div className="text-xs text-foreground/50">{t('editor.emptySection')}</div>
-        )}
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            const next = [
-              ...((infoItems as unknown[]) ?? []),
-              { id: crypto.randomUUID(), icon: 'mail' as InfoIconId, label: '', value: '' }
-            ]
-            setField('basics.infoItems', next)
-          }}
-        >
-          ＋
-        </Button>
-      </div>
-
-      {/* 自定义字段（2026-08-07 增补，M1 UI 即用） */}
-      <div className="mt-2 border-t border-border/70 pt-3">
-        <div className="mb-2 text-xs font-medium text-foreground/70">{t('editor.field.customFieldLabel')}</div>
-        {Array.isArray(customFields) && customFields.length > 0 ? (
-          customFields.map((cf, i) => {
-            const c = cf as { id: string; label: string; value: string }
-            return (
-              <div key={c.id} className="mb-2 flex items-center gap-2">
-                <TextField value={c.label} onCommit={(v) => setField(`basics.customFields[${i}].label`, v)} />
-                <TextField value={c.value} onCommit={(v) => setField(`basics.customFields[${i}].value`, v)} />
-                <Button
-                  size="sm"
-                  variant="danger"
-                  onClick={() => {
-                    const next = (customFields as unknown[]).filter((_, idx) => idx !== i)
-                    setField('basics.customFields', next)
-                  }}
+          }
+          return (
+            <div key={f.id} className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <IconPicker value={f.icon ?? ''} onChange={(v) => setTag(i, { icon: v })} />
+                {/* R5：标签文本自由编辑（替换图标后手动修正 label） */}
+                <input
+                  className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1 text-xs outline-none focus:border-foreground/50"
+                  value={f.label}
+                  placeholder={t('editor.field.customTitle')}
+                  onChange={(e) => setTag(i, { label: e.target.value })}
+                />
+                <button
+                  type="button"
+                  className="shrink-0 px-1 text-foreground/40 transition-colors hover:text-danger"
+                  title={t('resumesJobs.delete')}
+                  onClick={() => removeTag(i)}
                 >
                   ✕
-                </Button>
+                </button>
               </div>
-            )
-          })
-        ) : (
-          <div className="text-xs text-foreground/50">{t('editor.emptySection')}</div>
-        )}
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            const next = [
-              ...((customFields as unknown[]) ?? []),
-              { id: crypto.randomUUID(), label: '', value: '' }
-            ]
-            setField('basics.customFields', next)
-          }}
-        >
-          ＋
-        </Button>
+              <input
+                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-foreground/50"
+                value={f.value}
+                placeholder={f.label || t('editor.field.customTitle')}
+                onChange={(e) => setTag(i, { value: e.target.value })}
+              />
+            </div>
+          )
+        })}
       </div>
-
-      {/* L8（M2）：profile 个人简介（短头部版，Tiptap 富文本） */}
-      <div className="mt-2 border-t border-border/70 pt-3">
-        <FieldRow label={t('editor.field.profile')}>
-          <TiptapField
-            value={resume.basics.profile as never}
-            onChange={(v) => setField('basics.profile', v)}
-            onEditorReady={(ed) => registerFieldEditor('basics.profile', ed)}
-          />
-        </FieldRow>
-      </div>
-    </SectionCard>
+    </div>
   )
 }
 
@@ -765,6 +773,16 @@ function LanguagesForm(): React.JSX.Element {
 /** 内置可排序板块默认顺序（与模板 DEFAULT_SECTION_ORDER 一致；basics/summary 固定顶部） */
 export const DEFAULT_MODULE_ORDER = ['education', 'work', 'projects', 'skills', 'certificates', 'languages']
 
+/** 2026-08-09 T3：模块主分区卡片图标（emoji，按模块类型） */
+const MODULE_ICONS: Record<string, string> = {
+  education: '🎓',
+  work: '💼',
+  projects: '🚀',
+  skills: '⚙️',
+  certificates: '📜',
+  languages: '🌐'
+}
+
 /** 自定义模块表单（非基本信息；可编辑标题 + 富文本正文 + 删除） */
 function CustomSectionForm({ id }: { id: string }): React.JSX.Element {
   const { t } = useTranslation()
@@ -838,6 +856,7 @@ export function EditorPane(): React.JSX.Element {
   const { t } = useTranslation()
   const activeSection = useResumeStore((s) => s.activeSection)
   const setActiveSection = useResumeStore((s) => s.setActiveSection)
+  const setActiveFieldPath = useResumeStore((s) => s.setActiveFieldPath)
   const activeFieldPath = useResumeStore((s) => s.activeFieldPath)
   const resumeId = useResumeStore((s) => s.resumeId)
   const jobId = useResumeStore((s) => s.aiContext.jobId)
@@ -911,6 +930,28 @@ export function EditorPane(): React.JSX.Element {
     languages: () => <LanguagesForm />
   }
 
+  /* R6：基本信息三透明模块（图片/姓名与职业/标签信息）——主分区内联编辑 + 拖拽排序（basicsOrder） */
+  const BASIC_BLOCK_IDS = ['photo', 'identity', 'tags'] as const
+  const basicsOrder = resume.layout?.basicsOrder?.length
+    ? resume.layout.basicsOrder
+    : [...BASIC_BLOCK_IDS]
+  const BASIC_BLOCK_TITLES: Record<string, string> = {
+    photo: t('editor.basicsBlock.photo'),
+    identity: t('editor.basicsBlock.identity'),
+    tags: t('editor.basicsBlock.tags')
+  }
+  const [basicDrag, setBasicDrag] = useState<string | null>(null)
+  const [basicDrop, setBasicDrop] = useState<string | null>(null)
+  const handleBasicDrop = (targetId: string): void => {
+    setBasicDrop(null)
+    if (!basicDrag || basicDrag === targetId) return
+    const list = basicsOrder.filter((id) => id !== basicDrag) as Array<'photo' | 'identity' | 'tags'>
+    const idx = list.indexOf(targetId as 'photo' | 'identity' | 'tags')
+    list.splice(idx < 0 ? list.length : idx, 0, basicDrag as 'photo' | 'identity' | 'tags')
+    setField('layout.basicsOrder', list)
+    setBasicDrag(null)
+  }
+
   const handleDrop = (targetId: string): void => {
     setDropTarget(null)
     if (!dragId || dragId === targetId) return
@@ -937,37 +978,99 @@ export function EditorPane(): React.JSX.Element {
     <div className="editor-pane" ref={containerRef}>
       <LayoutBar />
       <div className="editor-scroll-body">
-        <div data-section="basics">
-          <BasicsForm />
-        </div>
-        <div data-section="summary">
-          <SummaryForm />
-        </div>
-        {modules.map((id) => (
-          <div
-            key={id}
-            data-section={id}
-            className={`module-card ${dropTarget === id ? 'module-card-dragover' : ''}`}
-            onDragOver={(e) => {
-              e.preventDefault()
-              e.dataTransfer.dropEffect = 'move'
-              setDropTarget(id)
-            }}
-            onDragLeave={() => setDropTarget((d) => (d === id ? null : d))}
-            onDrop={(e) => {
-              e.preventDefault()
-              handleDrop(id)
-            }}
-          >
-            <ModuleDragHandle id={id} onDragStart={setDragId} onDragEnd={() => setDragId(null)} />
-            {BUILTIN_FORMS[id]?.() ?? <CustomSectionForm id={id} />}
+        {activeSection === null || activeSection === 'basics' ? (
+          /* ── 模块主分区（2026-08-09 R6）：基本信息三透明模块内联顶部 + 其余模块卡网格 ── */
+          <>
+            <div className="basics-inline" data-section="basics">
+              {basicsOrder.map((bid) => (
+                <div
+                  key={bid}
+                  className={`basics-module ${basicDrop === bid ? 'module-card-dragover' : ''}`}
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    e.dataTransfer.dropEffect = 'move'
+                    setBasicDrop(bid)
+                  }}
+                  onDragLeave={() => setBasicDrop((d) => (d === bid ? null : d))}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    handleBasicDrop(bid)
+                  }}
+                >
+                  <ModuleDragHandle id={bid} onDragStart={setBasicDrag} onDragEnd={() => setBasicDrag(null)} />
+                  <div className="basics-module-title">{BASIC_BLOCK_TITLES[bid] ?? bid}</div>
+                  {bid === 'photo' ? <PhotoBlock /> : bid === 'identity' ? <IdentityBlock /> : <TagsBlock />}
+                </div>
+              ))}
+            </div>
+            <div className="module-grid">
+              <button type="button" className="module-card module-card-tile" onClick={() => setActiveSection('summary')}>
+                <span className="module-tile-icon" aria-hidden>✍️</span>
+                <span className="module-tile-title">{t('editor.section.summary')}</span>
+              </button>
+              {modules.map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={`module-card module-card-tile ${dropTarget === id ? 'module-card-dragover' : ''}`}
+                  draggable
+                  onDragStart={() => setDragId(id)}
+                  onDragEnd={() => setDragId(null)}
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    e.dataTransfer.dropEffect = 'move'
+                    setDropTarget(id)
+                  }}
+                  onDragLeave={() => setDropTarget((d) => (d === id ? null : d))}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    handleDrop(id)
+                  }}
+                  onClick={() => setActiveSection(id)}
+                >
+                  <ModuleDragHandle id={id} onDragStart={setDragId} onDragEnd={() => setDragId(null)} />
+                  <span className="module-tile-icon" aria-hidden>
+                    {MODULE_ICONS[id] ?? '📄'}
+                  </span>
+                  <span className="module-tile-title">
+                    {id === 'custom' ? t('editor.section.custom') : DEFAULT_MODULE_ORDER.includes(id) ? t(`editor.section.${id}`) : (resume.customSections?.find((c) => c.id === id)?.title ?? t('editor.section.custom'))}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className="module-add-row">
+              <Button variant="outline" onClick={addCustomModule}>
+                ＋ {t('editor.module.add')}
+              </Button>
+            </div>
+          </>
+        ) : (
+          /* ── 单模块编辑分区（一次仅显示一个；左上返回按钮回模块主分区）── */
+          <div data-section={activeSection} className="module-edit-pane">
+            <div className="mb-3 flex items-center gap-2 border-b border-border/70 pb-2">
+              <button
+                type="button"
+                className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-foreground/70 transition-colors hover:bg-border/40 hover:text-foreground"
+                onClick={() => {
+                  setActiveSection(null)
+                  // 2026-08-09 T4 修复：清反查路径——否则预览反查 effect（activeFieldPath 残留）
+                  // 随 activeSection 变化重跑，用旧路径立即把视图拉回分区，返回键失效
+                  setActiveFieldPath(null)
+                }}
+              >
+                ← {t('common.back')}
+              </button>
+              <h3 className="text-sm font-semibold text-foreground">
+                {activeSection === 'basics' || activeSection === 'summary' || DEFAULT_MODULE_ORDER.includes(activeSection)
+                  ? t(`editor.section.${activeSection}`)
+                  : (resume.customSections?.find((c) => c.id === activeSection)?.title ?? t('editor.section.custom'))}
+              </h3>
+            </div>
+            {activeSection === 'summary' ? (
+              <SummaryForm />
+            ) : BUILTIN_FORMS[activeSection]?.() ?? <CustomSectionForm id={activeSection} />}
           </div>
-        ))}
-        <div className="module-add-row">
-          <Button variant="outline" onClick={addCustomModule}>
-            ＋ {t('editor.module.add')}
-          </Button>
-        </div>
+        )}
       </div>
       {assist ? (
         <AiAssistPanel

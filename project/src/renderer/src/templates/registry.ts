@@ -6,6 +6,7 @@
  */
 import type { ComponentType } from 'react'
 import type { TemplatePreset } from './shared/preset'
+import { TEMPLATE_PRESETS } from '@shared/templates/layout'
 import type { Resume } from '@shared/schema/resume'
 import { ClassicTemplate } from './classic/ClassicTemplate'
 import { ModernTemplate } from './modern/ModernTemplate'
@@ -16,12 +17,8 @@ import { CompactThumb } from './compact/thumb'
 
 export type TemplateId = 'classic' | 'modern' | 'compact'
 
-/** 三套模板的排版预设（layout 未覆盖时缺省值；与示例 PDF classic 标尺对齐） */
-export const PRESETS: Record<TemplateId, TemplatePreset> = {
-  classic: { baseFontSize: 16, lineHeight: 1.8, pagePadding: 32, paragraphSpacing: 12, sectionSpacing: 16, headerSize: 18 },
-  modern: { baseFontSize: 16, lineHeight: 1.6, pagePadding: 36, paragraphSpacing: 14, sectionSpacing: 20, headerSize: 17 },
-  compact: { baseFontSize: 15, lineHeight: 1.4, pagePadding: 26, paragraphSpacing: 10, sectionSpacing: 12, headerSize: 15 }
-}
+/** 三套模板的排版预设（2026-08-10 收敛：值单一事实源 = shared/templates/layout.ts TEMPLATE_PRESETS） */
+export const PRESETS: Record<TemplateId, TemplatePreset> = TEMPLATE_PRESETS as Record<TemplateId, TemplatePreset>
 
 export interface TemplateMeta {
   id: TemplateId

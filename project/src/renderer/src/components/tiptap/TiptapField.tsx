@@ -126,21 +126,33 @@ export function TiptapField({ value, onChange, onEditorReady }: TiptapFieldProps
           active={editor?.isActive('bulletList')}
           onMouseDown={() => editor?.chain().focus().toggleBulletList().run()}
         >
-          •≡
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+            <circle cx="4" cy="6" r="1.2" fill="currentColor" stroke="none" />
+            <circle cx="4" cy="12" r="1.2" fill="currentColor" stroke="none" />
+            <circle cx="4" cy="18" r="1.2" fill="currentColor" stroke="none" />
+            <path d="M8 6h12M8 12h12M8 18h12" />
+          </svg>
         </ToolBtn>
         <ToolBtn
           title="1."
           active={editor?.isActive('orderedList')}
           onMouseDown={() => editor?.chain().focus().toggleOrderedList().run()}
         >
-          1≡
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+            <path d="M10 6h10M10 12h10M10 18h10" />
+            <path d="M4 5.5v3M3 8.5l1.5-1M5.5 5.5v6" strokeWidth="1.6" />
+            <path d="M3.5 16.5h2.2c0 1.1-2 1.2-2 2.2 0 .7.5 1.3 1.3 1.3 1 0 1.5-.5 1.5-1.2" strokeWidth="1.6" />
+          </svg>
         </ToolBtn>
         <ToolBtn
           title="🔗"
           active={editor?.isActive('link')}
           onMouseDown={() => setLinkOpen((v) => !v)}
         >
-          🔗
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L11 5" />
+            <path d="M14 11a5 5 0 0 0-7.07 0l-2.83 2.83a5 5 0 0 0 7.07 7.07L13 19" />
+          </svg>
         </ToolBtn>
       </div>
       {linkOpen ? (

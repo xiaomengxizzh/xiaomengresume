@@ -20,7 +20,7 @@ interface ResumeState {
   resumeId: string | null
   resume: Resume
   /** 当前编辑 section（左侧导航/折叠状态） */
-  activeSection: string
+  activeSection: string | null
   /** 预览反查定位路径（仅预览点击置位，触发 EditorPane 滚动+闪烁；2026-08-08 与 lastEditedPath 拆分） */
   activeFieldPath: FieldPath | null
   /** 最近一次编辑提交的字段路径（纯记录，不触发预览反查；每键更新） */
@@ -43,7 +43,7 @@ interface ResumeState {
   duplicateItem(section: string, index: number): void
   removeItem(section: string, index: number): void
   toggleItemVisible(section: string, index: number): void
-  setActiveSection(section: string): void
+  setActiveSection(section: string | null): void
   setActiveFieldPath(path: FieldPath | null): void
   toggleSidebar(): void
   setCurrentView(view: string): void
@@ -111,12 +111,14 @@ const LIST_SECTIONS = ['education', 'work', 'projects', 'skills', 'certificates'
 export const useResumeStore = create<ResumeState>()((set, get) => ({
   resumeId: null,
   resume: createEmptyResume(),
-  activeSection: 'basics',
+  // 2026-08-09 T3：默认 = 模块主分区（null），点击模块卡进入单模块编辑分区
+  activeSection: null,
   activeFieldPath: null,
   lastEditedPath: null,
   historyTick: 0,
   sidebarCollapsed: false,
-  currentView: 'resumes-home',
+  // 2026-08-09：默认初始页 = 独立欢迎界面（不预载任何简历功能区）
+  currentView: 'welcome',
   privacyMode: false,
   aiContext: { resumeId: null, jobId: null },
 
@@ -177,7 +179,7 @@ export const useResumeStore = create<ResumeState>()((set, get) => ({
     set({ resume: next, historyTick: get().historyTick + 1 })
   },
 
-  setActiveSection: (section) => set({ activeSection: section }),
+  setActiveSection: (section: string | null) => set({ activeSection: section }),
   setActiveFieldPath: (path) => set({ activeFieldPath: path }),
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
   setCurrentView: (view) => set({ currentView: view }),

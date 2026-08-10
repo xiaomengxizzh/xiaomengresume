@@ -66,3 +66,13 @@ export function Select({
     </select>
   )
 }
+
+/* ── UI 美化 P1：新增组件（分文件，shadcn 风格手写，零 Radix 依赖）────── */
+export { Switch } from './switch'
+export { Dialog } from './dialog'
+export { Slider } from './slider'
+export { Badge } from './badge'
+export { Tooltip } from './tooltip'
+export { Label } from './label'
+export { Progress } from './progress'
+export { EmptyState } from './empty-state'

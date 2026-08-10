@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest'
-import { render } from '@testing-library/react'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { render, cleanup } from '@testing-library/react'
 import '../../../i18n'
 import { ResumeBody } from '../ResumeBody'
 import { useResumeStore } from '../../../store/useResumeStore'
@@ -8,6 +8,10 @@ import { createEmptyResume } from '@shared/schema/resume'
 
 Element.prototype.scrollIntoView = (() => {}) as never
 vi.mock('@tiptap/react', () => ({ useEditor: () => null, EditorContent: () => null }))
+
+// vitest globals 未开（vitest.config test.globals 默认 false），RTL 无自动 cleanup——
+// 不清理组件树会导致 React 19 并发调度在 jsdom teardown 后执行（window is not defined）
+afterEach(() => cleanup())
 
 function setPhoto(photo: string): void {
   const r = createEmptyResume()

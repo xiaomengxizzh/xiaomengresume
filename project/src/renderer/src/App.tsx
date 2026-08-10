@@ -13,9 +13,12 @@ import { AiGrammar } from './views/AiGrammar'
 import { AiIntro } from './views/AiIntro'
 import { AiPolish } from './views/AiPolish'
 import { AiMatch } from './views/AiMatch'
-import { JobsHome } from './views/JobsHome'
 import { SettingsAi } from './views/SettingsAi'
 import { ImportHome } from './views/ImportHome'
+import { WelcomeView } from './views/WelcomeView'
+import { NewResumeView } from './views/NewResumeView'
+import { ResumesManager } from './views/ResumesManager'
+import { JobsManager } from './views/JobsManager'
 import { useResumeStore } from './store/useResumeStore'
 import { getTemplate } from './templates/registry'
 
@@ -78,11 +81,14 @@ export default function App(): React.JSX.Element {
   }
 
   const renderView = (): React.JSX.Element => {
+    if (currentView === 'welcome') return <WelcomeView /> // 2026-08-09：默认初始页 = 独立欢迎界面
     if (currentView === 'editor') return <EditorView />
     if (currentView === 'resumes-home') return <ResumesHome />
     if (currentView === 'resumes-list') return <ResumesList />
     if (currentView === 'resumes-recent') return <ResumesList mode="recent" />
-    if (currentView === 'jobs-home') return <JobsHome />
+    if (currentView === 'resumes-new') return <NewResumeView /> // 2026-08-09 T8：新建简历二级选择（含导入迁移）
+    if (currentView === 'resumes-manage') return <ResumesManager /> // 2026-08-09 T8：简历管理
+    if (currentView === 'jobs-manage') return <JobsManager /> // 2026-08-09 T8：岗位管理
     if (currentView === 'import-home') return <ImportHome />
     if (currentView === 'ai-home') return <AiHome />
     // M3 AI 四分区（导航子项直达；共享 store.aiContext 与「当前简历」）

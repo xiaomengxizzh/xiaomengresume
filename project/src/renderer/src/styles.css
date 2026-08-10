@@ -19,6 +19,27 @@
   --color-warning-bg: var(--warning-bg);
   --color-success: var(--success);
   --color-success-bg: var(--success-bg);
+  /* 2026-08-09 UI 美化 P0：卡片圆角/投影/字体收拢为令牌（值见 :root，阴影随主题块自包含） */
+  --radius-card: var(--radius);
+  --shadow-card: var(--shadow);
+  --shadow-card-hover: var(--shadow-card-hover);
+  --shadow-card-press: var(--shadow-card-press);
+  --font-ui: var(--ui-font);
+  /* 2026-08-09 UI 美化 P1：shadcn 组件消费变量（--primary 按拍板② 4 主题各自派生，其余 color-mix 派生，零新增 hex） */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-popover: var(--popover);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  /* 2026-08-09 C3：品牌色映射（供 bg-brand/text-brand/bg-brand-soft 类） */
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
 }
 
 :root {
@@ -30,6 +51,23 @@
   --selected: #e5e5e7; /* 2026-08-07：派生选中令牌（F18 四色，与 --border 同值，hover 用 color-mix 派生浅色） */
   --radius: 12px;
   --shadow: 0 6px 24px rgba(0, 0, 0, 0.05);
+  /* 2026-08-09 UI 美化 P0：卡片 hover/active 派生阴影（随主题块自包含）+ --ui-font 默认值（WP-T4 落地后由 SettingsSchema 覆盖） */
+  --shadow-card-hover: 0 12px 32px rgba(0, 0, 0, 0.08);
+  --shadow-card-press: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --ui-font: system-ui, -apple-system, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  /* 2026-08-09 品牌色（C3 定案）：装饰/强调用（图标/渐变/竖条/选中态），不作正文文字色
+     （#5b6abf 在 dark 底对比 ~3.2 < 4.5，dark 用浅化变体 #8b93d8；防绿字护栏：蓝紫非绿） */
+  --brand: #5b6abf;
+  --brand-soft: #e8eaf6;
+  --brand-grad: linear-gradient(135deg, #5b6abf, #7c6dd8);
+  /* 2026-08-09 阴影层级（B5 定案）：sm=内嵌（EntryCard 级）/ md=卡片（现有 --shadow 别名）/ lg=浮层（弹窗/预览纸） */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-md: var(--shadow);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.1);
+  /* 2026-08-09 动画时长 3 档（A8 定案）：fast=按钮/hover / normal=展开/滑入 / slow=主题切换 */
+  --duration-fast: 0.12s;
+  --duration-normal: 0.2s;
+  --duration-slow: 0.35s;
   /* 2026-08-08 语义色（light 基线）：danger=红 / warning=黄 / success=绿 */
   --danger: #a32d2d;
   --danger-bg: #fcebeb;
@@ -37,6 +75,22 @@
   --warning-bg: #fff3cd;
   --success: #3b6d11;
   --success-bg: #eaf3de;
+  /* 2026-08-09 UI 美化 P1：shadcn 组件消费变量，拍板② 4 主题各自派生（primary = 各主题 --foreground），全 var() 引用零新增 hex */
+  --primary: var(--foreground);
+  --primary-foreground: var(--background);
+  --muted: color-mix(in srgb, var(--selected) 50%, var(--card));
+  --muted-foreground: color-mix(in srgb, var(--foreground) 60%, var(--card));
+  --accent: var(--selected);
+  --accent-foreground: var(--foreground);
+  --ring: color-mix(in srgb, var(--foreground) 30%, transparent);
+  --input: var(--border);
+  --popover: var(--card);
+  --destructive: var(--danger);
+  --destructive-foreground: color-mix(in srgb, var(--background) 90%, var(--foreground));
+  /* 2026-08-09 品牌色（C3）：light/beige/green 同值，dark 块用浅化变体 */
+  --brand: #5b6abf;
+  --brand-soft: #e8eaf6;
+  --brand-grad: linear-gradient(135deg, #5b6abf, #7c6dd8);
 }
 
 /* 2026-08-07：F18 四主题令牌骨架（切换逻辑随 M5，令牌先行）。
@@ -50,12 +104,30 @@
   --border: #3c4043;
   --selected: #3c4043;
   --shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  --shadow-card-hover: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --shadow-card-press: 0 2px 8px rgba(0, 0, 0, 0.3);
   --danger: #f2b8b5;
   --danger-bg: #3d2323;
   --warning: #ecd9a0;
   --warning-bg: #3a3120;
   --success: #b5d8a8;
   --success-bg: #22301f;
+  /* 2026-08-09 UI 美化 P1：shadcn 组件消费变量（dark 自包含派生，同拍板②） */
+  --primary: var(--foreground);
+  --primary-foreground: var(--background);
+  --muted: color-mix(in srgb, var(--selected) 50%, var(--card));
+  --muted-foreground: color-mix(in srgb, var(--foreground) 60%, var(--card));
+  --accent: var(--selected);
+  --accent-foreground: var(--foreground);
+  --ring: color-mix(in srgb, var(--foreground) 30%, transparent);
+  --input: var(--border);
+  --popover: var(--card);
+  --destructive: var(--danger);
+  --destructive-foreground: color-mix(in srgb, var(--background) 90%, var(--foreground));
+  /* 2026-08-09 品牌色（C3）：dark 浅化变体（深底装饰可辨；蓝紫非绿护栏） */
+  --brand: #8b93d8;
+  --brand-soft: #2a2f4a;
+  --brand-grad: linear-gradient(135deg, #6a74c4, #8b93d8);
 }
 
 [data-theme="beige"] {
@@ -66,12 +138,30 @@
   --border: #f0e3cb;
   --selected: #f0e3cb;
   --shadow: 0 6px 24px rgba(0, 0, 0, 0.05);
+  --shadow-card-hover: 0 12px 32px rgba(0, 0, 0, 0.08);
+  --shadow-card-press: 0 2px 8px rgba(0, 0, 0, 0.04);
   --danger: #a32d2d;
   --danger-bg: #fcebeb;
   --warning: #7a5c00;
   --warning-bg: #fff3cd;
   --success: #3b6d11;
   --success-bg: #eaf3de;
+  /* 2026-08-09 UI 美化 P1：shadcn 组件消费变量，拍板② 4 主题各自派生（primary = 各主题 --foreground），全 var() 引用零新增 hex */
+  --primary: var(--foreground);
+  --primary-foreground: var(--background);
+  --muted: color-mix(in srgb, var(--selected) 50%, var(--card));
+  --muted-foreground: color-mix(in srgb, var(--foreground) 60%, var(--card));
+  --accent: var(--selected);
+  --accent-foreground: var(--foreground);
+  --ring: color-mix(in srgb, var(--foreground) 30%, transparent);
+  --input: var(--border);
+  --popover: var(--card);
+  --destructive: var(--danger);
+  --destructive-foreground: color-mix(in srgb, var(--background) 90%, var(--foreground));
+  /* 2026-08-09 品牌色（C3）：light/beige/green 同值，dark 块用浅化变体 */
+  --brand: #5b6abf;
+  --brand-soft: #e8eaf6;
+  --brand-grad: linear-gradient(135deg, #5b6abf, #7c6dd8);
 }
 
 [data-theme="green"] {
@@ -82,18 +172,36 @@
   --border: #dce8ce;
   --selected: #dce8ce;
   --shadow: 0 6px 24px rgba(0, 0, 0, 0.05);
+  --shadow-card-hover: 0 12px 32px rgba(0, 0, 0, 0.08);
+  --shadow-card-press: 0 2px 8px rgba(0, 0, 0, 0.04);
   --danger: #a32d2d;
   --danger-bg: #fcebeb;
   --warning: #7a5c00;
   --warning-bg: #fff3cd;
   --success: #3b6d11;
   --success-bg: #eaf3de;
+  /* 2026-08-09 UI 美化 P1：shadcn 组件消费变量，拍板② 4 主题各自派生（primary = 各主题 --foreground），全 var() 引用零新增 hex */
+  --primary: var(--foreground);
+  --primary-foreground: var(--background);
+  --muted: color-mix(in srgb, var(--selected) 50%, var(--card));
+  --muted-foreground: color-mix(in srgb, var(--foreground) 60%, var(--card));
+  --accent: var(--selected);
+  --accent-foreground: var(--foreground);
+  --ring: color-mix(in srgb, var(--foreground) 30%, transparent);
+  --input: var(--border);
+  --popover: var(--card);
+  --destructive: var(--danger);
+  --destructive-foreground: color-mix(in srgb, var(--background) 90%, var(--foreground));
+  /* 2026-08-09 品牌色（C3）：light/beige/green 同值，dark 块用浅化变体 */
+  --brand: #5b6abf;
+  --brand-soft: #e8eaf6;
+  --brand-grad: linear-gradient(135deg, #5b6abf, #7c6dd8);
 }
 
 * {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+  /* 2026-08-09 修复：移除 margin/padding reset——无 layer 原生规则会压制 Tailwind v4
+     @layer utilities 的间距类（如 p-5）；reset 已由 Tailwind preflight（@layer base）提供 */
 }
 
 html,
@@ -103,15 +211,21 @@ body,
 }
 
 body {
-  font-family:
+  font-family: var(
+    --ui-font,
     system-ui,
     -apple-system,
     'Segoe UI',
     'Microsoft YaHei',
     'PingFang SC',
-    sans-serif;
+    sans-serif
+  );
   color: var(--foreground);
-  background: var(--background);
+  /* 2026-08-09 C2：品牌色低透明径向渐变装饰（加视觉温度；不动 4 主题权威令牌值） */
+  background:
+    radial-gradient(ellipse at top left, color-mix(in srgb, var(--brand) 4%, transparent), transparent 55%),
+    radial-gradient(ellipse at bottom right, color-mix(in srgb, var(--brand) 4%, transparent), transparent 55%),
+    var(--background);
   font-size: 15px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -140,9 +254,13 @@ body {
   padding: 0 20px;
   height: 56px;
   flex-shrink: 0;
-  background: var(--card);
+  /* 2026-08-09 P2-6：顶栏改主背景色（原 --card 白）——侧栏独立白卡悬浮感不被顶栏同色拼接破坏；
+     去掉重阴影，分隔只留底部细线 */
+  background: var(--background);
   border-bottom: 1px solid var(--border);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  /* 2026-08-09 顶栏交互防御：置顶确保不被编辑区任何 absolute 元素覆盖 */
+  position: relative;
+  z-index: 5;
 }
 
 /* ── 左侧导航（2026-08-07 P1-#3：旧 .navbar/.nav-scroll/.nav-group-title/.nav-item/.nav-divider 已清理，现用 .navbar-v2 悬浮卡）── */
@@ -248,7 +366,11 @@ body {
   min-height: 0;
   overflow-y: auto;
   overflow-x: auto;
-  padding: 28px 32px 56px;
+  /* 2026-08-09 P1-6：flex + margin auto 实现纸张水平居中；纸张按「整页完整可见」高度约束
+     恒撑满可用高（垂直居中与整页可见天然冲突），故对称化上下 padding 保证视觉均衡 */
+  display: flex;
+  flex-direction: column;
+  padding: 28px 32px 28px;
   background: var(--background);
 }
 
@@ -259,7 +381,7 @@ body {
    2026-08-08 P2 修复：overflow:hidden 裁剪纸张未变换的 794×1123 布局盒溢出——
    CSS transform 不参与可滚动溢出计算，无裁剪时 .preview-pane 出现幽灵滚动条。 */
 .preview-scale-wrapper {
-  margin: 0 auto;
+  margin: auto; /* 2026-08-09 P1-6：flex 容器内 margin:auto = 水平+垂直居中（原仅水平居中） */
   overflow: hidden;
 }
 
@@ -274,10 +396,24 @@ body {
   overflow-x: hidden;
   margin: 0;
   border-radius: 4px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.14); /* 2026-08-09 P1-6：纸张投影加强（原 0 8px 32px 0.08），增强悬浮感 */
   transform: scale(var(--preview-scale, 1));
   transform-origin: top left;
   /* padding 由模板内层 .preview-paper-body 承接（pagePadding），此处不设避免双层叠加 */
+  /* 2026-08-10 任务3：A4 分页视觉辅助线——贴合纸张下缘（标准 A4 边界）浅灰水平实线；
+     仅视觉参考：z-index 底层、pointer-events:none 不干扰编辑、不侵入导出（纯预览 CSS） */
+  position: relative;
+}
+.preview-paper::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.1); /* 规格 #E0E0E0 系 */
+  z-index: 0;
+  pointer-events: none;
 }
 
 /* 纸内链接用简历强调色（--rm-accent 由 ClassicTemplate rootStyle 注入；
@@ -319,10 +455,10 @@ body {
   flex-shrink: 0;
 }
 
-/* 条目子卡（数组 section 的每条记录） */
+/* 条目子卡（数组 section 的每条记录；2026-08-09 C5：color-mix 浅底轻量化，与主卡形成内嵌层级，4 主题自动适配） */
 .entry-card {
-  background: var(--card);
-  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 55%, var(--background));
+  border: 1px solid color-mix(in srgb, var(--border) 70%, var(--background));
   border-radius: 10px;
   margin-bottom: 12px;
   padding: 14px;
@@ -529,6 +665,19 @@ body {
   text-align: center;
   padding: 12px 0 36px;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* 2026-08-09 品牌图标（material/图标.png 同源 public/icon.png） */
+.nav-brand-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  object-fit: contain;
+  flex: none;
 }
 
 .nav-list {
@@ -566,9 +715,35 @@ body {
 }
 
 .nav-main-row.active {
-  background-color: var(--selected);
-  transform: translateY(0px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  /* 2026-08-09 C4 定案升级（替代 P0-5 的"无底色仅加粗"）：父项激活 = 品牌色浅渐变 + 左竖条 + 文字加粗，
+     与子项选中（中性灰底）色彩体系区分（brand 紫系 vs 中性灰），父项存在感明显增强 */
+  background: linear-gradient(90deg, color-mix(in srgb, var(--brand) 14%, transparent), transparent 75%);
+  box-shadow: none;
+  position: relative;
+}
+
+.nav-main-row.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--brand);
+}
+
+.nav-main-row.active .nav-label {
+  font-weight: 600;
+}
+
+/* 2026-08-09 C4：主项间渐变分隔线（透明→border→透明） */
+.nav-main-group + .nav-main-group::before {
+  content: '';
+  display: block;
+  height: 1px;
+  margin: 8px 16px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
 }
 
 .nav-main-text {
@@ -634,7 +809,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 6px 0 6px 44px;
+  padding: 6px 0 6px 38px;
+  /* 2026-08-09 P0-3：缩进 44→38px 收窄，配合子项 padding 减小，防「打开或最近」等长文案截断 */
   /* 2026-08-07 P1：子功能展开/收起双向动画（向下滑入 / 向上滑出，0.4s 统一节奏） */
   transform-origin: top;
   overflow: hidden;
@@ -653,7 +829,7 @@ body {
 }
 
 .nav-sub {
-  padding: 7px 12px;
+  padding: 7px 8px;
   border-radius: 6px;
   font-size: 15px;
   font-weight: 400;
@@ -666,6 +842,7 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0; /* 2026-08-09 P0-3：flex 子项防挤压，长文案 ellipsis 兜底 */
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
@@ -768,7 +945,7 @@ body {
   min-height: 56px; /* 2026-08-07 P0-#4：定案高 ~56 */
   padding: 18px 24px;
   background: var(--card);
-  border-radius: 12px;
+  border-radius: var(--radius-card);
   font-size: 17px;
   font-weight: 500;
   color: var(--foreground);
@@ -785,18 +962,45 @@ body {
 .home-card:hover:not(.disabled) {
   transform: translateY(-3px);
   background-color: color-mix(in srgb, var(--selected) 40%, var(--card));
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .home-card:active:not(.disabled) {
   transform: translateY(0px);
   background-color: var(--selected);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-card-press);
 }
 
 .home-card.disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* 2026-08-09 C1：首页双列网格（ResumesHome grid 模式；AiHome/SettingsHome 保持竖排不受影响）
+   2026-08-09 T6：auto-fit minmax 自适应——窗口宽时多列、窄时收拢，卡片增大紧凑
+   2026-08-09 R10：固定两列四宫格（用户定案：简历 4 / AI 4 / 设置 3，一行两个）；
+   奇数卡片（设置 3 卡）时第二行仅右侧放第三个（:last-child:nth-child(odd) → grid-column 2）。 */
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.home-grid > :last-child:nth-child(odd) {
+  grid-column: 2;
+}
+
+.home-grid .home-card {
+  width: 100%;
+  margin: 0;
+  min-height: 88px;
+  padding: 22px 24px;
+  justify-content: center;
+}
+
+.home-grid .home-card-full {
+  grid-column: 1 / -1;
 }
 
 .home-card-title {
@@ -813,7 +1017,7 @@ body {
 /* ── Coming Soon 占位卡 ─────────────────────────────────────────────────── */
 .coming-soon-card {
   background: var(--card);
-  border-radius: 12px;
+  border-radius: var(--radius-card);
   box-shadow: var(--shadow);
   padding: 24px;
   display: flex;
@@ -845,7 +1049,7 @@ body {
   justify-content: space-between;
   padding: 14px 20px;
   background: var(--card);
-  border-radius: 12px;
+  border-radius: var(--radius-card);
   box-shadow: var(--shadow);
   cursor: pointer;
   font-size: 15px;
@@ -865,7 +1069,7 @@ body {
 .resume-list-item:active {
   transform: translateY(0px);
   background-color: var(--selected);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-card-press);
 }
 
 .resume-list-name {
@@ -961,5 +1165,149 @@ body {
 }
 .module-drag-handle:hover { opacity: 1; background: var(--border, rgba(0,0,0,0.06)); }
 .module-drag-handle:active { cursor: grabbing; }
-.module-card-dragover { outline: 2px dashed var(--selected, #6366f1); outline-offset: -2px; border-radius: 12px; }
+.module-card-dragover { outline: 2px dashed var(--selected, #6366f1); outline-offset: -2px; border-radius: var(--radius-card); }
 .module-add-row { padding: 14px 4px; display: flex; justify-content: center; }
+
+/* ── 2026-08-09 T3：模块主分区（模块卡网格）与单模块编辑分区 ────────────── */
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+/* ── 2026-08-09 R6：基本信息三透明模块（图片/姓名与职业/标签信息）─────────
+   主分区内联编辑：背景/边框/阴影完全隐藏（透明），仅标题 + 拖拽手柄可见；
+   独立类（非 .module-card-tile 子类）避免继承实底卡片样式。 */
+.basics-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border, rgba(0, 0, 0, 0.08));
+}
+
+.basics-module {
+  position: relative;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 4px 0 4px 4px;
+  transition: opacity 0.2s ease;
+}
+
+.basics-module .module-drag-handle {
+  right: 4px;
+  top: 0;
+}
+
+.basics-module-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 8px;
+  padding-left: 2px;
+}
+
+/* R6：预览反查高亮（data-section=basics 落在 .basics-inline 上） */
+.basics-inline.rm-flash {
+  animation: rm-flash-basics 1.2s ease;
+}
+
+@keyframes rm-flash-basics {
+  0%, 100% { background: transparent; }
+  30% { background: color-mix(in srgb, var(--selected) 30%, transparent); border-radius: var(--radius-card); }
+}
+
+.module-card-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 96px;
+  padding: 14px 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card-press);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.module-card-tile:hover {
+  transform: translateY(-2px);
+  background-color: color-mix(in srgb, var(--selected) 35%, var(--card));
+  box-shadow: var(--shadow-card-hover);
+}
+
+.module-card-tile:active {
+  transform: translateY(0);
+  background-color: var(--selected);
+}
+
+.module-tile-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.module-tile-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--foreground);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.module-edit-pane {
+  padding-bottom: 24px;
+}
+
+/* T3 美化：编辑分区输入紧凑（label 12px / input 13px 已由组件保证；此处统一间距） */
+.module-edit-pane .field-row {
+  margin-bottom: 10px;
+}
+
+/* 2026-08-09 T2：照片占位（人形剪影，无照片时左上头像位；预览与 PDF 占位一致） */
+.photo-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: color-mix(in srgb, var(--foreground) 30%, transparent);
+  background: color-mix(in srgb, var(--border) 35%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--border) 60%, var(--card));
+  border-radius: 4px;
+}
+
+/* ── 2026-08-09 T1：光标可见性兜底（任何主题/状态下输入光标不透明可见；防绿字护栏延伸）── */
+input,
+textarea,
+[contenteditable] {
+  caret-color: var(--foreground);
+}
+
+/* ── UI 美化 P1：Tooltip（.tooltip-wrap，CSS ::after 方案，对齐 [data-rm-path] 既有模式）── */
+.tooltip-wrap { position: relative; }
+.tooltip-wrap[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 1.2;
+  padding: 4px 8px;
+  color: var(--foreground);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: var(--shadow-card-press);
+  pointer-events: none;
+}

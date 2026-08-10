@@ -124,9 +124,9 @@ describe('pdf/build (文字版 PDF 纯代码生成)', () => {
     // bfchar 形如 <xxxx><yyyy>（CMap 字符映射）
     const touHex = allInflated.match(/<[0-9a-f]{4}><[0-9a-f]{4}>/g) || []
     expect(touHex.length).toBeGreaterThan(20)
-    // 字体名（PDF 字节 ASCII 区）：SimHei/SimSun/SourceHan/NotoSansCJK/Microsoft
+    // 字体名（PDF 字节 ASCII 区）：2026-08-10 默认字体体系改等线 Deng（P0-1，含 Dengb 粗体子集）
     const bytes: string = buffer.toString('latin1')
-    expect(bytes).toContain('SimHei')
+    expect(bytes).toContain('Deng')
     // 内容含基础 section 标题字符的 UTF-16BE 字形映射（ToUnicode CMap）
     expect(allInflated).toContain('<5b8b>') // 宋
     expect(allInflated).toContain('<9ad8>') // 娜

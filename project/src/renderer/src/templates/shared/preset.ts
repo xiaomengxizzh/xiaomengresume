@@ -1,28 +1,14 @@
 /**
  * templates/shared/preset.ts —— 模板预设（F4）
- * 三套模板的排版预设值；layout 覆盖链：简历 layout > 模板预设 > 全局初始值。
- * 2026-08-08 D11：组件 store 驱动（无 props），预设随组件注册进 registry。
+ * 2026-08-10 架构收敛批：TemplatePreset 类型 / lv() / 预设值收敛至
+ * shared/templates/layout.ts 单一事实源（本文件 re-export 保持既有 import 兼容，不持有数值）。
+ * 字体解析（resolveFontFamily）保留本文件（渲染端特有逻辑，PDF 端有对应 getSectionFontFamily）。
  */
 import type { Layout } from '@shared/schema/resume'
 import { FONT_OPTIONS } from '@shared/constants/fonts'
 
-/** 排版预设键（与 LayoutSchema 数字字段对齐，LayoutBar 消费同源） */
-export type PresetKey = 'baseFontSize' | 'lineHeight' | 'pagePadding' | 'paragraphSpacing' | 'sectionSpacing' | 'headerSize'
-
-export interface TemplatePreset {
-  baseFontSize: number
-  lineHeight: number
-  pagePadding: number
-  paragraphSpacing: number
-  sectionSpacing: number
-  headerSize: number
-}
-
-/** 从 layout 取值，缺省回落模板预设（F4 覆盖链） */
-export function lv(layout: Layout | undefined, key: PresetKey, preset: TemplatePreset): number {
-  const v = layout?.[key]
-  return typeof v === 'number' ? v : preset[key]
-}
+export type { TemplatePreset, PresetKey } from '@shared/templates/layout'
+export { TEMPLATE_PRESETS, lv } from '@shared/templates/layout'
 
 /**
  * section/全局字体解析（F4 字体选择，三套模板共用）

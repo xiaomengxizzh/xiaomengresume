@@ -96,8 +96,13 @@ export function ExportDialog({ open, onClose, resumeId, flush }: ExportDialogPro
   const runExport = useCallback(async (): Promise<void> => {
     if (!resumeId) return
     // P1 修复：导出前先 flush 落盘最新 resume（打印窗口按磁盘读取，防抖窗内编辑会导出陈旧内容）
+    // 2026-08-10 D12：flush 失败（保存异常）→ 中止导出并提示，避免用陈旧磁盘数据静默导出
     if (flush) {
-      await flush()
+      const ok = await flush()
+      if (ok === false) {
+        setError('export.flushFailed')
+        return
+      }
     }
     setRunning(true)
     setError('')
@@ -146,7 +151,7 @@ export function ExportDialog({ open, onClose, resumeId, flush }: ExportDialogPro
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={running ? undefined : onClose}>
       <div
-        className="w-[520px] max-w-[92vw] rounded-xl bg-surface p-5 shadow-lg"
+        className="max-h-[85vh] w-[520px] max-w-[92vw] overflow-y-auto rounded-card border border-border bg-surface p-5 shadow-card-hover"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -172,8 +177,10 @@ export function ExportDialog({ open, onClose, resumeId, flush }: ExportDialogPro
               type="button"
               disabled={!f.available || running}
               className={`rounded-lg border p-3 text-left transition-colors ${
-                selected === f.id ? 'border-foreground/40 bg-selected/40' : 'border-border bg-surface hover:border-foreground/30'
-              } ${!f.available ? 'cursor-not-allowed opacity-55' : ''}`}
+                selected === f.id
+                  ? 'border-primary bg-primary/10 ring-1 ring-primary/30'
+                  : 'border-border bg-surface hover:border-foreground/30'
+              } ${!f.available ? 'cursor-not-allowed bg-border/30 opacity-60' : ''}`}
               onClick={() => setSelected(f.id)}
             >
               <div className="text-sm font-medium text-foreground">{t(f.titleKey)}</div>

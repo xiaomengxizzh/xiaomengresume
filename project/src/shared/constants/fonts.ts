@@ -3,7 +3,8 @@
  * 跨平台常见中英文字体；id 为存储值（layout.resumeFont），family 为 CSS 字体栈，
  * labelKey 为 i18n 显示名（禁硬编码中文）。M1 最小集 = 系统默认 + 固定几项；
  * M2 起用户导入字体（font:// 协议）扩展。
- * 「系统默认」= 空 family，走现有 fallback 链（PingFang SC / Microsoft YaHei / Noto Sans CJK SC / sans-serif）。
+ * 「系统默认」= DengXian 优先栈（2026-08-10：与 PDF 端 system→Deng.ttf/Dengb.ttf 对齐，
+ * Windows 两端同字等线 + 真加粗；原空 family 走雅黑 fallback 与 PDF SimHei 不一致）。
  */
 export interface FontOption {
   id: string
@@ -12,7 +13,7 @@ export interface FontOption {
 }
 
 export const FONT_OPTIONS: FontOption[] = [
-  { id: 'system', family: '', labelKey: 'editor.font.system' },
+  { id: 'system', family: "'DengXian', 'Microsoft YaHei', 'SimHei', 'PingFang SC', 'Noto Sans CJK SC', sans-serif", labelKey: 'editor.font.system' },
   { id: 'songti', family: 'SimSun, serif', labelKey: 'editor.font.songti' },
   { id: 'heiti', family: 'SimHei, sans-serif', labelKey: 'editor.font.heiti' },
   { id: 'yahei', family: '"Microsoft YaHei", sans-serif', labelKey: 'editor.font.yahei' },
