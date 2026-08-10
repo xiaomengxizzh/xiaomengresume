@@ -205,7 +205,25 @@ z.object({
   headerSize: z.number().min(12).max(36).optional(),
   resumeFont: z.string().optional(), // 字体白名单 id / 字体名，缺省「系统默认」fallback 链
   /** 2026-08-07 UI 重构增补（仅增不改）：单元级字体覆盖，key = section 名（basics/summary/work…） */
-  sectionFonts: z.record(z.string(), z.string()).optional()
+  sectionFonts: z.record(z.string(), z.string()).optional(),
+  /** 2026-08-09 增补（仅增不改）：模块显示顺序（education/work/projects/skills/certificates/languages
+   *  + customSections.id；basics/summary 固定顶部不参与）。缺省 = 模板默认顺序。 */
+  sectionOrder: z.array(z.string()).optional(),
+  /** 2026-08-09 R6 增补（仅增不改）：基本信息三透明模块（图片/姓名与职业/标签信息）编辑区排序，
+   *  同时驱动预览/PDF 头部三块横向排列顺序（photo=图片、identity=姓名与职业、tags=标签信息）。
+   *  缺省 = ['photo','identity','tags']（经典模板布局）。 */
+  basicsOrder: z.array(z.enum(['photo', 'identity', 'tags'])).optional()
+})
+```
+
+### `CustomSectionSchema`
+
+```ts
+z.object({
+  id: Uuid,
+  title: z.string().default(''),
+  /** 富文本正文（Tiptap doc / 降级 HTML） */
+  content: RichTextSchema.optional()
 })
 ```
 
@@ -223,6 +241,9 @@ z.object({
   skills: z.array(SkillsSchema),
   certificates: z.array(CertificatesSchema),
   languages: z.array(LanguagesSchema),
+  /** 2026-08-09 增补（仅增不改，T3）：简历文件标题/显示名——与 basics.name（姓名）独立；
+   *  列表/导出文件名优先用它，空则回落 basics.name；修改任一方不影响另一方。 */
+  title: z.string().optional(),
   /** F9 扩展预留（可选，仅增不改）：岗位 JD，供匹配度打分 */
   targetJobDescription: RichTextSchema.optional(),
   /** 2026-08-07 增补（仅增不改）：per-resume 排版覆盖（F4 修订） */
@@ -230,7 +251,9 @@ z.object({
   /** F11 WP-T1（仅增不改）：主进程写入的活动时间戳 */
   meta: ResumeMetaSchema,
   /** F19 WP-T2（仅增不改，数据层 M1 顺带落码）：绑定岗位 id 列表（JobSchema.id[]） */
-  boundJobIds: z.array(Uuid).default([]).describe('bound job id list; empty = no binding')
+  boundJobIds: z.array(Uuid).default([]).describe('bound job id list; empty = no binding'),
+  /** 2026-08-09 增补（仅增不改）：自定义模块（非基本信息，用户新建；顺序见 layout.sectionOrder） */
+  customSections: z.array(CustomSectionSchema).optional()
 })
 ```
 

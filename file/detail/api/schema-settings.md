@@ -12,6 +12,10 @@ SettingsSchema —— M0 令牌地基
 
 ```ts
 z.object({
+  /** 2026-08-09 R3：服务商显示名覆盖（内置缺省 = BUILTIN_INFO.name，持久化覆盖值） */
+  name: z.string().max(64).optional(),
+  /** 2026-08-09 R3：接口地址覆盖（内置缺省 = BUILTIN_INFO.baseURL） */
+  baseURL: z.string().url().max(2048).optional(),
   apiKey: z.string().optional(),
   modelId: z.string().optional(),
   enabled: z.boolean().default(false)
@@ -25,7 +29,9 @@ z.object({
   grammar: z.string(),
   intro: z.string(),
   polish: z.string(),
-  match: z.string()
+  match: z.string(),
+  /** R7：豆包视觉模型提示词（M4b 图片/扫描件信息提取；与简历提示词分开设置） */
+  vision: z.string()
 })
 ```
 

@@ -18,6 +18,8 @@ z.object({
   name: z.string().min(1),
   /** 投递时间，复用 F1 DateStr */
   appliedAt: DateStrSchema,
+  /** 2026-08-09 增补（仅增不改）：岗位状态（未投/在投/已过/已拒）；缺省 = 未投 */
+  status: z.enum(['notApplied', 'applying', 'passed', 'rejected']).default('notApplied'),
   /** 岗位要求（纯文本，供润色/打分消费） */
   requirements: z.string(),
   /** ISO 8601，主进程写入 */

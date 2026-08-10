@@ -26,6 +26,8 @@ IPC 通道契约（M0 冻结 · M1 扩展 · M2 F5 扩展 export:*）
 | Ai | `ai:match` | 岗位匹配打分（非流式，generateObject → MatchScore） |
 | Ai | `ai:config:get` | 读 AI 服务商配置（脱敏形态，apiKey 前4后4） |
 | Ai | `ai:config:save` | 保存 AI 服务商配置（apiKey 入 safeStorage，其余入 electron-store） |
+| Ai | `ai:config:test` | 2026-08-09 T3：检测模型（临时 apiKey+modelId 发最小请求验证） |
+| Ai | `ai:config:reset` | 2026-08-09：重置全部 AI 配置为系统预设默认值（服务商覆盖/Key/自定义/参数/提示词） |
 | Resume | `resume:save` | 保存简历（主进程校验 Zod → 三件套原子写） |
 | Resume | `resume:save-now` | 关窗前静默保存（单向 send，不依赖回执——P2：beforeunload 中 invoke 回执 |
 | Resume | `resume:open` | 打开简历（读文件 + 刷新 meta.lastOpenedAt 轻量写） |
@@ -46,6 +48,7 @@ IPC 通道契约（M0 冻结 · M1 扩展 · M2 F5 扩展 export:*）
 | Jobs | `jobs:save` | — |
 | Jobs | `jobs:delete` | — |
 | Import | `import:run` | 导入简历：主进程开文件对话框 → 解析+映射 → 返回草稿（渲染层不传路径，防路径穿越） |
+| Import | `import:runBatch` | 2026-08-09 R8：批量导入（多选 → 逐份解析 → 直接落盘为独立新简历，无需三步核对） |
 
 ## 分命名空间明细
 
@@ -81,6 +84,8 @@ AI 通道（M0 流式验证；M3 扩展四分区 + 服务商配置。流式增�
 - `Match` → `ai:match`：岗位匹配打分（非流式，generateObject → MatchScore）
 - `ConfigGet` → `ai:config:get`：读 AI 服务商配置（脱敏形态，apiKey 前4后4）
 - `ConfigSave` → `ai:config:save`：保存 AI 服务商配置（apiKey 入 safeStorage，其余入 electron-store）
+- `ConfigTest` → `ai:config:test`：2026-08-09 T3：检测模型（临时 apiKey+modelId 发最小请求验证）
+- `ConfigReset` → `ai:config:reset`：2026-08-09：重置全部 AI 配置为系统预设默认值（服务商覆盖/Key/自定义/参数/提示词）
 
 ### Resume
 
@@ -126,6 +131,7 @@ AI 通道（M0 流式验证；M3 扩展四分区 + 服务商配置。流式增�
 导入（M4a 文本批冻结；M4b 扩展图片能力）
 
 - `Run` → `import:run`：导入简历：主进程开文件对话框 → 解析+映射 → 返回草稿（渲染层不传路径，防路径穿越）
+- `RunBatch` → `import:runBatch`：2026-08-09 R8：批量导入（多选 → 逐份解析 → 直接落盘为独立新简历，无需三步核对）
 
 ## 返回类型
 
@@ -164,6 +170,8 @@ boundJobIds: string[]
 id: string
 name: string
 appliedAt?: string
+/** 2026-08-09 T8：岗位状态（在投/已过/已拒） */
+status?: string
 ```
 
 ### `ExportRunArgs`
@@ -266,7 +274,21 @@ apiKeyMasked: string | null
 hasApiKey: boolean
 modelId: string | null
 enabled: boolean
-/** 仅 custom */
+/** 2026-08-09 T3：内置与 custom 均有接口地址（builtin 默认端点） */
+baseURL?: string
+/** 2026-08-09 R3：默认显示名（重置按钮回退值；内置 = BUILTIN_INFO.name，custom = 添加时名） */
+defaultName?: string
+/** 2026-08-09 R3：默认接口地址（重置按钮回退值；内置 = BUILTIN_INFO.baseURL） */
+defaultBaseURL?: string
+```
+
+### `AiConfigTestArgs`
+
+```ts
+providerId: string
+apiKey: string
+modelId: string
+/** 2026-08-09 R3：custom/volcengine 兼容通道 baseURL（检测用输入值） */
 baseURL?: string
 ```
 
@@ -286,6 +308,20 @@ prompts: AiPrompts | null
 format: ImportFormat
 /** 目标简历（覆盖模式）；省略 = 新建模式 */
 resumeId?: string
+```
+
+### `ImportRunBatchArgs`
+
+```ts
+/** 2026-08-09 R8：预留——批量导入不需要格式参数（多选混合格式） */
+format?: ImportFormat
+```
+
+### `ImportBatchResult`
+
+```ts
+imported: number
+failed: Array<{ fileName: string; code: string; message?: string }>
 ```
 
 ### `ImportDraft`
