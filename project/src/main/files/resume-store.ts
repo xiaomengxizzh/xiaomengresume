@@ -17,6 +17,7 @@ import {
 } from '../../shared/schema/resume'
 import { createZip, extractZip, type ZipEntry } from './zip'
 import { extractPendingIds } from './recovery'
+import { deletePhotoFiles, copyPhotoFiles, savePhotoFile } from './photo-store'
 import { JobSchema } from '../../shared/schema/job'
 import type { Settings } from '../../shared/schema/settings'
 import type { RecentResume, ResumeSummary } from '../../shared/ipc-channels'
@@ -215,6 +216,17 @@ export async function saveResume(id: string, resume: Resume): Promise<Resume> {
     createdAt: validated.meta?.createdAt ?? nowIso()
   }
   const withMeta = { ...validated, meta }
+  // B3（2026-08-11 photo 转存）：photo dataURL → 转存文件 → JSON 存引用（幂等——
+  // 引用/空/avatar 原样；大图出 JSON，自动保存/备份/列表扫描瘦身）。转存失败降级
+  // 保留内嵌（不丢数据，下次保存重试）。
+  const photo = withMeta.basics.photo
+  if (typeof photo === 'string' && photo.startsWith('data:image/')) {
+    try {
+      withMeta.basics.photo = await savePhotoFile(getStorageDir(), id, photo)
+    } catch {
+      /* 转存失败保留 dataURL 内嵌（照片不丢；可下次保存重试） */
+    }
+  }
   await atomicWrite(id, withMeta, { backup: true })
   return withMeta
 }
@@ -225,6 +237,16 @@ export async function openResume(id: string): Promise<Resume> {
   const file = resumeFilePath(id)
   const raw = JSON.parse(await fs.readFile(file, 'utf-8')) as unknown
   const resume = migrate(raw)
+  // B4（2026-08-11 photo 转存）：旧数据迁移——photo dataURL 转存文件 → 引用（一次性，
+  // 成功随 lastOpenedAt 轻量写落盘；失败降级保留内嵌，下次打开重试）
+  const photo = resume.basics.photo
+  if (typeof photo === 'string' && photo.startsWith('data:image/')) {
+    try {
+      resume.basics.photo = await savePhotoFile(getStorageDir(), id, photo)
+    } catch {
+      /* 迁移失败保留内嵌（照片不丢；下次打开重试） */
+    }
+  }
   const meta = { ...resume.meta, lastOpenedAt: nowIso(), createdAt: resume.meta?.createdAt ?? nowIso() }
   const updated = { ...resume, meta }
   try {
@@ -259,7 +281,14 @@ export async function duplicateResume(id: string): Promise<{ id: string; resume:
       meta: { createdAt: now, updatedAt: now, lastOpenedAt: now }
     })
   )
+  // B3：photo 引用随新 id 更新（copyPhotoFiles 已复制照片文件，引用必须指向新文件）
+  const p = copy.basics.photo
+  if (typeof p === 'string' && p.startsWith('photos/')) {
+    copy.basics.photo = `photos/${newId}${p.slice(p.lastIndexOf('.'))}`
+  }
   await atomicWrite(newId, copy, { backup: false })
+  // B1：复制照片文件（photos/<id>.* → <newId>.*；失败静默，不阻断复制）
+  await copyPhotoFiles(getStorageDir(), id, newId)
   return { id: newId, resume: copy }
 }
 
@@ -271,6 +300,8 @@ export async function deleteResume(id: string): Promise<boolean> {
   await withWriteLock(id, async () => {
     await fs.unlink(resumeFilePath(id)).catch(() => {})
     await fs.unlink(`${resumeFilePath(id)}.tmp`).catch(() => {})
+    // B1：同步删除照片文件（photos/<id>.*）
+    await deletePhotoFiles(getStorageDir(), id)
     let files: string[] = []
     try {
       files = await fs.readdir(dir)

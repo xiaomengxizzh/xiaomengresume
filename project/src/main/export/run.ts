@@ -21,7 +21,8 @@ import {
 } from '../../shared/ipc-channels'
 import { ResumeSchema } from '../../shared/schema/resume'
 import type { Settings } from '../../shared/schema/settings'
-import { openResume } from '../files/resume-store'
+import { openResume, getStorageDir } from '../files/resume-store'
+import { readPhotoFile } from '../files/photo-store'
 import { printAppToPdf } from '../print/pdf'
 
 const store = new Store<Settings>()
@@ -87,6 +88,13 @@ export function registerExportIpc(): void {
           if (!resumeId) return { canceled: false, error: 'export: missing resumeId' }
           const raw = await readResumeOrThrow(resumeId)
           const parsed = ResumeSchema.parse(raw)
+          // B3（2026-08-11 photo 转存）：JSON 导出重组内嵌照片——photo 引用读回 dataURL，
+          // 导出自包含（再导入恢复照片，不破坏"便于再导入"承诺）；缺失则原样（空/avatar 特判）
+          const photo = parsed.basics.photo
+          if (typeof photo === 'string' && photo.startsWith('photos/')) {
+            const dataUrl = await readPhotoFile(getStorageDir(), photo)
+            if (dataUrl) parsed.basics.photo = dataUrl
+          }
           const fileName = `${safeFileName(parsed.title || parsed.basics.name || 'resume')}.json`
           const filePath = path.resolve(dir, fileName)
           // 路径穿越纵深防御：最终路径必须仍在目标目录内（目录参数/文件名注入兜底）

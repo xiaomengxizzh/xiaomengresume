@@ -78,12 +78,35 @@ export function ResumeBody({ variant, resume: externalResume }: { variant: Templ
   )
 
   const basics = resume.basics
+  // B2（2026-08-11 photo 转存）：photo 双态——data: 内嵌 / avatar 特判 → 同步直渲；
+  // 'photos/<ref>' 路径引用 → 异步经 IPC 读文件（预览骨架；导出模式由 ExportView 预读注入为 dataURL，无竞态）
+  const rawPhoto = basics.photo
+  const isPhotoRef =
+    typeof rawPhoto === 'string' &&
+    rawPhoto.trim().length > 0 &&
+    !rawPhoto.trim().startsWith('data:') &&
+    !['avatar', '/avatar.png', 'avatar.png'].includes(rawPhoto.trim())
+  const [refPhoto, setRefPhoto] = useState<string | null>(null)
+  useEffect(() => {
+    let alive = true
+    if (!isPhotoRef) {
+      setRefPhoto(null)
+      return
+    }
+    void window.electronAPI.resumes.readPhoto(rawPhoto.trim()).then((dataUrl) => {
+      if (alive && dataUrl) setRefPhoto(dataUrl)
+    })
+    return () => {
+      alive = false
+    }
+    // rawPhoto 为 string 值引用（非对象），值不变不重复触发
+  }, [rawPhoto])
   const photoSrc: string | null = ((): string | null => {
-    const p = basics.photo
-    if (typeof p !== 'string' || p.trim().length === 0) return null
-    const v = p.trim()
+    if (typeof rawPhoto !== 'string' || rawPhoto.trim().length === 0) return null
+    const v = rawPhoto.trim()
     if (v === 'avatar' || v === '/avatar.png' || v === 'avatar.png') return avatarUrl
-    return v
+    if (v.startsWith('data:')) return v
+    return refPhoto
   })()
   const showPhoto = photoSrc !== null
   // 2026-08-09 T2：渲染尺寸兜底 clamp（导入已等比缩放，此处防任何异常大图占满 A4；上限宽 180/高 240）

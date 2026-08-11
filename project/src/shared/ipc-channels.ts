@@ -72,6 +72,12 @@ export const IPC = {
     Recover: 'resume:recover',
     /** 内置示例简历：生成新 uuid 写入存储目录，返回 {id, resume}（M1 补口 2026-08-07） */
     CreateSample: 'resume:create-sample',
+    /**
+     * 2026-08-11 B1（photo 转存）：读取照片文件 → dataURL。
+     * photoRef = resume.basics.photo 引用值（'photos/<id>.<ext>'）；data: 开头（内嵌）无需走此通道。
+     * 主进程仅允许 <storage>/photos/ 下的合法文件名（防路径穿越）。
+     */
+    ReadPhoto: 'resume:read-photo',
     /** 绑定岗位（F19，v1.1 实现） */
     BindJob: 'resume:bind-job',
     /** 解绑岗位（F19，v1.1 实现） */
@@ -130,6 +136,14 @@ export interface ResumeSummary {
   updatedAt?: string
   boundJobIds: string[]
 }
+
+/** 照片读取参数（2026-08-11 B1）：photoRef = resume.basics.photo 引用值（'photos/<id>.<ext>'） */
+export interface ReadPhotoArgs {
+  photoRef: string
+}
+
+/** 照片读取结果：dataURL；文件不存在/非法引用 → null（模板回退不显示） */
+export type ReadPhotoResult = string | null
 
 /** 岗位摘要（jobs:list 返回值，F19 v1.1） */
 export interface JobSummary {

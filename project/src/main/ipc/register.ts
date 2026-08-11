@@ -28,6 +28,8 @@ import {
 } from '../files/resume-store'
 import { listJobs, getJob, saveJob, deleteJob } from '../files/job-store'
 import { createSampleResume } from '../files/sample-resume'
+import { getStorageDir } from '../files/resume-store'
+import { readPhotoFile } from '../files/photo-store'
 
 export function registerIpc(): void {
   // app:ping —— 通信冒烟
@@ -141,6 +143,12 @@ export function registerIpc(): void {
   ipcMain.handle(IPC.Resume.UnbindJob, async (_e, payload: { resumeId: string; jobId: string }) =>
     unbindJob(payload.resumeId, payload.jobId)
   )
+  // B1：resume:read-photo —— 读取照片文件（photo 为路径引用时渲染/导出用；主进程限
+  // photos/ 目录 + basename/UUID 白名单防路径穿越；data: 内嵌无需此通道）
+  ipcMain.handle(IPC.Resume.ReadPhoto, async (_e, payload: { photoRef: string }) => {
+    if (!payload || typeof payload.photoRef !== 'string') return null
+    return readPhotoFile(getStorageDir(), payload.photoRef)
+  })
 
   // ── F19 岗位目录（M3，契约 M1 已冻结；rename/duplicate 由渲染层 get→改→save 组合）──
   ipcMain.handle(IPC.Jobs.List, async () => listJobs())

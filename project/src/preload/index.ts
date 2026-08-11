@@ -18,7 +18,8 @@ import {
   type ImportRunArgs,
   type ImportDraft,
   type ImportBatchResult,
-  type ImportProgress
+  type ImportProgress,
+  type ReadPhotoResult
 } from '@shared/ipc-channels'
 import type { Resume } from '@shared/schema/resume'
 import type { Job } from '@shared/schema/job'
@@ -139,6 +140,9 @@ const electronAPI = {
     scanRecovery: (): Promise<string[]> => ipcRenderer.invoke(IPC.Resume.ScanRecovery),
     recover: (id: string): Promise<Resume | null> => ipcRenderer.invoke(IPC.Resume.Recover, id),
     createSample: (): Promise<{ id: string; resume: Resume }> => ipcRenderer.invoke(IPC.Resume.CreateSample),
+    /** 2026-08-11 B1：读取照片文件 → dataURL（photo 为路径引用时模板/导出用；data: 内嵌无需此通道） */
+    readPhoto: (photoRef: string): Promise<ReadPhotoResult> =>
+      ipcRenderer.invoke(IPC.Resume.ReadPhoto, { photoRef }),
     /** M3 F19 岗位绑定 */
     bindJob: (resumeId: string, jobId: string): Promise<Resume> =>
       ipcRenderer.invoke(IPC.Resume.BindJob, { resumeId, jobId }),
