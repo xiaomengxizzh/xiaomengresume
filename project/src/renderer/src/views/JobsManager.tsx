@@ -156,6 +156,17 @@ export function JobsManager(): React.JSX.Element {
 
       <div className="flex-1 overflow-y-auto">
         <div className="home-view">
+          {/* 2026-08-11：对齐简历目录（ResumesList）——返回键 + home-title 行，保证列表卡片位置一致 */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-foreground/70 transition-colors hover:bg-border/40 hover:text-foreground"
+              onClick={() => setCurrentView('resumes-home')}
+            >
+              ← {t('common.back')}
+            </button>
+            <h2 className="home-title">{t('homeCard.manage')}</h2>
+          </div>
           {jobs.length === 0 ? (
             <EmptyState title={t('resumesJobs.emptyJobs')} action={{ label: `＋ ${t('jobsManager.new')}`, onClick: startNew }} />
           ) : (
