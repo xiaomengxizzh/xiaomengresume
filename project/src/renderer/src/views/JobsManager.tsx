@@ -154,11 +154,11 @@ export function JobsManager(): React.JSX.Element {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4" style={{ maxWidth: 'var(--ui-list-max-width)', margin: '0 auto', width: '100%' }}>
         {jobs.length === 0 ? (
           <EmptyState title={t('resumesJobs.emptyJobs')} action={{ label: `＋ ${t('jobsManager.new')}`, onClick: startNew }} />
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col" style={{ gap: 'var(--ui-list-gap)' }}>
             {selectMode && jobs.length > 0 ? (
               <label className="mb-1 flex cursor-pointer items-center gap-2 px-1 text-xs text-foreground/70">
                 <input

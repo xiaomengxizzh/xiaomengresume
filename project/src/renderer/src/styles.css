@@ -3,6 +3,9 @@
    四主题切换（F18）随 M5 落码，令牌结构自 M0 起按五次定案预留。
    守 3.15.1：PreviewPane 强制白纸（--resume-* 正交，模板侧消费） */
 
+/* UI 配置体系（ui-config/ 设计阶段产物，构建期生成，勿手改） */
+@import './ui-config.generated.css';
+
 @import 'tailwindcss';
 
 /* 令牌 → Tailwind @theme 映射（D1 拍板：M1 引入 Tailwind v4，令牌迁移方案）
@@ -979,7 +982,7 @@ body {
 .home-view {
   /* 2026-08-07 P0-#4：首卡与左导航首菜单项顶部拉齐（导航首项顶 ≈ 24 导航padding + 72 品牌 = 96px） */
   padding: 96px 40px 40px;
-  max-width: 860px;
+  max-width: var(--ui-list-max-width); /* ui-config layout.listMaxWidth（与岗位目录一致） */
   margin: 0 auto;
   width: 100%;
   display: flex;
@@ -1111,7 +1114,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 20px;
+  padding: var(--ui-card-padding-y) var(--ui-card-padding-x); /* ui-config layout.cardPadding */
   background: var(--card);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow);

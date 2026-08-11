@@ -28,3 +28,6 @@ __pycache__/
 
 # UI 截图产物（AI 评估临时生成，不入库）
 ui_screenshots_full/
+
+# UI 配置生成产物（构建期由 gen_ui_config.mjs 生成，勿入库）
+project/src/renderer/src/ui-config.generated.css
