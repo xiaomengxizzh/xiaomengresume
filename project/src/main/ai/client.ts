@@ -6,9 +6,6 @@
  * 假设（方案 A1）：火山方舟兼容端点 baseURL = https://ark.cn-beijing.volces.com/api/v3（常量可改）。
  * temperature/maxTokens 随 handle 返回，由调用方传入 generateObject/streamText（v7 provider 工厂仅收模型名）。
  */
-import { createDeepSeek } from '@ai-sdk/deepseek'
-import { createOpenAI } from '@ai-sdk/openai'
-import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { generateText } from 'ai'
 import type { LanguageModel } from 'ai'
 import Store from 'electron-store'
@@ -51,19 +48,24 @@ export async function createModel(providerId: string): Promise<AiModelHandle> {
     const baseURL = providerId.startsWith('custom:') ? cfg.baseURL : (cfg.baseURL ?? VOLCENGINE_BASE_URL)
     if (!baseURL) throw new AiServiceError('CONFIG_INVALID', `${providerId}: missing baseURL`)
     if (!cfg.modelId) throw new AiServiceError('CONFIG_INVALID', `${providerId}: missing modelId`)
+    // 2026-08-11 A1：provider adapter 按需加载（原顶层静态 import 令三 adapter 随 main 启动全载）
+    const { createOpenAI } = await import('@ai-sdk/openai')
     const openai = createOpenAI({ apiKey: cfg.apiKey, baseURL })
     return { model: openai(cfg.modelId), displayName: providerId, ...handle }
   }
   if (providerId === 'deepseek') {
     if (!cfg.modelId) throw new AiServiceError('CONFIG_INVALID', 'deepseek: missing modelId')
+    const { createDeepSeek } = await import('@ai-sdk/deepseek')
     return { model: createDeepSeek({ apiKey: cfg.apiKey })(cfg.modelId), displayName: 'DeepSeek', ...handle }
   }
   if (providerId === 'openai') {
     if (!cfg.modelId) throw new AiServiceError('CONFIG_INVALID', 'openai: missing modelId')
+    const { createOpenAI } = await import('@ai-sdk/openai')
     return { model: createOpenAI({ apiKey: cfg.apiKey })(cfg.modelId), displayName: 'OpenAI', ...handle }
   }
   if (providerId === 'google') {
     if (!cfg.modelId) throw new AiServiceError('CONFIG_INVALID', 'google: missing modelId')
+    const { createGoogleGenerativeAI } = await import('@ai-sdk/google')
     return {
       model: createGoogleGenerativeAI({ apiKey: cfg.apiKey })(cfg.modelId),
       displayName: 'Gemini',
@@ -82,12 +84,25 @@ export async function testProvider(providerId: string, apiKey: string, modelId: 
   // R3：custom 走 OpenAI 兼容通道（此前缺失导致 custom 检测恒失败）；volcengine 透传覆盖 baseURL
   if (providerId.startsWith('custom:')) {
     if (!baseURL) throw new AiServiceError('CONFIG_INVALID', `${providerId}: missing baseURL`)
+    const { createOpenAI } = await import('@ai-sdk/openai')
     return ping(createOpenAI({ apiKey, baseURL })(modelId))
   }
-  if (providerId === 'volcengine') return ping(createOpenAI({ apiKey, baseURL: baseURL ?? VOLCENGINE_BASE_URL })(modelId))
-  if (providerId === 'deepseek') return ping(createDeepSeek({ apiKey })(modelId))
-  if (providerId === 'openai') return ping(createOpenAI({ apiKey })(modelId))
-  if (providerId === 'google') return ping(createGoogleGenerativeAI({ apiKey })(modelId))
+  if (providerId === 'volcengine') {
+    const { createOpenAI } = await import('@ai-sdk/openai')
+    return ping(createOpenAI({ apiKey, baseURL: baseURL ?? VOLCENGINE_BASE_URL })(modelId))
+  }
+  if (providerId === 'deepseek') {
+    const { createDeepSeek } = await import('@ai-sdk/deepseek')
+    return ping(createDeepSeek({ apiKey })(modelId))
+  }
+  if (providerId === 'openai') {
+    const { createOpenAI } = await import('@ai-sdk/openai')
+    return ping(createOpenAI({ apiKey })(modelId))
+  }
+  if (providerId === 'google') {
+    const { createGoogleGenerativeAI } = await import('@ai-sdk/google')
+    return ping(createGoogleGenerativeAI({ apiKey })(modelId))
+  }
   throw new AiServiceError('CONFIG_INVALID', `unknown provider: ${providerId}`)
 }
 

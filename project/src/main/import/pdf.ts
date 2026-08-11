@@ -7,10 +7,18 @@
  */
 import { promises as fs } from 'node:fs'
 import { deflateSync } from 'node:zlib'
-import { getDocumentProxy, extractText, extractTextItems, extractImages } from 'unpdf'
 import type { ImportDraft } from '../../shared/ipc-channels'
 import { createEmptyResume } from '../../shared/schema/resume'
 import { ImportError } from './errors'
+
+/**
+ * unpdf 懒加载（2026-08-11 A1：WASM 解析器仅首次调用时加载——unpdf 2.5MB + pdf.js，
+ * 原顶层静态 import 令 main 启动即解析/WASM 初始化。外部依赖经 externalizeDepsPlugin
+ * 外置，动态 import 保留运行时加载，与 docx.ts 的 mammoth 同模式）。
+ */
+async function loadUnpdf(): Promise<typeof import('unpdf')> {
+  return await import('unpdf')
+}
 
 /** 文本型阈值（#3 拍板：100 字符落码；M4 实测调参集中此常量） */
 export const PDF_TEXT_MIN_CHARS = 100
@@ -52,6 +60,7 @@ export async function extractPdfText(filePath: string): Promise<PdfExtractResult
   }
   let rawText: string
   try {
+    const { getDocumentProxy, extractText } = await loadUnpdf()
     const pdf = await getDocumentProxy(new Uint8Array(buffer))
     const { text } = await extractText(pdf, { mergePages: true })
     rawText = text
@@ -145,6 +154,7 @@ export async function extractPdfLines(filePath: string): Promise<PdfLinesResult>
   let rawText: string
   let pageItems: Array<Array<{ str: string; x: number; y: number; width: number; height: number }>>
   try {
+    const { getDocumentProxy, extractText, extractTextItems } = await loadUnpdf()
     const pdf = await getDocumentProxy(new Uint8Array(buffer))
     // ① 阅读序文本（与 extractPdfText 一致）
     const t = await extractText(pdf, { mergePages: true })
@@ -324,6 +334,7 @@ export async function extractPdfPhoto(filePath: string): Promise<PdfPhotoResult 
     return null
   }
   try {
+    const { getDocumentProxy, extractImages } = await loadUnpdf()
     const pdf = await getDocumentProxy(new Uint8Array(buffer))
     const images = await extractImages(pdf, 1)
     // 面积最大图 = 候选头像

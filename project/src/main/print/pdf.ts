@@ -2,7 +2,6 @@ import { BrowserWindow, app } from 'electron'
 import { writeFileSync, unlinkSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { PDFDocument } from 'pdf-lib'
 import type { Language } from '@shared/schema/settings'
 
 /**
@@ -31,7 +30,9 @@ export function createPdfWindow(): BrowserWindow {
       // 故与 main/index.ts 同为 ../preload/index.mjs（out/main/../preload = out/preload）
       sandbox: false,
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      // 2026-08-11 A2：hidden 窗口防背景节流——被节流会拖慢 rAF/定时器，延迟 __exportReady 置位
+      backgroundThrottling: false
     }
   })
   return pdfWindow
@@ -156,7 +157,13 @@ export async function printAppToPdf(resumeId: string, opts: PrintAppOptions): Pr
       })
     ])
 
+    // 2026-08-11 A1：pdf-lib 仅页数统计用，按需加载（原顶层静态 import 令其随 main 启动全载）
+    const { PDFDocument } = await import('pdf-lib')
     const pageCount = (await PDFDocument.load(data)).getPageCount()
+    // 2026-08-11 A2：低频导出用完即毁——销毁窗口即回收整个 renderer 进程（Electron
+    // process-model：destroy 是回收进程内存的唯一手段；hide 只降级不回收）。原单例常驻
+    // 整场会话；改后每次导出后释放，下次导出懒重建（代价 ~1s 加载，低频可接受）。
+    destroyPdfWindow()
     return { data: Buffer.from(data), pageCount }
   } catch (err) {
     // 失败重建窗口：防打印队列污染（一次失败后单例队列可能卡死后续调用）
