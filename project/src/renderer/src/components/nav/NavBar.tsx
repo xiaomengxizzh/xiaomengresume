@@ -141,7 +141,7 @@ export function NavBar(): React.JSX.Element {
   return (
     <nav className="navbar-v2">
       <div className="nav-brand">
-        <img src="/icon.png" alt="" className="nav-brand-icon" draggable={false} />
+        <img src="./icon.png" alt="" className="nav-brand-icon" draggable={false} />
         {t('nav.brand')}
       </div>
       <div className="nav-list">{MAIN_ORDER.map(renderItem)}</div>

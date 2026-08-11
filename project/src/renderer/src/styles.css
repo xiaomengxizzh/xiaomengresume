@@ -490,7 +490,7 @@ body {
 }
 
 [data-rm-path]:hover {
-  outline-color: #90a4ae;
+  outline-color: var(--border);
   cursor: pointer;
 }
 
@@ -503,9 +503,9 @@ body {
   z-index: 5;
   font-size: 11px;
   line-height: 1;
-  color: #1f6feb;
-  background: #ffffff;
-  border: 1px solid #d0d7de;
+  color: var(--foreground);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 3px 7px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -520,8 +520,8 @@ body {
 @keyframes rm-flash {
   0%,
   60% {
-    outline-color: #1f6feb;
-    background: rgba(31, 111, 235, 0.08);
+    outline-color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 8%, transparent);
   }
   100% {
     outline-color: transparent;
@@ -1136,8 +1136,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #999;
-  background: #f0f0f0;
+  color: color-mix(in srgb, var(--foreground) 40%, var(--border));
+  background: var(--border);
   border-radius: 2px;
   filter: none;
 }
