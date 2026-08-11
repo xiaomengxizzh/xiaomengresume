@@ -24,6 +24,20 @@
   /* 2026-08-11 Batch3 D1：圆角三档定案（卡片 12 / 控件 8 / 预览纸 4） */
   --radius-control: 8px;
   --radius-paper: 4px;
+  /* 2026-08-11 Batch4 D2：Type Scale 5 档（O8 中文约束：最小档 12px）+ 4px 基线间距（@theme inline 生成 utility） */
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 17px;
+  --text-xl: 22px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
   --shadow-card: var(--shadow);
   --shadow-card-hover: var(--shadow-card-hover);
   --shadow-card-press: var(--shadow-card-press);
@@ -699,7 +713,7 @@ body {
   display: flex;
   flex-direction: column;
   padding: 24px 14px 10px;
-  transition: width 0.2s ease, transform 0.2s ease;
+  transition: transform 0.2s ease; /* 2026-08-11 Batch4 C6：去 width 动画（layout thrash，impeccable 命中）；宽度切换瞬间完成，低频交互可接受 */
   overflow: hidden;
   z-index: 2;
 }
@@ -805,7 +819,7 @@ body {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 17px;
+  font-size: var(--text-lg);
   font-weight: 500;
   color: var(--foreground);
   font-family: inherit;
@@ -868,7 +882,7 @@ body {
   opacity: 0;
   transform: translateY(-8px);
   pointer-events: none;
-  transition: max-height 0.4s ease, opacity 0.4s ease, transform 0.4s ease;
+  transition: opacity 0.4s ease, transform 0.4s ease; /* 2026-08-11 Batch4 C6：去 max-height 动画（layout thrash）；展开高度瞬间生效 + 内容淡入降级 */
 }
 
 .nav-sub-list.open {
@@ -976,7 +990,7 @@ body {
 }
 
 .home-title {
-  font-size: 22px;
+  font-size: var(--text-xl);
   font-weight: 500;
   color: var(--foreground);
   margin-bottom: 4px;
@@ -1288,6 +1302,19 @@ body {
   box-shadow: var(--shadow-card-press);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+/* 2026-08-11 Batch4 D3：模块卡左缘 3px 竖条视觉锚点（--primary 派生，长表单定位辅助） */
+.module-card-tile::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--primary);
+  opacity: 0.5;
 }
 
 .module-card-tile:hover {

@@ -22,7 +22,7 @@ export function Button({
   const sizes = { sm: 'px-2 py-1 text-xs', md: 'px-3 py-1.5 text-[13px]' }
   return (
     <button
-      className={`inline-flex cursor-pointer select-none items-center justify-center gap-1 rounded-lg font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 ${BTN_VARIANTS[variant]} ${sizes[size]} ${className}`}
+      className={`inline-flex cursor-pointer select-none items-center justify-center gap-1 rounded-lg font-medium transition-[color,transform] active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 ${BTN_VARIANTS[variant]} ${sizes[size]} ${className}`}
       {...props}
     />
   )
