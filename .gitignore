@@ -25,3 +25,6 @@ __pycache__/
 /project/used_keys.txt
 # material 核验产物（PDF/PNG 大文件不入库；基准材料保持跟踪，2026-08-11 A4）
 /material/核验/
+
+# UI 截图产物（AI 评估临时生成，不入库）
+ui_screenshots_full/
