@@ -31,6 +31,7 @@
 - **凭据与隐私（2026-08-11）**：凭据只从环境变量/密钥服务读取，源码/示例/测试禁写可用凭据字面量（占位符 sk-... 可）；**禁写本机绝对路径**（文档/代码，泄露用户名与目录结构，需提路径用 `<用户目录>` 等通用描述）；CI 跑 gitleaks（security.yml），GitHub Secret scanning 已建议启用（SECURITY.md）。
 - **性能与结构铁律（2026-08-11，规范五章 8-13）**：主进程重依赖（unpdf/mammoth/@ai-sdk/pdf-lib）一律函数内动态 import；渲染低频视图一律 lazy 拆 chunk（编辑区 TipTap 保持同步）；大对象（base64 图 >100KB）出 JSON 转文件+引用；隐藏窗口用完即毁 + backgroundThrottling:false；新增功能过渲染/内存自检 5 问（编辑器实例数/全量拷贝/列表扫描/监听清理/快照就绪）；性能改动先量化基线再优化。
 - **验证**：改动收口必过 typecheck + lint（--max-warnings 0）+ vitest；涉及持久化/自动保存/启动恢复/路由跳转须 `XM_UI_SMOKE=1` 通过。
+- **UI 尺寸/容器铁律（2026-08-11，规范五章 14）**：尺寸/间距/容器参数走 `ui-config/layout.ts`（`--ui-*` 变量）禁散写；近似页面复用通用容器（home-view/resume-list/T-shell/居中壳）禁独立容器；尺寸需求以 `scripts/ui_layout_audit.cjs` 实测为准（视觉模型不读尺寸）；新界面容器从既有算法选型。
 
 ## 长期记忆深读指引
 - 完整记忆在 ZCode 持久化记忆 `~/.zcode/cli/memories/projects/xiaomengresume-*/memory/`（自动加载，含环境操作细节；项目内 `.workbuddy/` 已移除，2026-08-08 重构）：
