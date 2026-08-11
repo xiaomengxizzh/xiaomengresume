@@ -1107,7 +1107,7 @@ body {
 .resume-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--ui-list-gap); /* ui-config layout.listGap（简历/岗位列表同源） */
 }
 
 .resume-list-item {

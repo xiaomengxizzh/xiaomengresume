@@ -154,14 +154,12 @@ export function JobsManager(): React.JSX.Element {
         </div>
       </div>
 
-      <div
-        className="flex-1 overflow-y-auto"
-        style={{ maxWidth: 'var(--ui-list-max-width)', margin: '0 auto', width: '100%', padding: '16px var(--ui-list-padding-x)' }}
-      >
-        {jobs.length === 0 ? (
-          <EmptyState title={t('resumesJobs.emptyJobs')} action={{ label: `＋ ${t('jobsManager.new')}`, onClick: startNew }} />
-        ) : (
-          <div className="flex flex-col" style={{ gap: 'var(--ui-list-gap)' }}>
+      <div className="flex-1 overflow-y-auto">
+        <div className="home-view">
+          {jobs.length === 0 ? (
+            <EmptyState title={t('resumesJobs.emptyJobs')} action={{ label: `＋ ${t('jobsManager.new')}`, onClick: startNew }} />
+          ) : (
+            <div className="resume-list">
             {selectMode && jobs.length > 0 ? (
               <label className="mb-1 flex cursor-pointer items-center gap-2 px-1 text-xs text-foreground/70">
                 <input
@@ -215,6 +213,7 @@ export function JobsManager(): React.JSX.Element {
             })}
           </div>
         )}
+        </div>
       </div>
 
       {/* 新建/编辑岗位模态框（居整个 UI 正中央） */}

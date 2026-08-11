@@ -17,7 +17,7 @@ export const uiLayout = {
   /** 列表容器水平内边距（px）。简历 home-view 与岗位列表容器统一（卡片实际宽 = listMaxWidth - 2×listPaddingX） */
   listPaddingX: 40,
   /** 列表卡片之间垂直间距（px） */
-  listGap: 8,
+  listGap: 10,
   /** 卡片水平内边距（px） */
   cardPaddingX: 20,
   /** 卡片垂直内边距（px） */
