@@ -58,7 +58,7 @@ export function AiMatch(): React.JSX.Element {
       ) : error ? (
         <EmptyState error title={t('ai.error.' + error.code)} secondary={{ label: t('common.retry'), onClick: () => void run() }} />
       ) : score ? (
-        <div className="mx-auto flex max-w-[560px] flex-col gap-3">
+        <div className="mx-auto flex max-w-[var(--ui-content-max-width)] flex-col gap-3">
           <div className="flex items-center gap-4 rounded-card border border-border bg-surface p-4 shadow-card-press">
             <span className="text-4xl font-bold text-foreground">{score.overall}</span>
             <div className="flex flex-col">

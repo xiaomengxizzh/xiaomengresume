@@ -217,20 +217,22 @@ export function SettingsAi(): React.JSX.Element {
   return (
     <div className="flex h-full flex-col">
       {loadWarn}
-      <div className="flex items-center gap-3 border-b border-border/70 px-4 py-2">
-        {/* 2026-08-09：返回改为独立小卡片样式（与整体卡片风格一致） */}
-        <button
-          type="button"
-          className="flex shrink-0 items-center gap-1 rounded-card border border-border bg-surface px-3 py-1.5 text-xs text-foreground/70 shadow-card-press transition-all hover:-translate-y-px hover:text-foreground hover:shadow-card-hover"
-          onClick={() => setCurrentView('settings-home')}
-        >
-          ← {t('common.back')}
-        </button>
-        <h2 className="text-sm font-semibold">{t('settings.ai.title')}</h2>
-      </div>
+      <div className="flex-1 overflow-y-auto">
+        <div className="home-view">
+          {/* 2026-08-11：对齐 D 类容器（JobsManager/ResumesManager）——home-view 内返回 + home-title（AI 字母标题） */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-foreground/70 transition-colors hover:bg-border/40 hover:text-foreground"
+              onClick={() => setCurrentView('settings-home')}
+            >
+              ← {t('common.back')}
+            </button>
+            <h2 className="home-title">{t('settings.ai.title')}</h2>
+          </div>
 
-      {/* 服务商 tab（2026-08-09 T1：四内置 + 自定义 provider tab + 右侧「添加自定义供应商」按钮） */}
-      <div className="flex flex-wrap items-end gap-1 border-b border-border/70 px-4 pt-2">
+      {/* 服务商 tab（2026-08-09 T1：四内置 + 自定义 provider tab + 右侧「添加自定义供应商」按钮；2026-08-11 去 px-4，水平留白由 home-view 提供） */}
+      <div className="flex flex-wrap items-end gap-1 border-b border-border/70 pt-2">
         {BUILTIN_TABS.map((tb) => (
           <button
             key={tb.id}
@@ -265,7 +267,7 @@ export function SettingsAi(): React.JSX.Element {
 
       {/* 2026-08-09 T1：添加自定义供应商表单（名称/地址/模型 ID） */}
       {addOpen ? (
-        <div className="flex flex-col gap-2 border-b border-border/70 bg-border/20 px-4 py-3">
+        <div className="flex flex-col gap-2 border-b border-border/70 bg-border/20 py-3">
           <div className="grid grid-cols-3 gap-2">
             <input
               className="rounded border border-border bg-surface px-2 py-1 text-sm outline-none focus:border-foreground/50"
@@ -307,7 +309,7 @@ export function SettingsAi(): React.JSX.Element {
         </div>
       ) : null}
 
-      <div className="flex-1 overflow-y-auto px-4 py-3">
+      <div className="flex flex-col gap-3 py-3">
         {activeProvider ? (
           <div className="mb-4 flex flex-col gap-3 rounded-lg border border-border bg-surface p-3">
             {/* R3：供应商名字（内置可编辑，重置回默认） */}
@@ -514,6 +516,8 @@ export function SettingsAi(): React.JSX.Element {
               onReset={() => save({ prompts: null })}
             />
           </div>
+        </div>
+      </div>
         </div>
       </div>
     </div>

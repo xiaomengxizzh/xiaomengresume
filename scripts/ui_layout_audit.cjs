@@ -64,6 +64,30 @@ app.whenReady().then(async () => {
     console.log('RESUME ' + JSON.stringify(await info()))
     await win.webContents.executeJavaScript(CLICK('岗位管理'), true); await sleep(1800)
     console.log('JOB ' + JSON.stringify(await info()))
+    // 2026-08-11：SettingsAi home-view 化后，记录 AI 字母标题（home-title）位置数据（供微调对齐参考）
+    // 路径：设置主项文字（→ settings-home 宫格）→ AI 设置卡（→ settings-ai）
+    await win.webContents.executeJavaScript(`(() => {
+      const rows = [...document.querySelectorAll('.nav-main-row')];
+      const row = rows.find(r => (r.textContent || '').includes('设置'));
+      if (!row) return false;
+      const txt = row.querySelector('.nav-main-text');
+      if (txt) { txt.click(); return true; }
+      return false;
+    })()`, true)
+    await sleep(1500)
+    const cardHit = await win.webContents.executeJavaScript(`(() => {
+      const cards = [...document.querySelectorAll('.home-card')];
+      const c = cards.find(c => (c.textContent || '').includes('AI 设置'));
+      if (c) { c.click(); return true; }
+      return cards.length;
+    })()`, true)
+    await sleep(2000)
+    const ai = await win.webContents.executeJavaScript(`(() => {
+      const t = document.querySelector('.home-title');
+      const all = [...document.querySelectorAll('h1,h2,h3')].map(h => (h.textContent || '').trim()).filter(Boolean);
+      return { homeTitle: t ? (() => { const r = t.getBoundingClientRect(); return { txt: (t.textContent || '').trim(), x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) }; })() : null, headings: all.slice(0, 6) };
+    })()`, true)
+    console.log('SETTINGS_AI_TITLE ' + JSON.stringify({ cardHit, ...ai }))
   } catch (e) { console.log('AUDIT_ERR ' + e) }
   app.exit(0)
 })

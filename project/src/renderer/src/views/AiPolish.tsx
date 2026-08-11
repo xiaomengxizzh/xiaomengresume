@@ -16,7 +16,7 @@ export function AiPolish(): React.JSX.Element {
 
   return (
     <AiScreenLayout icon="polish" backTo="ai-home" title={t('navSub.polish')}>
-      <div className="mx-auto flex max-w-[480px] flex-col items-center gap-3 py-8 text-center">
+      <div className="mx-auto flex max-w-[var(--ui-content-max-width)] flex-col items-center gap-3 py-8 text-center">
         <EmptyState
           title={t('navSub.polish')}
           desc={t('homeDesc.polish')}

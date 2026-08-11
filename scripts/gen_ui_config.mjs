@@ -17,6 +17,10 @@ const out = resolve(root, 'project/src/renderer/src/ui-config.generated.css')
 const vars = [
   ['--ui-list-max-width', `${uiLayout.listMaxWidth}px`],
   ['--ui-list-padding-x', `${uiLayout.listPaddingX}px`],
+  ['--ui-home-padding-top', `${uiLayout.homeTopPadding}px`],
+  ['--ui-home-padding-bottom', `${uiLayout.homeBottomPadding}px`],
+  ['--ui-home-gap', `${uiLayout.homeGap}px`],
+  ['--ui-content-max-width', `${uiLayout.contentMaxWidth}px`],
   ['--ui-list-gap', `${uiLayout.listGap}px`],
   ['--ui-card-padding-x', `${uiLayout.cardPaddingX}px`],
   ['--ui-card-padding-y', `${uiLayout.cardPaddingY}px`],

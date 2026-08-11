@@ -15,7 +15,11 @@
 |---|---|---|---|
 | 卡片长度 / 宽度 | `layout.listMaxWidth` | 860px | 列表容器最大宽度，0=通栏 |
 | 列表左右留白 | `layout.listPaddingX` | 40px | 列表容器水平内边距（卡片实际宽 = maxWidth − 2×此值） |
-| 卡片间距 | `layout.listGap` | 8px | 列表卡片之间垂直间距 |
+| 顶部拉齐 | `layout.homeTopPadding` | 96px | home-view 顶部 padding（对齐左导航首项） |
+| 底部留白 | `layout.homeBottomPadding` | 40px | home-view 底部 padding |
+| 内容纵向间距 | `layout.homeGap` | 14px | home-view 子元素间距 |
+| AI 内容卡宽 | `layout.contentMaxWidth` | 560px | AI 功能区窄卡（AiMatch/AiPolish）最大宽度 |
+| 卡片间距 | `layout.listGap` | 10px | 列表卡片之间垂直间距 |
 | 卡片内部留白 | `layout.cardPaddingX/Y` | 20px / 14px | 卡片内边距 |
 | 模块卡间距 | `layout.moduleGridGap` | 14px | 编辑区模块卡网格间距 |
 

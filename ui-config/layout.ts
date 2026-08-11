@@ -16,6 +16,14 @@ export const uiLayout = {
   listMaxWidth: 860,
   /** 列表容器水平内边距（px）。简历 home-view 与岗位列表容器统一（卡片实际宽 = listMaxWidth - 2×listPaddingX） */
   listPaddingX: 40,
+  /** 容器算法：home-view 顶部拉齐（对齐左导航首项 ≈ 24 导航 padding + 72 品牌） */
+  homeTopPadding: 96,
+  /** 容器算法：home-view 底部内边距 */
+  homeBottomPadding: 40,
+  /** 容器算法：home-view 子元素纵向间距 */
+  homeGap: 14,
+  /** 容器算法：AI 内容卡最大宽度（AiMatch/AiPolish 窄卡，2026-08-11 入配置） */
+  contentMaxWidth: 560,
   /** 列表卡片之间垂直间距（px） */
   listGap: 10,
   /** 卡片水平内边距（px） */
