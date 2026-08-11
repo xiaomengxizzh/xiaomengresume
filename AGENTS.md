@@ -28,6 +28,7 @@
 - **文案**：禁硬编码中文，走 F13 i18n（zh/en 对称，新 key 双端同步）。
 - **依赖**：新依赖过 G.2 三问（原生编译？额外二进制？超 2 年未发版？）。
 - **git**：收口后 AI 自行 commit（规范 message，禁 --no-verify）；**开源仓库**（github.com/xiaomengxizzh/xiaomengresume）push 前先 `git fetch` 检查远端外部改动；`project/used_keys.txt` 类疑似敏感文件**永不提交**。
+- **凭据与隐私（2026-08-11）**：凭据只从环境变量/密钥服务读取，源码/示例/测试禁写可用凭据字面量（占位符 sk-... 可）；**禁写本机绝对路径**（文档/代码，泄露用户名与目录结构，需提路径用 `<用户目录>` 等通用描述）；CI 跑 gitleaks（security.yml），GitHub Secret scanning 已建议启用（SECURITY.md）。
 - **验证**：改动收口必过 typecheck + lint（--max-warnings 0）+ vitest；涉及持久化/自动保存/启动恢复/路由跳转须 `XM_UI_SMOKE=1` 通过。
 
 ## 长期记忆深读指引

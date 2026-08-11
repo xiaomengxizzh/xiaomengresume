@@ -1,0 +1,22 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  gitleaks:
+    name: gitleaks（密钥/令牌/私钥扫描）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # 扫全部历史（含已推送 commit），防旧泄漏
+          fetch-depth: 0
+
+      # 官方 gitleaks-action（community 模式：无需 license，扫描功能完整）
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 命中即失败（默认）；如需人工复核可改 GITLEAKS_NOTIFY_USER_LIST

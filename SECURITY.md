@@ -74,3 +74,11 @@ AI 功能使用 BYOK（Bring Your Own Key）模式，用户自行配置 API Key�
 ---
 
 **我们相信开源安全——代码可审计是最好的安全承诺。**
+---
+
+## 凭据与敏感信息保护（2026-08-11）
+
+- **凭据不落源码**：API Key / 令牌 / 密钥只从环境变量或密钥服务读取（应用运行时 = safeStorage keyring + 主进程环境变量）；源码、示例、测试不得写入可用凭据字面量（占位符如 sk-... 除外）。
+- **禁本机绝对路径**：文档/代码/示例禁写本机绝对路径（泄露用户名与目录结构）；需提路径用通用描述（<用户目录> 等）。
+- **CI 级持续扫描**：`.github/workflows/security.yml` 每次 push/PR 跑 gitleaks（密钥/令牌/私钥正则扫描，命中即失败）。
+- **GitHub Secret scanning**：请维护者在仓库 Settings → Code security and analysis → Secret scanning 启用（GitHub 原生扫描已推送历史与未来提交的已知密钥格式）。
