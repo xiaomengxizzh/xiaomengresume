@@ -68,7 +68,7 @@ export function BasicPreview({
     <div className="preview-pane" ref={ref}>
       <div className="preview-scale-wrapper" ref={wrapRef}>
         <div ref={paperRef} className="preview-paper">
-          {preview ? <Template resume={preview.resume} /> : <Template />}
+          {preview ? <Template resume={preview.resume} emptyHints /> : <Template emptyHints />}
         </div>
       </div>
     </div>

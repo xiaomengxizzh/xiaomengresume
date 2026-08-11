@@ -6,6 +6,6 @@
 import { ResumeBody } from '../shared/ResumeBody'
 import type { Resume } from '@shared/schema/resume'
 
-export function ClassicTemplate({ resume }: { resume?: Resume }): React.JSX.Element {
-  return <ResumeBody variant="classic" resume={resume} />
+export function ClassicTemplate({ resume, emptyHints }: { resume?: Resume; emptyHints?: boolean }): React.JSX.Element {
+  return <ResumeBody variant="classic" resume={resume} emptyHints={emptyHints} />
 }

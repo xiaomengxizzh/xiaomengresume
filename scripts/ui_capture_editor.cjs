@@ -33,13 +33,20 @@ const CLICK_JS = (txt) => `(() => {
   if (!hit) return false; hit.click(); return true;
 })()`
 async function shot(name) {
-  try {
-    const img = await win.webContents.capturePage()
-    fs.mkdirSync(OUT_DIR, { recursive: true })
-    fs.writeFileSync(path.join(OUT_DIR, `${name}.png`), img.toPNG())
-    log({ event: 'shot-ok', name })
-    return true
-  } catch (e) { log({ event: 'shot-fail', name, error: String(e) }); return false }
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const img = await win.webContents.capturePage()
+      fs.mkdirSync(OUT_DIR, { recursive: true })
+      fs.writeFileSync(path.join(OUT_DIR, `${name}.png`), img.toPNG())
+      log({ event: 'shot-ok', name, attempt })
+      return true
+    } catch (e) {
+      if (attempt < 2) { await sleep(1500); continue }
+      log({ event: 'shot-fail', name, error: String(e) })
+      return false
+    }
+  }
+  return false
 }
 
 app.whenReady().then(async () => {

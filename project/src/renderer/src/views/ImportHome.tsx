@@ -118,7 +118,7 @@ export function ImportHome(): React.JSX.Element {
   }
 
   return (
-    <div className="home-view">
+    <div className="home-view h-full justify-center">
       <div className="flex items-center gap-2">
         <button
           type="button"

@@ -6,6 +6,6 @@
 import { ResumeBody } from '../shared/ResumeBody'
 import type { Resume } from '@shared/schema/resume'
 
-export function CompactTemplate({ resume }: { resume?: Resume }): React.JSX.Element {
-  return <ResumeBody variant="compact" resume={resume} />
+export function CompactTemplate({ resume, emptyHints }: { resume?: Resume; emptyHints?: boolean }): React.JSX.Element {
+  return <ResumeBody variant="compact" resume={resume} emptyHints={emptyHints} />
 }

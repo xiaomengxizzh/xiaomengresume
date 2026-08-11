@@ -37,7 +37,7 @@ function titleCss(logic: ReturnType<typeof titleStyleLogic>): CSSProperties {
   }
 }
 
-export function ResumeBody({ variant, resume: externalResume }: { variant: TemplateId; resume?: Resume }): React.JSX.Element {
+export function ResumeBody({ variant, resume: externalResume, emptyHints }: { variant: TemplateId; resume?: Resume; emptyHints?: boolean }): React.JSX.Element {
   const { t } = useTranslation()
   // P2（用户拍板 C）：resume 经 rAF 合并节流订阅——同帧多次 setField 只渲染一次。
   // 2026-08-09 统一预览：外部 resume（导入向导草稿预览）优先，否则 store 订阅（实时预览）
@@ -332,9 +332,14 @@ export function ResumeBody({ variant, resume: externalResume }: { variant: Templ
                 <div key={bid} style={{ minWidth: 0, paddingTop: '2px' }}>
                   {basics.name ? (
                     <h1 className="redact-field" style={{ fontSize: `${TYPE_SCALE.namePx[variant]}px`, fontWeight: 700, lineHeight: 1.2, marginBottom: '2px', color: '#111827' }}>{basics.name}</h1>
+                  ) : emptyHints ? (
+                    /* 2026-08-11 Batch3 B6：空态预览占位（仅编辑预览 emptyHints 显示；导出不渲染，守「模板=打印」） */
+                    <div aria-hidden style={{ height: `${TYPE_SCALE.namePx[variant]}px`, width: 140, borderRadius: 4, border: '1.5px dashed rgba(0,0,0,0.18)', opacity: 0.6 }} />
                   ) : null}
                   {basics.headline ? (
                     <div className="redact-field" style={{ fontSize: `${TYPE_SCALE.headlinePx[variant]}px`, opacity: 0.75, lineHeight: 1.4 }}>{basics.headline}</div>
+                  ) : emptyHints ? (
+                    <div aria-hidden style={{ height: `${TYPE_SCALE.headlinePx[variant]}px`, width: 96, borderRadius: 4, border: '1.5px dashed rgba(0,0,0,0.18)', opacity: 0.6, marginTop: 4 }} />
                   ) : null}
                 </div>
               )
