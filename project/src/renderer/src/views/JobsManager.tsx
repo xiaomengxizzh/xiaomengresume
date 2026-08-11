@@ -154,7 +154,10 @@ export function JobsManager(): React.JSX.Element {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4" style={{ maxWidth: 'var(--ui-list-max-width)', margin: '0 auto', width: '100%' }}>
+      <div
+        className="flex-1 overflow-y-auto"
+        style={{ maxWidth: 'var(--ui-list-max-width)', margin: '0 auto', width: '100%', padding: '16px var(--ui-list-padding-x)' }}
+      >
         {jobs.length === 0 ? (
           <EmptyState title={t('resumesJobs.emptyJobs')} action={{ label: `＋ ${t('jobsManager.new')}`, onClick: startNew }} />
         ) : (

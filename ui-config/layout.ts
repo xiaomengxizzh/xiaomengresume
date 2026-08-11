@@ -14,6 +14,8 @@
 export const uiLayout = {
   /** 列表容器最大宽度（px）。简历/岗位目录统一 860 居中（对齐 .home-view）。0 = 通栏 */
   listMaxWidth: 860,
+  /** 列表容器水平内边距（px）。简历 home-view 与岗位列表容器统一（卡片实际宽 = listMaxWidth - 2×listPaddingX） */
+  listPaddingX: 40,
   /** 列表卡片之间垂直间距（px） */
   listGap: 8,
   /** 卡片水平内边距（px） */

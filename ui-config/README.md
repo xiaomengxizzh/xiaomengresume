@@ -14,6 +14,7 @@
 | 你说的 | 配置键 | 当前值 | 说明 |
 |---|---|---|---|
 | 卡片长度 / 宽度 | `layout.listMaxWidth` | 860px | 列表容器最大宽度，0=通栏 |
+| 列表左右留白 | `layout.listPaddingX` | 40px | 列表容器水平内边距（卡片实际宽 = maxWidth − 2×此值） |
 | 卡片间距 | `layout.listGap` | 8px | 列表卡片之间垂直间距 |
 | 卡片内部留白 | `layout.cardPaddingX/Y` | 20px / 14px | 卡片内边距 |
 | 模块卡间距 | `layout.moduleGridGap` | 14px | 编辑区模块卡网格间距 |
