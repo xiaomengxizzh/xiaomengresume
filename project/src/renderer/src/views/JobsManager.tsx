@@ -173,7 +173,7 @@ export function JobsManager(): React.JSX.Element {
             {jobs.map((j) => {
               const bound = resumes.filter((r) => (r.boundJobIds ?? []).includes(j.id))
               return (
-                <div key={j.id} className="group resume-list-item flex items-center gap-3">
+                <div key={j.id} className="group resume-list-item min-w-0 gap-3">
                   {selectMode ? (
                     <input
                       type="checkbox"
@@ -183,21 +183,21 @@ export function JobsManager(): React.JSX.Element {
                       aria-label={j.name}
                     />
                   ) : null}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-medium text-foreground">{j.name}</span>
-                      {bound.length > 0 ? (
-                        <span className="shrink-0 rounded-full bg-success-bg px-2 py-0.5 text-[10px] text-success" title={bound.map((r) => r.name).join('、')}>
-                          {t('jobsManager.bound')} · {bound.map((r) => r.name).join('、')}
-                        </span>
-                      ) : null}
-                    </div>
-                    <div className="mt-0.5 flex items-center gap-3 text-[11px] text-foreground/50">
-                      <span>{j.appliedAt || '—'}</span>
-                      <span className={`rounded-full px-1.5 py-px ${j.status === 'rejected' ? 'bg-danger-bg text-danger' : j.status === 'passed' ? 'bg-success-bg text-success' : 'bg-border/60 text-foreground/70'}`}>
-                        {t(STATUS_KEYS[(j.status as JobStatus) ?? 'notApplied'])}
+                  {/* 左主信息：岗位名 + 绑定简历徽章（对齐简历卡「名称左」） */}
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <span className="resume-list-name truncate text-sm text-foreground">{j.name}</span>
+                    {bound.length > 0 ? (
+                      <span className="shrink-0 rounded-full bg-success-bg px-2 py-0.5 text-[10px] text-success" title={bound.map((r) => r.name).join('、')}>
+                        {t('jobsManager.bound')} · {bound.map((r) => r.name).join('、')}
                       </span>
-                    </div>
+                    ) : null}
+                  </div>
+                  {/* 右元信息：投递时间 + 状态徽章（对齐简历卡「meta 右」两端分布） */}
+                  <div className="flex shrink-0 items-center gap-2.5">
+                    <span className="whitespace-nowrap text-[11px] text-foreground/50">{j.appliedAt || '—'}</span>
+                    <span className={`whitespace-nowrap rounded-full px-1.5 py-px text-[11px] ${j.status === 'rejected' ? 'bg-danger-bg text-danger' : j.status === 'passed' ? 'bg-success-bg text-success' : 'bg-border/60 text-foreground/70'}`}>
+                      {t(STATUS_KEYS[(j.status as JobStatus) ?? 'notApplied'])}
+                    </span>
                   </div>
                   <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                     <button type="button" className="rounded px-2 py-1 text-[11px] text-foreground/60 hover:bg-border/40 hover:text-foreground" onClick={() => void openEdit(j)}>
