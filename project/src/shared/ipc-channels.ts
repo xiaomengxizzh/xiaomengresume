@@ -106,6 +106,19 @@ export const IPC = {
     Run: 'import:run',
     /** 2026-08-09 R8：批量导入（多选 → 逐份解析 → 直接落盘为独立新简历，无需三步核对） */
     RunBatch: 'import:runBatch'
+  },
+  /** F21 简历存储位置（技术栈 §3.11.3 定案 · 2026-08-11 落码） */
+  Storage: {
+    /** 选择存储目录（dialog 目录选择器） */
+    Choose: 'storage:choose',
+    /** 获取存储信息 { defaultPath, currentPath, exists } */
+    Get: 'storage:get',
+    /** 设置存储位置（校验可写 → 迁移 .json+.bak+photos/ → 切换 → 返回迁移数） */
+    Set: 'storage:set',
+    /** 重置默认存储位置（Documents/xiaomengresume） */
+    Reset: 'storage:reset',
+    /** 打开当前存储目录（shell.openPath） */
+    Open: 'storage:open'
   }
 } as const
 
@@ -144,6 +157,20 @@ export interface ReadPhotoArgs {
 
 /** 照片读取结果：dataURL；文件不存在/非法引用 → null（模板回退不显示） */
 export type ReadPhotoResult = string | null
+
+/** 存储位置信息（storage:get 返回值，F21 §3.11.3） */
+export interface StorageInfo {
+  defaultPath: string
+  currentPath: string
+  exists: boolean
+}
+
+/** 存储位置设置结果（storage:set；migrated = 迁移文件数） */
+export interface StorageSetResult {
+  ok: boolean
+  migrated?: number
+  error?: string
+}
 
 /** 岗位摘要（jobs:list 返回值，F19 v1.1） */
 export interface JobSummary {

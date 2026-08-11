@@ -5,8 +5,12 @@
  * + backup:export/import；jobs:*（F19）+ resume:bind-job/unbind-job（M3 实现）；
  * ai:* 四分区 + ai:config:*（M3，见 registerAiIpc）。
  */
-import { app, BrowserWindow, ipcMain } from 'electron'
-import { IPC, type AppInfo, type RecentResume, type ResumeSummary } from '@shared/ipc-channels'
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
+import { promises as fs } from 'node:fs'
+import * as path from 'node:path'
+import Store from 'electron-store'
+import { IPC, type AppInfo, type RecentResume, type ResumeSummary, type StorageInfo, type StorageSetResult } from '@shared/ipc-channels'
+import type { Settings } from '../../shared/schema/settings'
 import { printHtmlToPdf } from '../print/pdf'
 import { registerExportIpc } from '../export/run'
 import { registerAiIpc } from '../ai/register-ai'
@@ -28,8 +32,11 @@ import {
 } from '../files/resume-store'
 import { listJobs, getJob, saveJob, deleteJob } from '../files/job-store'
 import { createSampleResume } from '../files/sample-resume'
-import { getStorageDir } from '../files/resume-store'
+import { getStorageDir, clearStorageFallback } from '../files/resume-store'
 import { readPhotoFile } from '../files/photo-store'
+import { migrateStorage } from '../files/storage-migrate'
+
+const store = new Store<Settings>()
 
 export function registerIpc(): void {
   // app:ping —— 通信冒烟
@@ -148,6 +155,48 @@ export function registerIpc(): void {
   ipcMain.handle(IPC.Resume.ReadPhoto, async (_e, payload: { photoRef: string }) => {
     if (!payload || typeof payload.photoRef !== 'string') return null
     return readPhotoFile(getStorageDir(), payload.photoRef)
+  })
+
+  // ── F21 存储位置（技术栈 §3.11.3 定案 · 2026-08-11 落码；设置屏 UI 随 M5）──────
+  ipcMain.handle(IPC.Storage.Choose, async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return null
+    const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+      properties: ['openDirectory', 'createDirectory'],
+      defaultPath: getStorageDir()
+    })
+    return canceled || filePaths.length === 0 ? null : filePaths[0]
+  })
+  ipcMain.handle(IPC.Storage.Get, async (): Promise<StorageInfo> => {
+    const currentPath = getStorageDir()
+    let exists = false
+    try {
+      exists = (await fs.stat(currentPath)).isDirectory()
+    } catch {
+      /* 目录不存在 */
+    }
+    return { defaultPath: path.join(app.getPath('documents'), 'xiaomengresume'), currentPath, exists }
+  })
+  ipcMain.handle(IPC.Storage.Set, async (_e, newDir: unknown): Promise<StorageSetResult> => {
+    if (typeof newDir !== 'string' || newDir.length === 0) return { ok: false, error: 'invalid path' }
+    if (newDir === getStorageDir()) return { ok: true, migrated: 0 }
+    try {
+      // 校验可写 + 迁移（.json/.bak.*/photos/）；失败不切换、旧数据不动
+      const migrated = await migrateStorage(getStorageDir(), newDir)
+      store.set('storage.folderPath', newDir)
+      clearStorageFallback() // 新目录已校验可写，会话兜底不再必要
+      return { ok: true, migrated }
+    } catch (err) {
+      return { ok: false, error: String(err) }
+    }
+  })
+  ipcMain.handle(IPC.Storage.Reset, async (): Promise<string> => {
+    store.delete('storage.folderPath')
+    clearStorageFallback()
+    return getStorageDir()
+  })
+  ipcMain.handle(IPC.Storage.Open, (): void => {
+    void shell.openPath(getStorageDir())
   })
 
   // ── F19 岗位目录（M3，契约 M1 已冻结；rename/duplicate 由渲染层 get→改→save 组合）──

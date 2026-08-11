@@ -103,6 +103,12 @@ export function getStorageDir(): string {
 let storageFallbackDir: string | null = null
 let storageProbe: Promise<string> | null = null
 
+/** 清除会话级存储兜底（F21 storage:set 切换成功后调用——新目录已校验可写，兜底不再必要） */
+export function clearStorageFallback(): void {
+  storageFallbackDir = null
+  storageProbe = null
+}
+
 async function doEnsureStorageDir(): Promise<string> {
   const dir = getStorageDir()
   try {

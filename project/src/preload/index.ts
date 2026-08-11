@@ -19,7 +19,9 @@ import {
   type ImportDraft,
   type ImportBatchResult,
   type ImportProgress,
-  type ReadPhotoResult
+  type ReadPhotoResult,
+  type StorageInfo,
+  type StorageSetResult
 } from '@shared/ipc-channels'
 import type { Resume } from '@shared/schema/resume'
 import type { Job } from '@shared/schema/job'
@@ -152,6 +154,14 @@ const electronAPI = {
   backup: {
     exportZip: (): Promise<string | null> => ipcRenderer.invoke(IPC.Backup.Export),
     importZip: (): Promise<number> => ipcRenderer.invoke(IPC.Backup.Import)
+  },
+  storage: {
+    /** F21 简历存储位置（技术栈 §3.11.3 · 2026-08-11 落码；设置屏 UI 随 M5） */
+    choose: (): Promise<string | null> => ipcRenderer.invoke(IPC.Storage.Choose),
+    get: (): Promise<StorageInfo> => ipcRenderer.invoke(IPC.Storage.Get),
+    set: (dir: string): Promise<StorageSetResult> => ipcRenderer.invoke(IPC.Storage.Set, dir),
+    reset: (): Promise<string> => ipcRenderer.invoke(IPC.Storage.Reset),
+    open: (): Promise<void> => ipcRenderer.invoke(IPC.Storage.Open)
   },
   import: {
     /** M4a：导入简历（主进程开对话框选文件；返回草稿进三步核对向导）；进度经 onProgress */
