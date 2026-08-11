@@ -347,12 +347,32 @@ body {
 
 .splitter {
   flex-shrink: 0;
-  width: 5px;
+  width: 8px; /* 2026-08-11 Batch2 C2：5→8px 热区（视觉保持细线感，触控/大屏容错）+ 圆点把手 */
   cursor: col-resize;
   background: transparent;
   transition: background-color 0.15s ease;
   position: relative;
   z-index: 5;
+}
+
+.splitter::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 3px;
+  height: 32px;
+  border-radius: 2px;
+  background: var(--border);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.splitter:hover::after,
+.splitter.dragging::after {
+  opacity: 1;
 }
 
 .splitter:hover,
@@ -372,6 +392,23 @@ body {
   flex-direction: column;
   padding: 28px 32px 28px;
   background: var(--background);
+}
+
+/* 2026-08-11 Batch2 C3：预览区滚动条与编辑区统一（8px 圆角主题色） */
+.preview-pane {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.preview-pane::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.preview-pane::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+.preview-pane::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 /* 纸张缩放 wrapper（2026-08-07 修复：实际宽高由 JS 同步 = 794s × 纸高s，
@@ -554,6 +591,13 @@ body {
   color: var(--danger);
 }
 
+/* 2026-08-11 Batch2 C1：全局键盘焦点环（shadcn 组件保留自身 focus-visible:ring 类） */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* ── 排版条（编辑面板顶部，2026-08-07 UI 重构）────────────────────────── */
 .layout-bar {
   display: flex;
@@ -665,6 +709,9 @@ body {
   text-align: center;
   padding: 12px 0 36px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -73,6 +73,7 @@ function SubList({ k, currentView, setCurrentView, open }: { k: MainKey; current
           key={s.key}
           type="button"
           className={`nav-sub ${s.disabled ? 'disabled' : ''} ${!s.disabled && currentView === s.view ? 'active' : ''}`}
+          aria-current={!s.disabled && currentView === s.view ? 'page' : undefined}
           disabled={s.disabled}
           title={s.disabled ? undefined : t(s.titleKey)}
           onClick={() => {
