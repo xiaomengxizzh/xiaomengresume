@@ -18,5 +18,10 @@ __pycache__/
 /electron-dist/
 /.npmcache/
 /project/.git*
+# git 元数据残留防护（2026-08-11 A4：误操作 mkdir 的 .git.bak*/ 等，任意层级）
+**/.git.bak*/
+**/.git.off
 # 疑似敏感文件铁律：永不提交（AGENTS 关键铁律）
 /project/used_keys.txt
+# material 核验产物（PDF/PNG 大文件不入库；基准材料保持跟踪，2026-08-11 A4）
+/material/核验/
