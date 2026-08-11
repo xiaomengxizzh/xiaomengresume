@@ -4,13 +4,16 @@
  * jsdom + store 注入含 6 字段 basics → TagsBlock 注入 6 格 → fireEvent 操作
  */
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, fireEvent, act, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { render, fireEvent, act, waitFor, cleanup } from '@testing-library/react'
 import '../../i18n'
 import { EditorView } from '../EditorView'
 import { ResumeBody } from '../../templates/shared/ResumeBody'
 import { useResumeStore } from '../../store/useResumeStore'
 import { createEmptyResume } from '@shared/schema/resume'
+
+// globals 未开 → RTL 无自动 cleanup；EditorView 内 useAutoSave 定时器需随卸载取消（防 teardown 竞态）
+afterEach(cleanup)
 
 vi.mock('@tiptap/react', () => ({
   useEditor: (): null => null,
