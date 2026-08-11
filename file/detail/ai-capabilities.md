@@ -43,7 +43,7 @@
 
 ```bat
 cd project
-C:\Users\zzh\AppData\Roaming\npm\pnpm.cmd build        REM 先构建 out/（node 需在 PATH 前缀）
+pnpm.cmd build        REM 先构建 out/（node 需在 PATH 前缀）
 node_modules\electron\dist\electron.exe ..\scripts\ui_capture.cjs
 ```
 
@@ -60,7 +60,7 @@ node_modules\electron\dist\electron.exe ..\scripts\ui_capture.cjs
 | 模块拖拽交互 | 实时交互单帧截图意义有限，未单独捕获（导出弹窗已覆盖"可展开功能区"项） |
 | 首次截图 GPU 错误 | `UnknownVizError` 偶发 → 脚本已内置 3 次重试（实测 attempt:1 成功） |
 | 编辑器就绪时序 | 点击"新建空白"后编辑器渲染有延迟 → 脚本轮询 `.editor-pane` 出现再截（曾截到首页，已修） |
-| 环境 | Windows system shell 下 `findstr`/`grep` 不可用、pnpm 需 `set PATH=E:\tool\nodejs;%PATH%` |
+| 环境 | Windows system shell 下 `findstr`/`grep` 不可用、pnpm 需 `set PATH=<node安装目录>;%PATH%` |
 
 ## 6. 关联
 
