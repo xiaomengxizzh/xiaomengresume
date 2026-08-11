@@ -287,7 +287,8 @@
     "open": "Open",
     "cancel": "Cancel",
     "save": "Save",
-    "retry": "Retry"
+    "retry": "Retry",
+    "loading": "Loading…"
   },
   "export": {
     "title": "Export",
