@@ -5,6 +5,7 @@
  */
 import { promises as fs } from 'node:fs'
 import { migrate } from '../../shared/schema/resume'
+import { DATE_RANGE_SEP } from '../../shared/templates/layout'
 import type { ImportDraft } from '../../shared/ipc-channels'
 import { ImportError } from './errors'
 
@@ -26,13 +27,13 @@ export function resumeToPreview(resume: ReturnType<typeof migrate>): string {
   const summary = textOf(resume.summary.content)
   if (summary) parts.push(summary)
   for (const e of resume.education) {
-    const line = [e.school, e.degree, e.major, [e.startDate, e.endDate].filter(Boolean).join(' – ')]
+    const line = [e.school, e.degree, e.major, [e.startDate, e.endDate].filter(Boolean).join(DATE_RANGE_SEP)]
       .filter(Boolean)
       .join(' · ')
     if (line) parts.push(line)
   }
   for (const w of resume.work) {
-    const line = [w.title, w.company, w.location, [w.startDate, w.endDate].filter(Boolean).join(' – ')]
+    const line = [w.title, w.company, w.location, [w.startDate, w.endDate].filter(Boolean).join(DATE_RANGE_SEP)]
       .filter(Boolean)
       .join(' · ')
     if (line) parts.push(line)

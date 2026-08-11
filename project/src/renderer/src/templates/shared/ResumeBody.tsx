@@ -16,7 +16,7 @@ import type { Resume } from '@shared/schema/resume'
 import { SectionBlock, Placeholder, entryHead, fmtDate, useJump } from './primitives'
 import { useThrottledResume } from '../../hooks/useThrottledResume'
 // 2026-08-10 架构收敛批：排版逻辑值单一事实源（与 PDF 端同源引用）
-import { contactFontSize, titleStyleLogic, TYPE_SCALE, LIST_MARK_LOGIC, CONTACT_GRID_LOGIC, entrySpacingLogic, type TitleVariant } from '@shared/templates/layout'
+import { contactFontSize, titleStyleLogic, TYPE_SCALE, LIST_MARK_LOGIC, CONTACT_GRID_LOGIC, entrySpacingLogic, DATE_RANGE_SEP, type TitleVariant } from '@shared/templates/layout'
 
 const CLASSIC_PHOTO = { width: 110, height: 110 }
 
@@ -182,7 +182,7 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
           {secTitle(t('editor.section.education'), headerSize)}
           {resume.education.filter((e) => e.visible !== false).map((e) => (
             <div key={e.id} style={{ marginBottom: `${entrySpacingLogic('education')}px` }}>
-              {entryHead(e.school, [fmtDate(e.startDate), e.endDate ? fmtDate(e.endDate) : ''].filter(Boolean).join(' – '), {
+              {entryHead(e.school, [fmtDate(e.startDate), e.endDate ? fmtDate(e.endDate) : ''].filter(Boolean).join(DATE_RANGE_SEP), {
                 fontSize: `${TYPE_SCALE.entryHeadEm}em`,
                 fontWeight: 700
               })}
@@ -203,11 +203,12 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
           {secTitle(t('editor.section.work'), headerSize)}
           {resume.work.filter((w) => w.visible !== false).map((w) => (
             <div key={w.id} style={{ marginBottom: `${entrySpacingLogic('work')}px` }}>
-              {entryHead(w.company, [fmtDate(w.startDate), w.current ? t('editor.field.current') : w.endDate ? fmtDate(w.endDate) : ''].filter(Boolean).join(' – '), {
+              {/* 2026-08-11 材料对比批：条目头主行 = 职位（求职视角第一眼），公司移次行（对齐 material/简历示例1.pdf）；title 空时主行回落公司 */}
+              {entryHead(w.title || w.company, [fmtDate(w.startDate), w.current ? t('editor.field.current') : w.endDate ? fmtDate(w.endDate) : ''].filter(Boolean).join(DATE_RANGE_SEP), {
                 fontSize: `${TYPE_SCALE.entryHeadEm}em`,
                 fontWeight: 700
               })}
-              <div style={{ fontSize: `${TYPE_SCALE.entrySubEm}em`, opacity: 0.8 }}>{w.title}</div>
+              {w.title ? <div style={{ fontSize: `${TYPE_SCALE.entrySubEm}em`, opacity: 0.8 }}>{w.company}</div> : null}
               {w.summary ? (
                 <div style={{ ...pStyle, marginTop: '4px' }} dangerouslySetInnerHTML={{ __html: richTextToHtml(w.summary) }} />
               ) : null}
@@ -224,11 +225,12 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
           {secTitle(t('editor.section.projects'), headerSize)}
           {resume.projects.filter((p) => p.visible !== false).map((p) => (
             <div key={p.id} style={{ marginBottom: `${entrySpacingLogic('projects')}px` }}>
-              {entryHead(p.name, [fmtDate(p.startDate), p.endDate ? fmtDate(p.endDate) : ''].filter(Boolean).join(' – '), {
+              {/* 2026-08-11 材料对比批：项目条目头主行 = 角色（role），项目名+组织移次行（对齐参考 PDF「角色+日期 / 项目名」） */}
+              {entryHead(p.role || p.name, [fmtDate(p.startDate), p.endDate ? fmtDate(p.endDate) : ''].filter(Boolean).join(DATE_RANGE_SEP), {
                 fontSize: `${TYPE_SCALE.entryHeadEm}em`,
                 fontWeight: 700
               })}
-              <div style={{ fontSize: `${TYPE_SCALE.entrySubEm}em`, opacity: 0.8 }}>{[p.role, p.organization].filter(Boolean).join(' · ')}</div>
+              {p.role ? <div style={{ fontSize: `${TYPE_SCALE.entrySubEm}em`, opacity: 0.8 }}>{[p.name, p.organization].filter(Boolean).join(' · ')}</div> : null}
               {p.description ? (
                 <div style={{ ...pStyle, marginTop: '4px' }} dangerouslySetInnerHTML={{ __html: richTextToHtml(p.description) }} />
               ) : null}
@@ -248,9 +250,10 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
             <ul style={{ listStyle: 'disc', paddingLeft: `${LIST_MARK_LOGIC.indent}px`, marginTop: '2px' }}>
               {resume.skills.map((s) => (
                 <li key={s.id} style={{ fontSize: `${TYPE_SCALE.skillEm}em`, lineHeight }}>
+                  {/* 2026-08-11 材料对比批：分类前缀「分类：内容」（对齐 material/简历示例1.pdf「前端框架：熟悉 React…」） */}
+                  {s.category ? `${s.category}：` : ''}
                   {s.name}
                   {s.level ? `（${t(`editor.skill.${s.level}`)}）` : ''}
-                  {s.category ? ` · ${s.category}` : ''}
                 </li>
               ))}
             </ul>

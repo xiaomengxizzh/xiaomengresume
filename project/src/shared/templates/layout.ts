@@ -44,6 +44,9 @@ export function fmtDate(d: string | undefined): string {
   return m ? `${y}/${m}` : y
 }
 
+/** 日期区间分隔符（对齐 material/简历示例1.pdf 连字符样式；2026-08-11 材料对比批） */
+export const DATE_RANGE_SEP = ' - '
+
 /* ── 字号体系 TYPE_SCALE（em 系数相对 baseFontSize；固定 px 用函数） ── */
 
 export const TYPE_SCALE = {
