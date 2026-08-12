@@ -119,6 +119,18 @@ export const IPC = {
     Reset: 'storage:reset',
     /** 打开当前存储目录（shell.openPath） */
     Open: 'storage:open'
+  },
+  /** M5 字体系统（技术栈 §3.7.4 手段 D：font:// 协议 + 导入字体管理，2026-08-12 契约冻结） */
+  Font: {
+    /** 导入字体（dialog 选 ttf/otf/woff/woff2 → 复制 userData/fonts/ → 注册 @font-face → 返回清单条目） */
+    Import: 'font:import',
+    /** 移除已导入字体（删文件 + 注销） */
+    Remove: 'font:remove'
+  },
+  /** M5 本地日志（技术栈 §3.11.1 #8：导出日志 zip，2026-08-12 契约冻结） */
+  Logs: {
+    /** 导出日志（userData/logs/*.log* → zip，二次扫描剔除 Key 痕迹） */
+    Export: 'logs:export'
   }
 } as const
 

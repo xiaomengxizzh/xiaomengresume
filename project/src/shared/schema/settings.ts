@@ -45,6 +45,22 @@ export const AiPromptsSchema = z.object({
 })
 export type AiPrompts = z.infer<typeof AiPromptsSchema>
 
+/** M5 全局模板参数覆盖层（模板设置主功能 A3：出厂配方之上的用户覆盖；key = templateId）
+ *  校验边界与 LayoutSchema 一致（resume.ts）；覆盖链：per-resume layout > 模板配置 > 代码默认 */
+export const TemplateOverrideSchema = z.object({
+  baseFontSize: z.number().min(9).max(24).optional(),
+  lineHeight: z.number().min(1).max(3).optional(),
+  pagePadding: z.number().min(0).max(80).optional(),
+  paragraphSpacing: z.number().min(0).max(40).optional(),
+  sectionSpacing: z.number().min(0).max(60).optional(),
+  headerSize: z.number().min(12).max(36).optional(),
+  resumeFont: z.string().optional(),
+  themeColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  /** 节标题风格（underline/accent-bar/compact 三选一，覆盖 variant 默认） */
+  titleStyle: z.enum(['underline', 'accent-bar', 'compact']).optional()
+})
+export type TemplateOverride = z.infer<typeof TemplateOverrideSchema>
+
 /**
  * 全局设置 —— M0 只冻结骨架字段（五段），后续里程碑段落级追加：
  * - M0：appearance / appearanceMode / language（F18/F13 字段地基）
@@ -121,7 +137,12 @@ export const SettingsSchema = z.object({
         addedAt: z.string()
       })
     )
-    .default([])
+    .default([]),
+
+  /** M5 模板设置主功能：全局模板参数覆盖层（key = templateId；缺省空 = 全部用出厂配方） */
+  templates: z.record(z.string(), TemplateOverrideSchema).default(() => ({})),
+  /** M5：默认模板（新建空白时的预选；缺省 classic） */
+  defaultTemplateId: z.string().default('classic')
 })
 export type Settings = z.infer<typeof SettingsSchema>
 

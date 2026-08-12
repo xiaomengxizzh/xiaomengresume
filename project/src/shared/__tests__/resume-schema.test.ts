@@ -127,7 +127,7 @@ describe('内置示例简历（M1 补口 · 打开示例入口数据源）', () 
   it('createSampleResume() 经 parse 通过且内容完整', () => {
     const r = ResumeSchema.parse(createSampleResume())
     expect(r.schemaVersion).toBe(1)
-    expect(r.basics.name).toBe('宋哈娜')
+    expect(r.basics.name).toBe('王晨') // 2026-08-12 B1：示例全局替换为自创人物（原宋哈娜）
     expect(r.education.length).toBeGreaterThan(0)
     expect(r.work.length).toBeGreaterThan(0)
     expect(r.layout).toBeDefined()

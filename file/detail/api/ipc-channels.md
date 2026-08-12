@@ -38,6 +38,7 @@ IPC 通道契约（M0 冻结 · M1 扩展 · M2 F5 扩展 export:*）
 | Resume | `resume:scan-recovery` | 崩溃恢复：扫描残留 .tmp（三件套 a，启动时渲染进程调用） |
 | Resume | `resume:recover` | 崩溃恢复：用 .tmp 覆盖正式文件 |
 | Resume | `resume:create-sample` | 内置示例简历：生成新 uuid 写入存储目录，返回 {id, resume}（M1 补口 2026-08-07） |
+| Resume | `resume:read-photo` | — |
 | Resume | `resume:bind-job` | 绑定岗位（F19，v1.1 实现） |
 | Resume | `resume:unbind-job` | 解绑岗位（F19，v1.1 实现） |
 | Resumes | `resumes:recent` | 最近简历列表（按 lastActivityAt 倒序） |
@@ -49,6 +50,14 @@ IPC 通道契约（M0 冻结 · M1 扩展 · M2 F5 扩展 export:*）
 | Jobs | `jobs:delete` | — |
 | Import | `import:run` | 导入简历：主进程开文件对话框 → 解析+映射 → 返回草稿（渲染层不传路径，防路径穿越） |
 | Import | `import:runBatch` | 2026-08-09 R8：批量导入（多选 → 逐份解析 → 直接落盘为独立新简历，无需三步核对） |
+| Storage | `storage:choose` | 选择存储目录（dialog 目录选择器） |
+| Storage | `storage:get` | 获取存储信息 { defaultPath, currentPath, exists } |
+| Storage | `storage:set` | 设置存储位置（校验可写 → 迁移 .json+.bak+photos/ → 切换 → 返回迁移数） |
+| Storage | `storage:reset` | 重置默认存储位置（Documents/xiaomengresume） |
+| Storage | `storage:open` | 打开当前存储目录（shell.openPath） |
+| Font | `font:import` | 导入字体（dialog 选 ttf/otf/woff/woff2 → 复制 userData/fonts/ → 注册 @font-face → 返回清单条目） |
+| Font | `font:remove` | 移除已导入字体（删文件 + 注销） |
+| Logs | `logs:export` | 导出日志（userData/logs/*.log* → zip，二次扫描剔除 Key 痕迹） |
 
 ## 分命名空间明细
 
@@ -101,6 +110,7 @@ AI 通道（M0 流式验证；M3 扩展四分区 + 服务商配置。流式增�
 - `ScanRecovery` → `resume:scan-recovery`：崩溃恢复：扫描残留 .tmp（三件套 a，启动时渲染进程调用）
 - `Recover` → `resume:recover`：崩溃恢复：用 .tmp 覆盖正式文件
 - `CreateSample` → `resume:create-sample`：内置示例简历：生成新 uuid 写入存储目录，返回 {id, resume}（M1 补口 2026-08-07）
+- `ReadPhoto` → `resume:read-photo`
 - `BindJob` → `resume:bind-job`：绑定岗位（F19，v1.1 实现）
 - `UnbindJob` → `resume:unbind-job`：解绑岗位（F19，v1.1 实现）
 
@@ -133,6 +143,29 @@ AI 通道（M0 流式验证；M3 扩展四分区 + 服务商配置。流式增�
 - `Run` → `import:run`：导入简历：主进程开文件对话框 → 解析+映射 → 返回草稿（渲染层不传路径，防路径穿越）
 - `RunBatch` → `import:runBatch`：2026-08-09 R8：批量导入（多选 → 逐份解析 → 直接落盘为独立新简历，无需三步核对）
 
+### Storage
+
+F21 简历存储位置（技术栈 §3.11.3 定案 · 2026-08-11 落码）
+
+- `Choose` → `storage:choose`：选择存储目录（dialog 目录选择器）
+- `Get` → `storage:get`：获取存储信息 { defaultPath, currentPath, exists }
+- `Set` → `storage:set`：设置存储位置（校验可写 → 迁移 .json+.bak+photos/ → 切换 → 返回迁移数）
+- `Reset` → `storage:reset`：重置默认存储位置（Documents/xiaomengresume）
+- `Open` → `storage:open`：打开当前存储目录（shell.openPath）
+
+### Font
+
+M5 字体系统（技术栈 §3.7.4 手段 D：font:// 协议 + 导入字体管理，2026-08-12 契约冻结）
+
+- `Import` → `font:import`：导入字体（dialog 选 ttf/otf/woff/woff2 → 复制 userData/fonts/ → 注册 @font-face → 返回清单条目）
+- `Remove` → `font:remove`：移除已导入字体（删文件 + 注销）
+
+### Logs
+
+M5 本地日志（技术栈 §3.11.1 #8：导出日志 zip，2026-08-12 契约冻结）
+
+- `Export` → `logs:export`：导出日志（userData/logs/*.log* → zip，二次扫描剔除 Key 痕迹）
+
 ## 返回类型
 
 ### `AppInfo`
@@ -162,6 +195,28 @@ id: string
 name: string
 updatedAt?: string
 boundJobIds: string[]
+```
+
+### `ReadPhotoArgs`
+
+```ts
+photoRef: string
+```
+
+### `StorageInfo`
+
+```ts
+defaultPath: string
+currentPath: string
+exists: boolean
+```
+
+### `StorageSetResult`
+
+```ts
+ok: boolean
+migrated?: number
+error?: string
 ```
 
 ### `JobSummary`
@@ -199,6 +254,8 @@ canceled: boolean
 /** image 多页时为数组 */
 filePath?: string | string[]
 error?: string
+/** 2026-08-10：PDF 实际页数（textPdf；first 裁剪后为 1）——导出对话框展示真实页数 */
+pageCount?: number
 ```
 
 ### `ExportProgress`
