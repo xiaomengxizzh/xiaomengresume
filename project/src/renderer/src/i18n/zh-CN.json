@@ -476,8 +476,30 @@
       "licenseNote": "字体许可由你自担：仅本机使用、不随应用重新分发。确定导入该字体？"
     },
     "templates": {
+      "title": "模板设置",
       "defaultTemplate": "默认模板",
-      "customized": "已自定义"
+      "customized": "已自定义",
+      "clickToEdit": "点击模板卡片进入编辑",
+      "prev": "上一个模板",
+      "next": "下一个模板",
+      "openEditor": "编辑「{{name}}」",
+      "baseFontSize": "基础字号",
+      "lineHeight": "行高",
+      "pagePadding": "页边距",
+      "paragraphSpacing": "段落间距",
+      "sectionSpacing": "板块间距",
+      "headerSize": "标题字号",
+      "resumeFont": "模板字体",
+      "fontSystem": "系统默认",
+      "themeColor": "主题色",
+      "titleStyle": "节标题风格",
+      "titleStyleOptions": {
+        "underline": "下划线",
+        "accent-bar": "强调条",
+        "compact": "紧凑"
+      },
+      "reset": "还原",
+      "save": "保存"
     },
     "ai": {
       "title": "AI 设置",

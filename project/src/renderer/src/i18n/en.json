@@ -476,8 +476,30 @@
       "licenseNote": "Font license is your responsibility: local use only, not redistributed with the app. Import this font?"
     },
     "templates": {
+      "title": "Template settings",
       "defaultTemplate": "Default template",
-      "customized": "Customized"
+      "customized": "Customized",
+      "clickToEdit": "Click a template card to edit it",
+      "prev": "Previous template",
+      "next": "Next template",
+      "openEditor": "Edit \"{{name}}\"",
+      "baseFontSize": "Base font size",
+      "lineHeight": "Line height",
+      "pagePadding": "Page padding",
+      "paragraphSpacing": "Paragraph spacing",
+      "sectionSpacing": "Section spacing",
+      "headerSize": "Header size",
+      "resumeFont": "Template font",
+      "fontSystem": "System default",
+      "themeColor": "Theme color",
+      "titleStyle": "Section title style",
+      "titleStyleOptions": {
+        "underline": "Underline",
+        "accent-bar": "Accent bar",
+        "compact": "Compact"
+      },
+      "reset": "Reset",
+      "save": "Save"
     },
     "ai": {
       "title": "AI Settings",

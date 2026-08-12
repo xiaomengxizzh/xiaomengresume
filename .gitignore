@@ -9,6 +9,7 @@
 /.tmp/
 /project/.tmp/
 /.codegraph/
+/.zcode/
 __pycache__/
 *.pyc
 *.log

@@ -1,7 +1,8 @@
 /**
- * SettingsTemplates —— M5-5 模板设置主功能（设置区第 4 屏）
- * A1 入口承接 + A2 模板预览屏（示例数据真实渲染）+ A6 默认模板可设 + 编辑（M5-3 A4 组件接入）。
- * 预览语义（A2 定案）：编辑草稿不实时联动，点「保存」后 store 更新 → 预览自动重渲染。
+ * SettingsTemplates —— 模板设置屏（M5-5 模板设置主功能 + 2026-08-12 界面调整批重设计）
+ * 重设计（用户定案）：设置屏改为「图书式翻书选择」——横排三槽位（中间当前模板完整突出、两侧露边），
+ * 左右箭头循环切换；卡片零按钮，点击任意卡进入该模板的独立编辑视图（复用 A4 编辑能力），编辑视图独立返回按钮回图书。
+ * 保留：A1 入口 + A6 默认模板可设（即时生效）+ A2 预览语义（编辑草稿不实时联动，点「保存」后 store 更新 → 预览重渲染）。
  * 示例数据 = shared/sample-resume.json（王晨，内嵌不进简历目录，与「打开示例」同源）。
  */
 import { useState } from 'react'
@@ -9,7 +10,7 @@ import { useTranslation } from 'react-i18next'
 import { useResumeStore } from '../store/useResumeStore'
 import { templateRegistry, getTemplate, type TemplateId } from '../templates/registry'
 import { TemplateSettingsEditor } from '../components/settings/TemplateSettingsEditor'
-import { TemplatePreviewCard } from '../components/template-preview-card'
+import { TemplateBook } from '../components/template-book'
 import { migrate } from '@shared/schema/resume'
 import sample from '@shared/sample-resume.json'
 
@@ -24,24 +25,49 @@ export function SettingsTemplates(): React.JSX.Element {
   const [selected, setSelected] = useState<TemplateId>(() =>
     TEMPLATE_IDS.includes(settings.defaultTemplateId as TemplateId) ? (settings.defaultTemplateId as TemplateId) : 'classic'
   )
+  // null = 图书选择；非空 = 该模板独立编辑视图
+  const [editing, setEditing] = useState<TemplateId | null>(null)
 
-  const Preview = getTemplate(selected).component
+  const backBtn =
+    'flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-foreground/70 transition-colors hover:bg-border/40 hover:text-foreground'
+
+  // 编辑视图：独立全屏（返回回图书 + 模板名 + 左编辑面板 / 右真实渲染预览）
+  if (editing !== null) {
+    const Preview = getTemplate(editing).component
+    return (
+      <div className="home-view">
+        <div className="flex items-center gap-2">
+          <button type="button" className={backBtn} onClick={() => setEditing(null)}>
+            ← {t('common.back')}
+          </button>
+          <h2 className="home-title">{t(templateRegistry[editing].nameKey)}</h2>
+        </div>
+
+        <div className="flex gap-4">
+          <div className="w-64 shrink-0">
+            <div className="rounded-lg border border-border p-4">
+              <TemplateSettingsEditor templateId={editing} />
+            </div>
+          </div>
+          <div className="min-w-0 flex-1 overflow-auto rounded-lg border border-border bg-surface p-4" style={{ maxHeight: '70vh' }}>
+            <Preview resume={PREVIEW_RESUME} />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="home-view">
       <div className="flex items-center gap-2">
-        <button
-          type="button"
-          className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-foreground/70 transition-colors hover:bg-border/40 hover:text-foreground"
-          onClick={() => useResumeStore.getState().setCurrentView('settings-home')}
-        >
+        <button type="button" className={backBtn} onClick={() => useResumeStore.getState().setCurrentView('settings-home')}>
           ← {t('common.back')}
         </button>
         <h2 className="home-title">{t('settings.templates.title')}</h2>
       </div>
 
-      {/* A6：默认模板（新建空白预选） */}
-      <div className="mb-4">
+      {/* A6：默认模板（新建空白预选，即时生效） */}
+      <div>
         <div className="mb-2 text-sm text-foreground/80">{t('settings.templates.defaultTemplate')}</div>
         <div className="flex gap-2">
           {TEMPLATE_IDS.map((id) => (
@@ -59,40 +85,10 @@ export function SettingsTemplates(): React.JSX.Element {
         </div>
       </div>
 
-      <div className="flex gap-4">
-        {/* 左：模板列表（真实预览卡；覆盖标记） */}
-        <div className="w-44 shrink-0 space-y-3">
-          {TEMPLATE_IDS.map((id) => {
-            const hasOverride = Boolean(settings.templates?.[id])
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setSelected(id)}
-                className={`w-full rounded-card border p-2 transition-all ${
-                  selected === id ? 'border-foreground bg-selected/30' : 'border-border bg-surface hover:bg-selected/20'
-                }`}
-              >
-                <TemplatePreviewCard templateId={id} />
-                <div className="mt-1 text-center text-xs text-foreground">
-                  {t(templateRegistry[id].nameKey)}
-                  {hasOverride ? <span className="ml-1 text-[10px] text-foreground/50">{t('settings.templates.customized')}</span> : null}
-                </div>
-              </button>
-            )
-          })}
-        </div>
+      {/* 图书式翻书选择（点任意卡进入编辑） */}
+      <TemplateBook templates={TEMPLATE_IDS} selected={selected} onSelect={setSelected} onOpen={setEditing} />
 
-        {/* 右：预览（示例数据真实渲染，保存后更新）+ 编辑 */}
-        <div className="min-w-0 flex-1 space-y-4">
-          <div className="overflow-auto rounded-lg border border-border bg-surface p-4" style={{ maxHeight: '48vh' }}>
-            <Preview resume={PREVIEW_RESUME} />
-          </div>
-          <div className="rounded-lg border border-border p-4">
-            <TemplateSettingsEditor templateId={selected} />
-          </div>
-        </div>
-      </div>
+      <div className="text-center text-xs text-foreground/50">{t('settings.templates.clickToEdit')}</div>
     </div>
   )
 }
