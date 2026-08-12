@@ -243,7 +243,8 @@
     "storage": "Storage",
     "openResume": "Open resume",
     "manageJobs": "Resumes & Jobs",
-    "newResume": "New resume"
+    "newResume": "New resume",
+    "templates": "Template Settings"
   },
   "homeTitle": {
     "resumes": "Resume",
@@ -273,7 +274,8 @@
     "newResume": "Start blank or import",
     "openResume": "Open recently edited resumes",
     "manage": "View and manage all resumes",
-    "jobs": "Maintain jobs and bindings"
+    "jobs": "Maintain jobs and bindings",
+    "templates": "Preview and edit default layout of 3 templates, set default template"
   },
   "homeEmpty": {
     "resumes": "No resumes yet. Click New blank to start."
@@ -462,24 +464,8 @@
       "licenseNote": "Font license is your responsibility: local use only, not redistributed with the app. Import this font?"
     },
     "templates": {
-      "title": "Template Settings",
-      "save": "Save",
-      "reset": "Restore defaults",
-      "baseFontSize": "Base font size",
-      "lineHeight": "Line height",
-      "pagePadding": "Page padding",
-      "paragraphSpacing": "Paragraph spacing",
-      "sectionSpacing": "Section spacing",
-      "headerSize": "Section title size",
-      "resumeFont": "Default font",
-      "fontSystem": "System default",
-      "themeColor": "Accent color",
-      "titleStyle": "Section title style",
-      "titleStyleOptions": {
-        "underline": "Underline",
-        "accent-bar": "Left bar",
-        "compact": "Compact"
-      }
+      "defaultTemplate": "Default template",
+      "customized": "Customized"
     },
     "ai": {
       "title": "AI Settings",
@@ -646,7 +632,10 @@
     "blank": "New blank resume",
     "blankDesc": "Start from scratch",
     "import": "Import existing",
-    "importDesc": "Import from PDF / Word / JSON"
+    "importDesc": "Import from PDF / Word / JSON",
+    "chooseTemplate": "Choose a template",
+    "default": "Default",
+    "start": "Start new"
   },
   "resumesManager": {
     "new": "New resume",

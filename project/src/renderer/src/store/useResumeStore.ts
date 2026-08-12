@@ -69,7 +69,8 @@ interface ResumeState {
    */
   loadResumeIntoEditor(resumeId: string, resume: Resume): void
   /** 新建空白简历（生成新 uuid，自动保存即落盘 <id>.json） */
-  newResume(): void
+  /** M5-5 A5：新建空白简历（可选模板 templateId；缺省用默认模板/出厂） */
+  newResume(templateId?: string): void
   /**
    * M4a 导入写入（#5 拍板：一次撤销可回滚导入）：
    * history.record(prev) + 整体替换（不走逐字段 setField，防 50 步栈爆炸）+ 进编辑器。
@@ -226,11 +227,14 @@ export const useResumeStore = create<ResumeState>()((set, get) => ({
     useResumeStore.getState().setCurrentView('editor')
   },
 
-  newResume: () => {
+  newResume: (templateId?: string) => {
     history.clear()
+    const resume = createEmptyResume()
+    // M5-5 A5：新建空白可选模板（模板选择界面传入；缺省用默认模板）
+    if (templateId) resume.layout = { ...(resume.layout ?? {}), templateId }
     set({
       resumeId: crypto.randomUUID(),
-      resume: createEmptyResume(),
+      resume,
       activeSection: 'basics',
       activeFieldPath: null,
       lastEditedPath: null,

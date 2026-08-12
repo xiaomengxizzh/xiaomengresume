@@ -4,7 +4,7 @@
  * 已对齐 F1 新 schema（schemaVersion 1 / basics 复数 / layout / boundJobIds）。
  * meta 不内嵌：由写入方（resume:create-sample handler → saveResume）补齐。
  */
-import sample from './sample-resume.json'
+import sample from '../../shared/sample-resume.json'
 import { migrate, type Resume } from '../../shared/schema/resume'
 
 /** 返回一份校验通过的示例简历（每次调用独立对象，可安全修改） */

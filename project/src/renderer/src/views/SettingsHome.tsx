@@ -6,8 +6,16 @@ import { useResumeStore } from '../store/useResumeStore'
 import { HomeView, type HomeItem } from './HomeView'
 
 /** 设置项线框图标（内联 SVG，对齐 AiIcon/HomeView 图标风格） */
-function SettingsIcon({ kind }: { kind: 'palette' | 'gear' | 'folder' }): React.JSX.Element {
+function SettingsIcon({ kind }: { kind: 'palette' | 'gear' | 'folder' | 'layout' }): React.JSX.Element {
   const p = { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none' as const, stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true }
+  if (kind === 'layout') {
+    return (
+      <svg {...p}>
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <path d="M3 9h18M9 9v12" />
+      </svg>
+    )
+  }
   if (kind === 'palette') {
     return (
       <svg {...p}>
@@ -38,6 +46,7 @@ export function SettingsHome(): React.JSX.Element {
   const setCurrentView = useResumeStore((s) => s.setCurrentView)
   const items: HomeItem[] = [
     { key: 'appearance', titleKey: 'navSub.appearance', descKey: 'homeDesc.appearance', icon: <SettingsIcon kind="palette" />, onClick: () => setCurrentView('settings-appearance') },
+    { key: 'templates', titleKey: 'navSub.templates', descKey: 'homeDesc.templates', icon: <SettingsIcon kind="layout" />, onClick: () => setCurrentView('settings-templates') },
     { key: 'aiSettings', titleKey: 'navSub.aiSettings', descKey: 'homeDesc.aiSettings', icon: <SettingsIcon kind="gear" />, onClick: () => setCurrentView('settings-ai') },
     { key: 'storage', titleKey: 'navSub.storage', descKey: 'homeDesc.storage', icon: <SettingsIcon kind="folder" />, onClick: () => setCurrentView('settings-storage') }
   ]

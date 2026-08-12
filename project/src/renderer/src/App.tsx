@@ -13,6 +13,7 @@ import { EditorView } from './views/EditorView'
 import { SettingsAi } from './views/SettingsAi'
 import { SettingsAppearance } from './views/SettingsAppearance'
 import { SettingsStorage } from './views/SettingsStorage'
+import { SettingsTemplates } from './views/SettingsTemplates'
 import { WelcomeView } from './views/WelcomeView'
 import { NewResumeView } from './views/NewResumeView'
 import { ResumesManager } from './views/ResumesManager'
@@ -145,6 +146,8 @@ export default function App(): React.JSX.Element {
     // M5-4：外观/存储设置屏落地（替换 coming: 占位）
     if (currentView === 'settings-appearance') return <SettingsAppearance />
     if (currentView === 'settings-storage') return <SettingsStorage />
+    // M5-5：模板设置主功能（A1 入口）
+    if (currentView === 'settings-templates') return <SettingsTemplates />
     if (currentView.startsWith('coming:')) {
       // 子页占位（M3 后剩余：appearance / storage；import 已于 M4a 启用）
       const sub = currentView.slice('coming:'.length)

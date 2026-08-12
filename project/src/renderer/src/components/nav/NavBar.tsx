@@ -34,6 +34,7 @@ const SUBS: Record<MainKey, SubItem[]> = {
   ],
   settings: [
     { key: 'appearance', titleKey: 'navSub.appearance', view: 'settings-appearance' },
+    { key: 'templates', titleKey: 'navSub.templates', view: 'settings-templates' },
     { key: 'aiSettings', titleKey: 'navSub.aiSettings', view: 'settings-ai' },
     { key: 'storage', titleKey: 'navSub.storage', view: 'settings-storage' }
   ]

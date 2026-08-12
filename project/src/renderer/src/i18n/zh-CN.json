@@ -243,7 +243,8 @@
     "storage": "存储位置",
     "openResume": "打开简历",
     "manageJobs": "简历与岗位目录",
-    "newResume": "新建简历"
+    "newResume": "新建简历",
+    "templates": "模板设置"
   },
   "homeTitle": {
     "resumes": "简历",
@@ -273,7 +274,8 @@
     "newResume": "从空白或导入开始",
     "openResume": "打开最近编辑的简历",
     "manage": "查看与管理全部简历",
-    "jobs": "维护岗位与绑定关系"
+    "jobs": "维护岗位与绑定关系",
+    "templates": "预览并编辑三套模板的默认排版参数，设置默认模板"
   },
   "homeEmpty": {
     "resumes": "还没有简历，点击「新建空白」开始"
@@ -462,24 +464,8 @@
       "licenseNote": "字体许可由你自担：仅本机使用、不随应用重新分发。确定导入该字体？"
     },
     "templates": {
-      "title": "模板设置",
-      "save": "保存",
-      "reset": "还原默认",
-      "baseFontSize": "正文字号",
-      "lineHeight": "行高",
-      "pagePadding": "页边距",
-      "paragraphSpacing": "段落间距",
-      "sectionSpacing": "区块间距",
-      "headerSize": "区块标题字号",
-      "resumeFont": "模板默认字体",
-      "fontSystem": "系统默认",
-      "themeColor": "主题色",
-      "titleStyle": "区块标题风格",
-      "titleStyleOptions": {
-        "underline": "下划线",
-        "accent-bar": "左侧色条",
-        "compact": "紧凑"
-      }
+      "defaultTemplate": "默认模板",
+      "customized": "已自定义"
     },
     "ai": {
       "title": "AI 设置",
@@ -646,7 +632,10 @@
     "blank": "新建空白简历",
     "blankDesc": "从零开始创建一份简历",
     "import": "导入已有简历",
-    "importDesc": "从 PDF / Word / JSON 导入"
+    "importDesc": "从 PDF / Word / JSON 导入",
+    "chooseTemplate": "选择模板",
+    "default": "默认",
+    "start": "开始新建"
   },
   "resumesManager": {
     "new": "新建简历",
