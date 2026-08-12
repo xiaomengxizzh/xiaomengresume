@@ -223,4 +223,14 @@ describe('immutableSetByPath（打字卡顿优化）', () => {
     expect(() => immutableSetByPath(r, 'basics.customFields[9].label', 'x')).toThrow(/out of range/)
     expect(() => immutableSetByPath(r, 'basics.name.sub', 'x')).toThrow(/not an object/)
   })
+
+  it('2026-08-12 修复：顶层无 title 字段（王晨 json 导入，空 title 被 JSON 序列化丢弃）可写入不抛错', () => {
+    const r = sample()
+    delete (r as { title?: string }).title // 模拟 importMapToResume 空 title → undefined → 序列化丢弃
+    expect('title' in r).toBe(false)
+    const next = immutableSetByPath(r, 'title', '王晨的销售简历')
+    expect(next.title).toBe('王晨的销售简历')
+    // 原对象不受影响（历史栈快照安全）
+    expect('title' in r).toBe(false)
+  })
 })

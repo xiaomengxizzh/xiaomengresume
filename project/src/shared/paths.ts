@@ -168,13 +168,15 @@ export function setByPath(target: Resume, path: FieldPath, value: unknown): void
 export function immutableSetByPath(target: Resume, path: FieldPath, value: unknown): Resume {
   const { section, index, field } = parsePath(path)
   const root = { ...(target as unknown as UnknownRecord) } as UnknownRecord
-  if (!(section in root)) {
-    throw new Error(`write failed: section not found ${section}`)
-  }
-  // 2026-08-09 T3：顶层字段（title / meta / boundJobIds / customSections 等）——单段路径直接写
+  // 2026-08-09 T3：顶层字段（title / meta / boundJobIds / customSections 等）——单段路径直接写。
+  // 2026-08-12 修复：顶层可选字段不存在时允许创建——importMapToResume 空 title 写 `undefined`（JSON
+  // 序列化丢弃该键）致导入简历顶层无 title，旧存在性检查抛 `write failed` → TopBar 标题无法编辑。
   if (!field) {
     root[section] = value
     return root as Resume
+  }
+  if (!(section in root)) {
+    throw new Error(`write failed: section not found ${section}`)
   }
 
   const clone = <T>(v: T): T => {
