@@ -667,5 +667,14 @@
     "bound": "已绑定",
     "bindResume": "绑定简历",
     "untitled": "未命名岗位"
+  },
+  "window": {
+    "controls": {
+      "title": "窗口控制",
+      "minimize": "最小化",
+      "maximize": "最大化",
+      "restore": "还原",
+      "close": "关闭"
+    }
   }
 }

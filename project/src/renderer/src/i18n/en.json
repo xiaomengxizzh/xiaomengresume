@@ -667,5 +667,14 @@
     "bound": "Bound",
     "bindResume": "Bind resume",
     "untitled": "Untitled job"
+  },
+  "window": {
+    "controls": {
+      "title": "Window controls",
+      "minimize": "Minimize",
+      "maximize": "Maximize",
+      "restore": "Restore",
+      "close": "Close"
+    }
   }
 }

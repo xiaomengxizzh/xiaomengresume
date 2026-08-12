@@ -445,12 +445,16 @@ SETTINGS_KEYS_EXPECTED = {
     "export",
     # 2026-08-09 M3 Q10：自定义 OpenAI 兼容服务商（SettingsSchema.customProviders）
     "customProviders",
+    # 2026-08-12 M5 文档同步：templates 覆盖层 / defaultTemplateId / customTheme / closeBehavior（技术栈 §3.11.7/§3.15）
+    "templates", "defaultTemplateId", "customTheme", "closeBehavior",
 }
 RESUME_KEYS_EXPECTED = {
     "schemaVersion", "basics", "summary", "education", "work", "projects",
     "skills", "certificates", "languages", "targetJobDescription", "layout",
     # 2026-08-07 M1 落码补充（F11 WP-T1 meta / F19 WP-T2 boundJobIds，仅增不改）
     "meta", "boundJobIds",
+    # 2026-08-09 增补（F1 字段表已记录）：title（T3 名称/姓名分离）/ customSections（模块化编辑）
+    "title", "customSections",
 }
 
 

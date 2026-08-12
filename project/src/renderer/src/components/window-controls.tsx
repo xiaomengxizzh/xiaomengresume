@@ -4,6 +4,7 @@
  * 图标内联 SVG 零依赖；最大化态经 onMaximized 广播切换（win maximize/unmaximize）。
  */
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 function MinimizeIcon(): React.JSX.Element {
   return (
@@ -37,6 +38,7 @@ function CloseIcon(): React.JSX.Element {
 }
 
 export function WindowControls(): React.JSX.Element {
+  const { t } = useTranslation()
   const [maximized, setMaximized] = useState(false)
 
   useEffect(() => window.electronAPI.window.onMaximized(setMaximized), [])
@@ -44,20 +46,21 @@ export function WindowControls(): React.JSX.Element {
   const btn =
     'flex h-7 w-7 items-center justify-center rounded-md text-foreground/60 transition-colors hover:bg-selected/60 hover:text-foreground'
   return (
-    <div className="window-controls" aria-label="窗口控制" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-      <button type="button" className={btn} title="最小化" aria-label="最小化" onClick={() => window.electronAPI.window.minimize()}>
+    // M5 文档同步 W1：aria-label/title 走 i18n（F13 铁律，window.* 命名空间）
+    <div className="window-controls" aria-label={t('window.controls.title')} style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+      <button type="button" className={btn} title={t('window.controls.minimize')} aria-label={t('window.controls.minimize')} onClick={() => window.electronAPI.window.minimize()}>
         <MinimizeIcon />
       </button>
       <button
         type="button"
         className={btn}
-        title={maximized ? '还原' : '最大化'}
-        aria-label={maximized ? '还原' : '最大化'}
+        title={maximized ? t('window.controls.restore') : t('window.controls.maximize')}
+        aria-label={maximized ? t('window.controls.restore') : t('window.controls.maximize')}
         onClick={() => window.electronAPI.window.maximizeToggle()}
       >
         <MaximizeIcon restore={maximized} />
       </button>
-      <button type="button" className={`${btn} hover:bg-red-500/80 hover:text-white`} title="关闭" aria-label="关闭" onClick={() => window.electronAPI.window.close()}>
+      <button type="button" className={`${btn} hover:bg-red-500/80 hover:text-white`} title={t('window.controls.close')} aria-label={t('window.controls.close')} onClick={() => window.electronAPI.window.close()}>
         <CloseIcon />
       </button>
     </div>
