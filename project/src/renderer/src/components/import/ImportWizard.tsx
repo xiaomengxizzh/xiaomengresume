@@ -15,6 +15,7 @@ import { Button, Input, Textarea } from '../ui'
 import { BasicPreview } from '../../preview/BasicPreview'
 import { EmptyState } from '../ui/empty-state'
 import { templateRegistry, type TemplateId } from '../../templates/registry'
+import { TemplatePreviewCard } from '../template-preview-card'
 
 /** RichText → 纯文本（Tiptap doc 递归 / 降级 HTML 剥标签） */
 function richTextToPlain(rt: RichText | undefined): string {
@@ -393,17 +394,16 @@ export function ImportWizard({
             <div className="grid grid-cols-3 gap-2">
               {(['classic', 'modern', 'compact'] as TemplateId[]).map((id) => {
                 const meta = templateRegistry[id]
-                const Th = meta.thumbnail
                 return (
                   <button
                     key={id}
                     type="button"
                     onClick={() => setPickedTemplate(id)}
-                    className={`flex flex-col gap-1 rounded-md border p-2 transition-colors ${
+                    className={`flex flex-col items-center gap-1 rounded-md border p-2 transition-colors ${
                       pickedTemplate === id ? 'border-foreground bg-selected/30' : 'border-border hover:bg-selected/20'
                     }`}
                   >
-                    <Th />
+                    <TemplatePreviewCard templateId={id} />
                     <span className="text-center text-[11px] text-foreground">{t(meta.nameKey)}</span>
                   </button>
                 )

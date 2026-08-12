@@ -221,7 +221,8 @@
     "placeholder": "规划中",
     "collapse": "收起导航",
     "expand": "展开导航",
-    "brand": "XM简历"
+    "brand": "XM简历",
+    "primary": "主导航"
   },
   "navMain": {
     "resume": "简历",
@@ -244,8 +245,7 @@
     "openResume": "打开简历",
     "manageJobs": "简历与岗位目录",
     "newResume": "新建简历",
-    "templates": "模板设置",
-    "about": "关于"
+    "templates": "模板设置"
   },
   "homeTitle": {
     "resumes": "简历",
@@ -276,8 +276,7 @@
     "openResume": "打开最近编辑的简历",
     "manage": "查看与管理全部简历",
     "jobs": "维护岗位与绑定关系",
-    "templates": "预览并编辑三套模板的默认排版参数，设置默认模板",
-    "about": "版本信息与日志导出"
+    "templates": "预览并编辑三套模板的默认排版参数，设置默认模板"
   },
   "homeEmpty": {
     "resumes": "还没有简历，点击「新建空白」开始"
@@ -523,14 +522,6 @@
         "openai": "OpenAI",
         "google": "Gemini"
       }
-    },
-    "about": {
-      "title": "关于",
-      "version": "版本",
-      "sourceCode": "开源代码",
-      "exportLogs": "导出日志",
-      "logsExported": "日志已导出：{{path}}",
-      "logsNone": "暂无日志文件"
     }
   },
   "import": {

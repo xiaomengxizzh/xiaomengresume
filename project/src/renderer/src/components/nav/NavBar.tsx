@@ -141,7 +141,7 @@ export function NavBar(): React.JSX.Element {
   }
 
   return (
-    <nav className="navbar-v2">
+    <nav className="navbar-v2" aria-label={t('nav.primary')}>
       <div className="nav-brand">
         <img src="./icon.png" alt="" className="nav-brand-icon" draggable={false} />
         {t('nav.brand')}

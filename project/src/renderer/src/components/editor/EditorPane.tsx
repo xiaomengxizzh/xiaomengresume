@@ -95,7 +95,8 @@ export function SectionCard({
 }): React.JSX.Element {
   const { t } = useTranslation()
   return (
-    <section className="section-card">
+    // M5-7 D10 axe landmark：无名 section 不算 landmark（region 规则）→ 改 div 承载模块卡
+    <div className="section-card">
       <div className="section-card-header">
         <h3 className="text-[15px] font-medium">{title}</h3>
         <div className="section-toolbar">
@@ -118,7 +119,7 @@ export function SectionCard({
         </div>
       </div>
       <div className="section-card-body">{children}</div>
-    </section>
+    </div>
   )
 }
 

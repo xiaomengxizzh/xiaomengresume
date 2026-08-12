@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next'
 import { useResumeStore } from '../store/useResumeStore'
 import { templateRegistry, getTemplate, type TemplateId } from '../templates/registry'
 import { TemplateSettingsEditor } from '../components/settings/TemplateSettingsEditor'
+import { TemplatePreviewCard } from '../components/template-preview-card'
 import { migrate } from '@shared/schema/resume'
 import sample from '@shared/sample-resume.json'
 
@@ -59,10 +60,9 @@ export function SettingsTemplates(): React.JSX.Element {
       </div>
 
       <div className="flex gap-4">
-        {/* 左：模板列表（缩略图卡；覆盖标记） */}
-        <div className="w-40 shrink-0 space-y-3">
+        {/* 左：模板列表（真实预览卡；覆盖标记） */}
+        <div className="w-44 shrink-0 space-y-3">
           {TEMPLATE_IDS.map((id) => {
-            const Th = templateRegistry[id].thumbnail
             const hasOverride = Boolean(settings.templates?.[id])
             return (
               <button
@@ -73,7 +73,7 @@ export function SettingsTemplates(): React.JSX.Element {
                   selected === id ? 'border-foreground bg-selected/30' : 'border-border bg-surface hover:bg-selected/20'
                 }`}
               >
-                <Th />
+                <TemplatePreviewCard templateId={id} />
                 <div className="mt-1 text-center text-xs text-foreground">
                   {t(templateRegistry[id].nameKey)}
                   {hasOverride ? <span className="ml-1 text-[10px] text-foreground/50">{t('settings.templates.customized')}</span> : null}

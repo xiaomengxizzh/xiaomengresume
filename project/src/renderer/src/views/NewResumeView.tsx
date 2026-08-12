@@ -8,6 +8,7 @@ import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useResumeStore } from '../store/useResumeStore'
 import { templateRegistry, type TemplateId } from '../templates/registry'
+import { TemplatePreviewCard } from '../components/template-preview-card'
 
 const ImportHome = lazy(() => import('./ImportHome').then((m) => ({ default: m.ImportHome })))
 
@@ -54,17 +55,16 @@ export function NewResumeView(): React.JSX.Element {
           <div className="grid grid-cols-3 gap-4">
             {TEMPLATE_IDS.map((id) => {
               const meta = templateRegistry[id]
-              const Th = meta.thumbnail
               return (
                 <button
                   key={id}
                   type="button"
                   onClick={() => setPicked(id)}
-                  className={`flex flex-col gap-2 rounded-card border p-3 transition-all hover:-translate-y-1 hover:shadow-card-hover ${
+                  className={`flex flex-col items-center gap-2 rounded-card border p-3 transition-all hover:-translate-y-1 hover:shadow-card-hover ${
                     picked === id ? 'border-foreground bg-selected/30' : 'border-border bg-surface shadow-card-press'
                   }`}
                 >
-                  <Th />
+                  <TemplatePreviewCard templateId={id} />
                   <span className="text-center text-xs font-medium text-foreground">
                     {t(meta.nameKey)}
                     {defaultTemplateId === id ? `（${t('newResume.default')}）` : ''}

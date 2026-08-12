@@ -221,7 +221,8 @@
     "placeholder": "Planned",
     "collapse": "Collapse nav",
     "expand": "Expand nav",
-    "brand": "XM Resume"
+    "brand": "XM Resume",
+    "primary": "Primary navigation"
   },
   "navMain": {
     "resume": "Resume",
@@ -244,8 +245,7 @@
     "openResume": "Open resume",
     "manageJobs": "Resumes & Jobs",
     "newResume": "New resume",
-    "templates": "Template Settings",
-    "about": "About"
+    "templates": "Template Settings"
   },
   "homeTitle": {
     "resumes": "Resume",
@@ -276,8 +276,7 @@
     "openResume": "Open recently edited resumes",
     "manage": "View and manage all resumes",
     "jobs": "Maintain jobs and bindings",
-    "templates": "Preview and edit default layout of 3 templates, set default template",
-    "about": "Version info and log export"
+    "templates": "Preview and edit default layout of 3 templates, set default template"
   },
   "homeEmpty": {
     "resumes": "No resumes yet. Click New blank to start."
@@ -523,14 +522,6 @@
         "openai": "OpenAI",
         "google": "Gemini"
       }
-    },
-    "about": {
-      "title": "About",
-      "version": "Version",
-      "sourceCode": "Source code",
-      "exportLogs": "Export logs",
-      "logsExported": "Logs exported: {{path}}",
-      "logsNone": "No log files yet"
     }
   },
   "import": {
