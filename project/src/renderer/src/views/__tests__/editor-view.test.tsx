@@ -87,6 +87,24 @@ describe('EditorView 自动保存接线（P0-1 回归）', () => {
     expect(resume.basics.name).not.toBe('张三的简历') // 姓名保持独立（空/原值）
   })
 
+  it('简历名称输入框可聚焦可键入（2026-08-12 用户报障回归：模拟真实交互 聚焦→键入→store 更新）', async () => {
+    render(<EditorView />)
+    const titleInput = screen.getByPlaceholderText('未命名简历')
+    // 真实交互模拟：点击聚焦 → 逐字键入（受控组件 onChange 每键触发 setField）
+    titleInput.focus()
+    expect(document.activeElement).toBe(titleInput)
+    fireEvent.change(titleInput, { target: { value: '晨' } })
+    fireEvent.change(titleInput, { target: { value: '王晨的销售简历' } })
+    const st = useResumeStore.getState().resume
+    expect(st.title).toBe('王晨的销售简历') // store 即时更新（不依赖防抖落盘）
+    await act(async () => {
+      vi.advanceTimersByTime(500)
+    })
+    const [id, resume] = saveMock.mock.calls[0] as [string, { title?: string }]
+    expect(id).toBe('11111111-2222-4333-8444-555555555555')
+    expect(resume.title).toBe('王晨的销售简历')
+  })
+
   it('resumeId 为空（首页态）时不触发保存', async () => {
     useResumeStore.getState().loadResume('', createEmptyResume())
     render(<EditorView />)
