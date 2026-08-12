@@ -33,9 +33,9 @@ const SUBS: Record<MainKey, SubItem[]> = {
     { key: 'match', titleKey: 'navSub.match', view: 'ai:match' }
   ],
   settings: [
-    { key: 'appearance', titleKey: 'navSub.appearance', view: 'coming:appearance', disabled: true },
+    { key: 'appearance', titleKey: 'navSub.appearance', view: 'settings-appearance' },
     { key: 'aiSettings', titleKey: 'navSub.aiSettings', view: 'settings-ai' },
-    { key: 'storage', titleKey: 'navSub.storage', view: 'coming:storage', disabled: true }
+    { key: 'storage', titleKey: 'navSub.storage', view: 'settings-storage' }
   ]
 }
 

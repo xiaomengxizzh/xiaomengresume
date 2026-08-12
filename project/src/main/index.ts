@@ -1,7 +1,7 @@
-import { app, shell, BrowserWindow, Tray, Menu, nativeImage, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, Tray, Menu, nativeImage, ipcMain, protocol, session, nativeTheme, net } from 'electron'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import { fileURLToPath } from 'node:url'
-import { dirname, join } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { dirname, join, resolve } from 'node:path'
 import Store from 'electron-store'
 import { registerIpc } from './ipc/register'
 import { runM0Smoke } from './smoke'
@@ -11,6 +11,7 @@ import { runExportVerify } from './verify-export'
 import type { Settings } from '../shared/schema/settings'
 import { IPC } from '../shared/ipc-channels'
 import { getWindowState, trackWindowState, applyMaximized } from './files/window-state'
+import { getFontsDir, ensureFontsDir } from './files/font-store'
 import icon from '../../resources/icon.png?asset'
 
 // 2026-08-09 真机修复（用户报告：编辑区文本框鼠标点击无反应/光标不出现，稳定复现于 dev 模式）。
@@ -19,6 +20,12 @@ import icon from '../../resources/icon.png?asset'
 // 未更新聚焦态（DevTools 开关会改变合成路径可验证）。禁用硬件加速走软件合成（可逆；影响：
 // 渲染走 CPU，桌面表单类应用可接受；printToPDF 为软件路径不受影响）。若用户验证无效可删除此行回退。
 app.disableHardwareAcceleration()
+
+// M5 D5：font:// 自定义协议（导入字体服务）——privileges 必须在 app ready 前注册（仅一次）
+// standard：相对路径解析；stream：流式响应（@font-face 期望）；bypassCSP：字体不受 CSP 拦
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'font', privileges: { standard: true, stream: true, bypassCSP: true, supportFetchAPI: true } }
+])
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -55,9 +62,17 @@ app.on('before-quit', () => {
 app.commandLine.appendSwitch('remote-allow-origins', '*')
 
 /** F18 首帧注入（M4a 前置 2026-08-09）：读取当前外观 → 经 additionalArguments 传 preload
- *  → preload 同步写 <html data-theme>，防首帧 FOUC（令牌 CSS 骨架已就绪，仅差注入） */
+ *  → preload 同步写 <html data-theme>，防首帧 FOUC（令牌 CSS 骨架已就绪，仅差注入）。
+ *  M5-4 完善：dark + 跟随系统时按 nativeTheme 实际深浅注入（首帧即反映系统） */
 function themeArg(): string {
-  const theme = store.get('appearance') ?? 'light'
+  const appearance = store.get('appearance') ?? 'light'
+  const mode = store.get('appearanceMode') ?? 'fixed'
+  const theme =
+    mode === 'system' && appearance === 'dark'
+      ? nativeTheme.shouldUseDarkColors
+        ? 'dark'
+        : 'light'
+      : appearance
   return `--xm-theme=${theme}`
 }
 
@@ -147,6 +162,27 @@ function registerWindowControls(): void {
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.xiaomengresume.app')
+
+  // M5 D5：font:// 协议服务 userData/fonts/ 文件（path.resolve + 前缀校验防越出目录）
+  protocol.handle('font', async (req) => {
+    try {
+      const url = new URL(req.url)
+      const fontsDir = resolve(getFontsDir())
+      const filePath = resolve(fontsDir, url.pathname.replace(/^\//, ''))
+      if (!filePath.startsWith(fontsDir + '\\') && !filePath.startsWith(fontsDir + '/')) {
+        return new Response('forbidden', { status: 403 })
+      }
+      await ensureFontsDir()
+      return net.fetch(pathToFileURL(filePath).toString())
+    } catch {
+      return new Response('not found', { status: 404 })
+    }
+  })
+  // M5 D5：Local Font Access API（queryLocalFonts 系统字体枚举）——只放行 local-fonts 权限
+  // （Electron Permission 类型枚举未含 local-fonts，按字符串比对）
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
+    callback((permission as string) === 'local-fonts')
+  })
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)

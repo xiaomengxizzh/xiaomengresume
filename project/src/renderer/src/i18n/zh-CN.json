@@ -417,6 +417,42 @@
     "emptyDesc": "点击右上角「新建岗位」创建第一份岗位，用于 AI 润色与匹配打分。"
   },
   "settings": {
+    "appearance": {
+      "title": "外观",
+      "theme": "主题",
+      "light": "浅色",
+      "dark": "深色",
+      "beige": "暖色",
+      "green": "环保",
+      "mode": "跟随系统",
+      "modeOptions": {
+        "fixed": "固定",
+        "system": "跟随系统"
+      },
+      "language": "界面语言",
+      "customTheme": "自定义主题",
+      "customHex": "自定义颜色",
+      "customReset": "恢复默认"
+    },
+    "storage": {
+      "title": "存储位置",
+      "currentPath": "当前存储位置",
+      "notExist": "目录不存在",
+      "migrated": "已迁移 {{count}} 份简历到新位置",
+      "resetConfirm": "确定重置为默认存储位置？",
+      "resetDone": "已重置为 {{dir}}",
+      "change": "更改位置",
+      "reset": "重置默认",
+      "open": "打开文件夹"
+    },
+    "fonts": {
+      "title": "界面字体",
+      "fontSystem": "系统默认",
+      "imported": "已导入",
+      "import": "导入字体",
+      "remove": "移除",
+      "licenseNote": "字体许可由你自担：仅本机使用、不随应用重新分发。确定导入该字体？"
+    },
     "templates": {
       "title": "模板设置",
       "save": "保存",
@@ -431,7 +467,11 @@
       "fontSystem": "系统默认",
       "themeColor": "主题色",
       "titleStyle": "区块标题风格",
-      "titleStyleOptions": { "underline": "下划线", "accent-bar": "左侧色条", "compact": "紧凑" }
+      "titleStyleOptions": {
+        "underline": "下划线",
+        "accent-bar": "左侧色条",
+        "compact": "紧凑"
+      }
     },
     "ai": {
       "title": "AI 设置",

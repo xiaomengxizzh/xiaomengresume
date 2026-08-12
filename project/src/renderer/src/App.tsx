@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useAppBootstrap } from './hooks/useAppBootstrap'
+import { useThemeApplier } from './hooks/useThemeApplier'
 import { NavBar } from './components/nav/NavBar'
 import { WindowControls } from './components/window-controls'
 import { ResumesHome } from './views/ResumesHome'
@@ -10,6 +11,8 @@ import { ResumesList } from './views/ResumesList'
 import { ComingSoon } from './views/ComingSoon'
 import { EditorView } from './views/EditorView'
 import { SettingsAi } from './views/SettingsAi'
+import { SettingsAppearance } from './views/SettingsAppearance'
+import { SettingsStorage } from './views/SettingsStorage'
 import { WelcomeView } from './views/WelcomeView'
 import { NewResumeView } from './views/NewResumeView'
 import { ResumesManager } from './views/ResumesManager'
@@ -110,6 +113,7 @@ export default function App(): React.JSX.Element {
   const { t } = useTranslation()
   useKeyboardShortcuts()
   useAppBootstrap()
+  useThemeApplier() // M5-4：外观应用（4 色/跟随系统/自定义主题派生/--ui-font）
 
   const currentView = useResumeStore((s) => s.currentView)
 
@@ -138,6 +142,9 @@ export default function App(): React.JSX.Element {
     if (currentView === 'ai:match') return <AiMatch />
     if (currentView === 'settings-home') return <SettingsHome />
     if (currentView === 'settings-ai') return <SettingsAi />
+    // M5-4：外观/存储设置屏落地（替换 coming: 占位）
+    if (currentView === 'settings-appearance') return <SettingsAppearance />
+    if (currentView === 'settings-storage') return <SettingsStorage />
     if (currentView.startsWith('coming:')) {
       // 子页占位（M3 后剩余：appearance / storage；import 已于 M4a 启用）
       const sub = currentView.slice('coming:'.length)

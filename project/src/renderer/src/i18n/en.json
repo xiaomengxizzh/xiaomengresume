@@ -417,6 +417,42 @@
     "emptyDesc": "Click “New job” in the top-right to create your first job, used for AI polish and matching."
   },
   "settings": {
+    "appearance": {
+      "title": "Appearance",
+      "theme": "Theme",
+      "light": "Light",
+      "dark": "Dark",
+      "beige": "Beige",
+      "green": "Green",
+      "mode": "Follow system",
+      "modeOptions": {
+        "fixed": "Fixed",
+        "system": "Follow system"
+      },
+      "language": "Language",
+      "customTheme": "Custom theme",
+      "customHex": "Custom color",
+      "customReset": "Reset"
+    },
+    "storage": {
+      "title": "Storage Location",
+      "currentPath": "Current storage location",
+      "notExist": "Directory does not exist",
+      "migrated": "Migrated {{count}} resumes to the new location",
+      "resetConfirm": "Reset to default storage location?",
+      "resetDone": "Reset to {{dir}}",
+      "change": "Change location",
+      "reset": "Reset default",
+      "open": "Open folder"
+    },
+    "fonts": {
+      "title": "Interface Font",
+      "fontSystem": "System default",
+      "imported": "Imported",
+      "import": "Import font",
+      "remove": "Remove",
+      "licenseNote": "Font license is your responsibility: local use only, not redistributed with the app. Import this font?"
+    },
     "templates": {
       "title": "Template Settings",
       "save": "Save",
@@ -431,7 +467,11 @@
       "fontSystem": "System default",
       "themeColor": "Accent color",
       "titleStyle": "Section title style",
-      "titleStyleOptions": { "underline": "Underline", "accent-bar": "Left bar", "compact": "Compact" }
+      "titleStyleOptions": {
+        "underline": "Underline",
+        "accent-bar": "Left bar",
+        "compact": "Compact"
+      }
     },
     "ai": {
       "title": "AI Settings",

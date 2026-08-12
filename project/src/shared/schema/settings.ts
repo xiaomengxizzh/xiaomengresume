@@ -142,7 +142,14 @@ export const SettingsSchema = z.object({
   /** M5 模板设置主功能：全局模板参数覆盖层（key = templateId；缺省空 = 全部用出厂配方） */
   templates: z.record(z.string(), TemplateOverrideSchema).default(() => ({})),
   /** M5：默认模板（新建空白时的预选；缺省 classic） */
-  defaultTemplateId: z.string().default('classic')
+  defaultTemplateId: z.string().default('classic'),
+
+  /** M5 D2 自定义主题（F18 扩展：deriveTokens 派生全套令牌覆盖基础变量；仅增不改） */
+  customTheme: z
+    .object({
+      primary: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional()
+    })
+    .default(() => ({}))
 })
 export type Settings = z.infer<typeof SettingsSchema>
 

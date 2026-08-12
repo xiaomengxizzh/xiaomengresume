@@ -187,6 +187,13 @@ const electronAPI = {
     /** M5：局部更新设置（merge + Zod 校验；返回更新后完整设置） */
     set: (patch: Record<string, unknown>): Promise<import('@shared/schema/settings').Settings> =>
       ipcRenderer.invoke(IPC.Settings.Set, patch)
+  },
+  font: {
+    /** M5 D5：导入字体（dialog 选文件 → 复制 fonts/ → 更新清单 → 返回条目；取消返回 null） */
+    import: (): Promise<{ id: string; fileName: string; family: string; addedAt: string } | null> =>
+      ipcRenderer.invoke(IPC.Font.Import),
+    /** M5 D5：移除导入字体（删文件 + 清单移除） */
+    remove: (id: string): Promise<void> => ipcRenderer.invoke(IPC.Font.Remove, id)
   }
 }
 

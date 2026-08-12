@@ -37,9 +37,9 @@ function SettingsIcon({ kind }: { kind: 'palette' | 'gear' | 'folder' }): React.
 export function SettingsHome(): React.JSX.Element {
   const setCurrentView = useResumeStore((s) => s.setCurrentView)
   const items: HomeItem[] = [
-    { key: 'appearance', titleKey: 'navSub.appearance', descKey: 'homeDesc.appearance', icon: <SettingsIcon kind="palette" />, disabled: true },
+    { key: 'appearance', titleKey: 'navSub.appearance', descKey: 'homeDesc.appearance', icon: <SettingsIcon kind="palette" />, onClick: () => setCurrentView('settings-appearance') },
     { key: 'aiSettings', titleKey: 'navSub.aiSettings', descKey: 'homeDesc.aiSettings', icon: <SettingsIcon kind="gear" />, onClick: () => setCurrentView('settings-ai') },
-    { key: 'storage', titleKey: 'navSub.storage', descKey: 'homeDesc.storage', icon: <SettingsIcon kind="folder" />, disabled: true }
+    { key: 'storage', titleKey: 'navSub.storage', descKey: 'homeDesc.storage', icon: <SettingsIcon kind="folder" />, onClick: () => setCurrentView('settings-storage') }
   ]
   return <HomeView items={items} grid />
 }

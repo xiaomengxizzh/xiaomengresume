@@ -35,6 +35,7 @@ import { listJobs, getJob, saveJob, deleteJob } from '../files/job-store'
 import { createSampleResume } from '../files/sample-resume'
 import { getStorageDir, clearStorageFallback } from '../files/resume-store'
 import { readPhotoFile } from '../files/photo-store'
+import { saveFontFile, deleteFontFile, type ImportedFontFile } from '../files/font-store'
 import { migrateStorage } from '../files/storage-migrate'
 
 const store = new Store<Settings>()
@@ -52,6 +53,26 @@ export function registerIpc(): void {
       store.set(k as never, v as never)
     }
     return store.store as Settings
+  })
+
+  // ── M5 D5 字体系统（font:import/font:remove，契约 M5-1 冻结）──
+  ipcMain.handle(IPC.Font.Import, async (): Promise<ImportedFontFile | null> => {
+    const res = await dialog.showOpenDialog({
+      properties: ['openFile'],
+      filters: [{ name: 'Fonts', extensions: ['ttf', 'otf', 'woff', 'woff2'] }]
+    })
+    if (res.canceled || !res.filePaths[0]) return null
+    const entry = await saveFontFile(res.filePaths[0], path.basename(res.filePaths[0]))
+    const fonts = store.get('importedFonts') ?? []
+    store.set('importedFonts', [...fonts, entry])
+    return entry
+  })
+  ipcMain.handle(IPC.Font.Remove, async (_e, id: string): Promise<void> => {
+    const fonts = store.get('importedFonts') ?? []
+    const entry = fonts.find((f) => f.id === id)
+    if (!entry) return
+    await deleteFontFile(id, entry.fileName)
+    store.set('importedFonts', fonts.filter((f) => f.id !== id))
   })
 
   // app:get-info —— 版本信息展示
