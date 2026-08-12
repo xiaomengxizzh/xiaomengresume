@@ -36,6 +36,7 @@ import { createSampleResume } from '../files/sample-resume'
 import { getStorageDir, clearStorageFallback } from '../files/resume-store'
 import { readPhotoFile } from '../files/photo-store'
 import { saveFontFile, deleteFontFile, type ImportedFontFile } from '../files/font-store'
+import { createZip, type ZipEntry } from '../files/zip'
 import { migrateStorage } from '../files/storage-migrate'
 
 const store = new Store<Settings>()
@@ -73,6 +74,29 @@ export function registerIpc(): void {
     if (!entry) return
     await deleteFontFile(id, entry.fileName)
     store.set('importedFonts', fonts.filter((f) => f.id !== id))
+  })
+
+  // ── M5-6 D6 本地日志导出（logs:export，契约 M5-1 冻结；打包 logs/*.log* → zip，二次扫描脱敏）──
+  ipcMain.handle(IPC.Logs.Export, async (): Promise<string | null> => {
+    const logsDir = path.join(app.getPath('userData'), 'logs')
+    const files = await fs.readdir(logsDir).catch(() => [] as string[])
+    const logs = files.filter((f) => f.endsWith('.log'))
+    if (logs.length === 0) return null
+    const entries: ZipEntry[] = []
+    for (const f of logs) {
+      let content = await fs.readFile(path.join(logsDir, f), 'utf-8')
+      // 二次扫描剔除 Key 痕迹（sk- 前缀等疑似凭据）
+      content = content.replace(/sk-[A-Za-z0-9_-]{8,}/g, '<redacted>')
+      entries.push({ name: f, data: Buffer.from(content, 'utf-8') })
+    }
+    const date = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    const res = await dialog.showSaveDialog({
+      defaultPath: `xiaomengresume-logs-${date}.zip`,
+      filters: [{ name: 'Zip', extensions: ['zip'] }]
+    })
+    if (res.canceled || !res.filePath) return null
+    await fs.writeFile(res.filePath, createZip(entries))
+    return res.filePath
   })
 
   // app:get-info —— 版本信息展示

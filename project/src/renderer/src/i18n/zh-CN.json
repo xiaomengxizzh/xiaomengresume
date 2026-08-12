@@ -244,7 +244,8 @@
     "openResume": "打开简历",
     "manageJobs": "简历与岗位目录",
     "newResume": "新建简历",
-    "templates": "模板设置"
+    "templates": "模板设置",
+    "about": "关于"
   },
   "homeTitle": {
     "resumes": "简历",
@@ -275,7 +276,8 @@
     "openResume": "打开最近编辑的简历",
     "manage": "查看与管理全部简历",
     "jobs": "维护岗位与绑定关系",
-    "templates": "预览并编辑三套模板的默认排版参数，设置默认模板"
+    "templates": "预览并编辑三套模板的默认排版参数，设置默认模板",
+    "about": "版本信息与日志导出"
   },
   "homeEmpty": {
     "resumes": "还没有简历，点击「新建空白」开始"
@@ -319,7 +321,15 @@
     "pagesFirstWarn": "（将截断后续内容）",
     "privacyHint": "隐私模式已开启，导出将自动脱敏",
     "atsNote": "单栏矢量 PDF，ATS 可正常解析",
-    "timeoutError": "导出超时：打印引擎未响应。请重试或重启应用；若持续失败请反馈应用日志。"
+    "timeoutError": "导出超时：打印引擎未响应。请重试或重启应用；若持续失败请反馈应用日志。",
+    "error": {
+      "missingResumeId": "缺少简历信息，无法导出",
+      "invalidOutputPath": "输出路径无效，请重试",
+      "formatComing": "该导出格式暂未开放",
+      "timeout": "导出超时，请重试",
+      "permission": "没有写入权限，请检查目标文件夹",
+      "unknown": "导出失败"
+    }
   },
   "ai": {
     "context": {
@@ -513,6 +523,14 @@
         "openai": "OpenAI",
         "google": "Gemini"
       }
+    },
+    "about": {
+      "title": "关于",
+      "version": "版本",
+      "sourceCode": "开源代码",
+      "exportLogs": "导出日志",
+      "logsExported": "日志已导出：{{path}}",
+      "logsNone": "暂无日志文件"
     }
   },
   "import": {
@@ -606,7 +624,9 @@
     "warning.localRules": "已使用本地规则解析（未用 AI），字段归属请在核对中确认",
     "warning.dirtyLayout": "检测到复杂排版，建议配置 AI 服务商后重试精准映射",
     "previewRaw": "查看原文（提取文本）",
-    "m4bBadge": "敬请期待"
+    "m4bBadge": "敬请期待",
+    "aiSourceNote": "以下内容由 AI 识别提取，可能存在误差——请逐项核对修改后继续",
+    "chooseTemplate": "选择导入后使用的模板"
   },
   "resumeList": {
     "loadError": "简历列表加载失败",

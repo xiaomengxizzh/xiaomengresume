@@ -194,6 +194,10 @@ const electronAPI = {
       ipcRenderer.invoke(IPC.Font.Import),
     /** M5 D5：移除导入字体（删文件 + 清单移除） */
     remove: (id: string): Promise<void> => ipcRenderer.invoke(IPC.Font.Remove, id)
+  },
+  logs: {
+    /** M5-6 D6：导出日志 zip（logs/*.log* → 保存对话框 → 返回保存路径；取消/无日志返回 null） */
+    export: (): Promise<string | null> => ipcRenderer.invoke(IPC.Logs.Export)
   }
 }
 

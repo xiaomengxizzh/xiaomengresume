@@ -13,6 +13,8 @@ import type { Resume, RichText } from '@shared/schema/resume'
 import { useResumeStore } from '../../store/useResumeStore'
 import { Button, Input, Textarea } from '../ui'
 import { BasicPreview } from '../../preview/BasicPreview'
+import { EmptyState } from '../ui/empty-state'
+import { templateRegistry, type TemplateId } from '../../templates/registry'
 
 /** RichText → 纯文本（Tiptap doc 递归 / 降级 HTML 剥标签） */
 function richTextToPlain(rt: RichText | undefined): string {
@@ -165,6 +167,13 @@ export function ImportWizard({
   const [resume, setResume] = useState<Resume>(() => structuredClone(draft.resume))
   const [mode, setMode] = useState<'new' | 'overwrite'>('new')
   const [confirming, setConfirming] = useState(false)
+  // M5-6 A8：导入选模板（③确认写入步；默认模板预选，写 layout.templateId）
+  const defaultTemplateId = useResumeStore((s) => s.settings.defaultTemplateId)
+  const [pickedTemplate, setPickedTemplate] = useState<TemplateId>(() =>
+    (['classic', 'modern', 'compact'] as TemplateId[]).includes(defaultTemplateId as TemplateId)
+      ? (defaultTemplateId as TemplateId)
+      : 'classic'
+  )
 
   /** 原地改某字段（结构克隆后更新，setState 触发重渲染） */
   const patch = (fn: (d: Resume) => void): void => {
@@ -271,7 +280,10 @@ export function ImportWizard({
         return
       }
     }
-    applyImport(resume)
+    // M5-6 A8：导入套用所选模板（写 layout.templateId；覆盖模式同样生效）
+    const next = structuredClone(resume)
+    next.layout = { ...(next.layout ?? {}), templateId: pickedTemplate }
+    applyImport(next)
     // applyImport 已切 'editor' 视图；本组件随 currentView 卸载
   }
 
@@ -280,13 +292,13 @@ export function ImportWizard({
       {/* 步骤指示 */}
       <div className="mb-4 flex items-center gap-3 text-[13px]">
         {[1, 2, 3].map((s) => (
-          <span key={s} className={`flex items-center gap-2 ${step === s ? 'text-foreground' : 'text-foreground/40'}`}>
+          <span key={s} className={`flex items-center gap-2 ${step === s ? 'font-medium text-foreground' : 'text-foreground/40'}`}>
             <span
               className={`flex h-5 w-5 items-center justify-center rounded-full text-xs ${
-                step >= s ? 'bg-foreground text-surface' : 'border border-border'
+                step > s ? 'bg-foreground/60 text-surface' : step === s ? 'bg-foreground text-surface' : 'border border-border'
               }`}
             >
-              {s}
+              {step > s ? '✓' : s}
             </span>
             <span className={step >= s ? '' : 'hidden sm:inline'}>{t(`import.step${s}`)}</span>
             {s < 3 ? <span className="text-foreground/30">→</span> : null}
@@ -294,7 +306,7 @@ export function ImportWizard({
         ))}
       </div>
 
-      {/* ① 解析预览：模板渲染（与编辑器实时预览同一套 BasicPreview + 模板），非纯文本 */}
+      {/* ① 解析预览：左原文 / 右模板渲染（M5-6 C1 并排对照） */}
       {step === 1 ? (
         <div className="import-field-card">
           <div className="mb-3 flex items-baseline justify-between">
@@ -303,23 +315,26 @@ export function ImportWizard({
               {t('import.sourceInfo')}：{draft.fileName}（{draft.format}）
             </span>
           </div>
-          {/* 2026-08-09 统一预览：草稿经 BasicPreview 渲染（A4 纸张 + 模板 + ResumeBody），
-              与编辑器实时预览完全一致；原文文本折叠在「查看原文」。
-              容器必须 flex（.preview-pane 依赖 flex:1 撑高）——非 flex 下高度随内容自适应
-              会触发 ResizeObserver 缩放反馈死循环（无限缩小） */}
-          <div className="rounded-lg border border-border/60 bg-surface">
-            <div className="flex h-[52vh] flex-col overflow-hidden rounded-lg">
-              <BasicPreview preview={{ resume, templateId: resume.layout?.templateId ?? 'classic' }} />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex h-[52vh] flex-col overflow-hidden rounded-lg border border-border/60 bg-surface">
+              <div className="border-b border-border/40 px-3 py-2 text-xs text-foreground/60">{t('import.previewRaw')}</div>
+              {draft.sourcePreview ? (
+                <pre className="flex-1 overflow-auto whitespace-pre-wrap p-3 text-[13px] leading-relaxed text-foreground/85">
+                  {draft.sourcePreview}
+                </pre>
+              ) : (
+                <div className="flex flex-1 items-center justify-center">
+                  <EmptyState title={t('import.noContent')} />
+                </div>
+              )}
+            </div>
+            <div className="rounded-lg border border-border/60 bg-surface">
+              {/* 容器必须 flex（.preview-pane 依赖 flex:1 撑高）——非 flex 下 ResizeObserver 缩放反馈死循环 */}
+              <div className="flex h-[52vh] flex-col overflow-hidden rounded-lg">
+                <BasicPreview preview={{ resume, templateId: resume.layout?.templateId ?? 'classic' }} />
+              </div>
             </div>
           </div>
-          <details className="mt-2">
-            <summary className="cursor-pointer select-none text-xs text-foreground/50 hover:text-foreground/80">
-              {t('import.previewRaw')}
-            </summary>
-            <pre className="mt-2 max-h-[30vh] overflow-auto whitespace-pre-wrap rounded-lg border border-border/60 bg-surface p-3 text-[13px] leading-relaxed text-foreground/85">
-              {draft.sourcePreview || t('import.noContent')}
-            </pre>
-          </details>
           {draft.warnings.length > 0 ? (
             <div className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-[13px] text-amber-700">
               <span className="font-medium">{t('import.warnings')}：</span>
@@ -333,9 +348,12 @@ export function ImportWizard({
         </div>
       ) : null}
 
-      {/* ② 字段核对 */}
+      {/* ② 字段核对（M5-6 C2：AI 识别来源提示 + 字段可编辑） */}
       {step === 2 ? (
         <div className="space-y-4">
+          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-[13px] text-amber-700">
+            <span className="font-medium">{t('import.aiSourceNote')}</span>
+          </div>
           <div className="flex items-center gap-2 text-xs text-foreground/60">
             <span className="rounded bg-foreground/5 px-2 py-1">
               {isEmpty(resume)
@@ -343,6 +361,11 @@ export function ImportWizard({
                 : `${resume.basics.name || '—'} · ${resume.work.length} 段工作 · ${resume.education.length} 段教育`}
             </span>
           </div>
+          {isEmpty(resume) ? (
+            <div className="flex justify-center py-8">
+              <EmptyState title={t('import.noContent')} desc={t('import.aiSourceNote')} />
+            </div>
+          ) : (
           <div className="max-h-[58vh] space-y-4 overflow-auto pr-1">
             {renderObjectSection(SECTIONS[0], 'basics')}
             {renderObjectSection(SECTIONS[1], 'summary')}
@@ -353,6 +376,7 @@ export function ImportWizard({
             {renderArraySection(SECTIONS[6], 'certificates')}
             {renderArraySection(SECTIONS[7], 'languages')}
           </div>
+          )}
           <div className="flex justify-between gap-2">
             <Button variant="ghost" onClick={() => setStep(1)}>{t('import.back')}</Button>
             <Button onClick={() => setStep(3)}>{t('import.next')}</Button>
@@ -360,10 +384,32 @@ export function ImportWizard({
         </div>
       ) : null}
 
-      {/* ③ 确认写入 */}
+      {/* ③ 确认写入（M5-6 A8：导入选模板） */}
       {step === 3 ? (
         <div className="import-field-card max-w-xl">
           <h3 className="mb-3 text-sm font-semibold text-foreground">{t('import.confirmWriteHeading')}</h3>
+          <div className="mb-4">
+            <div className="mb-2 text-xs text-foreground/70">{t('import.chooseTemplate')}</div>
+            <div className="grid grid-cols-3 gap-2">
+              {(['classic', 'modern', 'compact'] as TemplateId[]).map((id) => {
+                const meta = templateRegistry[id]
+                const Th = meta.thumbnail
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setPickedTemplate(id)}
+                    className={`flex flex-col gap-1 rounded-md border p-2 transition-colors ${
+                      pickedTemplate === id ? 'border-foreground bg-selected/30' : 'border-border hover:bg-selected/20'
+                    }`}
+                  >
+                    <Th />
+                    <span className="text-center text-[11px] text-foreground">{t(meta.nameKey)}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
           <div className="space-y-2">
             <label className="flex cursor-pointer items-center gap-2 text-sm">
               <input

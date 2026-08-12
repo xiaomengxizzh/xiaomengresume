@@ -12,6 +12,8 @@ import type { Settings } from '../shared/schema/settings'
 import { IPC } from '../shared/ipc-channels'
 import { getWindowState, trackWindowState, applyMaximized } from './files/window-state'
 import { getFontsDir, ensureFontsDir } from './files/font-store'
+import { initLogger } from './diagnostics/logger'
+import log from './diagnostics/logger'
 import icon from '../../resources/icon.png?asset'
 
 // 2026-08-09 真机修复（用户报告：编辑区文本框鼠标点击无反应/光标不出现，稳定复现于 dev 模式）。
@@ -55,6 +57,7 @@ function createTray(win: BrowserWindow): void {
 // 真退出（托盘「退出」/ 系统退出）放行 close；否则 close = 托盘驻留
 app.on('before-quit', () => {
   isQuitting = true
+  log.info('app quitting')
 })
 
 // dev 调试辅助：允许外部 CDP 连接（配合 --remote-debugging-port 使用；生产无端口即无效）
@@ -184,6 +187,9 @@ function registerWindowControls(): void {
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.xiaomengresume.app')
+  // M5-6 D6：本地日志初始化（electron-log file transport → userData/logs/app.log，5MB×3 轮转）
+  initLogger()
+  log.info('app started', { version: app.getVersion(), platform: process.platform })
 
   // M5 D5：font:// 协议服务 userData/fonts/ 文件（path.resolve + 前缀校验防越出目录）
   protocol.handle('font', async (req) => {

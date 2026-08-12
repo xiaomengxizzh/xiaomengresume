@@ -13,6 +13,16 @@ import { Button } from '../ui'
 import { getTemplate } from '../../templates/registry'
 import type { ExportFormat, ExportProgress } from '@shared/ipc-channels'
 
+/** M5-6 D9：导出错误 → i18n 映射（run.ts 错误码 / 系统错误消息 → 中文提示；未知透传前缀） */
+function mapExportError(err: string): string {
+  if (err.includes('missing resumeId')) return 'export.error.missingResumeId'
+  if (err.includes('invalid output path')) return 'export.error.invalidOutputPath'
+  if (err.includes('coming in v1.1')) return 'export.error.formatComing'
+  if (err.includes('ETIMEDOUT') || err.includes('timeout')) return 'export.error.timeout'
+  if (err.includes('EACCES') || err.includes('EPERM') || err.includes('EISDIR')) return 'export.error.permission'
+  return 'export.error.unknown' // 未知错误：展示原文（见渲染处拼接）
+}
+
 interface ExportDialogProps {
   open: boolean
   onClose: () => void
@@ -132,7 +142,7 @@ export function ExportDialog({ open, onClose, resumeId, flush }: ExportDialogPro
       if (result.canceled) {
         // 用户取消：静默关闭
       } else if (result.error) {
-        setError(result.error)
+        setError(mapExportError(result.error))
       } else {
         setProgress(1)
         onClose()
@@ -234,7 +244,7 @@ export function ExportDialog({ open, onClose, resumeId, flush }: ExportDialogPro
         ) : null}
 
         {/* 错误提示 */}
-        {error ? <div className="mt-2 text-xs text-danger">{error}</div> : null}
+        {error ? <div className="mt-2 text-xs text-danger">{error.startsWith('export.error.') ? t(error) : error}</div> : null}
 
         {/* ATS 静态说明（D7：砍动态分级提示后的替代） */}
         <div className="mt-3 border-t border-border/70 pt-2 text-[11px] leading-relaxed text-foreground/45">{t('export.atsNote')}</div>
