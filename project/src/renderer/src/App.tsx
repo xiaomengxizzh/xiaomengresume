@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useAppBootstrap } from './hooks/useAppBootstrap'
 import { NavBar } from './components/nav/NavBar'
+import { WindowControls } from './components/window-controls'
 import { ResumesHome } from './views/ResumesHome'
 import { SettingsHome } from './views/SettingsHome'
 import { ResumesList } from './views/ResumesList'
@@ -151,11 +152,17 @@ export default function App(): React.JSX.Element {
   }
 
   return (
-    <div className="editor-shell" title={t('app.name')}>
-      <NavBar />
-      <div className="main-area">
-        {/* A3：lazy 视图在 Suspense 内加载（fallback 防白屏） */}
-        <Suspense fallback={<ViewLoading />}>{renderView()}</Suspense>
+    // M5 D4 无边框窗口壳：顶部 32px 拖拽区（window-drag-region）+ 右上三按钮（WindowControls）
+    // 视图整体下移让位；export 模式（打印窗）早退不套此壳
+    <div className="app-window-shell">
+      <div className="window-drag-region" />
+      <WindowControls />
+      <div className="editor-shell" title={t('app.name')}>
+        <NavBar />
+        <div className="main-area">
+          {/* A3：lazy 视图在 Suspense 内加载（fallback 防白屏） */}
+          <Suspense fallback={<ViewLoading />}>{renderView()}</Suspense>
+        </div>
       </div>
     </div>
   )

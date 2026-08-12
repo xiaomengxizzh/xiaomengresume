@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow } from 'electron'
+import { app, shell, BrowserWindow, Tray, Menu, nativeImage, ipcMain } from 'electron'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
@@ -9,6 +9,8 @@ import { runUiSmoke } from './ui-smoke'
 import { runUiShot } from './ui-shot'
 import { runExportVerify } from './verify-export'
 import type { Settings } from '../shared/schema/settings'
+import { IPC } from '../shared/ipc-channels'
+import { getWindowState, trackWindowState, applyMaximized } from './files/window-state'
 import icon from '../../resources/icon.png?asset'
 
 // 2026-08-09 真机修复（用户报告：编辑区文本框鼠标点击无反应/光标不出现，稳定复现于 dev 模式）。
@@ -22,6 +24,32 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const store = new Store<Settings>()
 
+// M5 D4 窗口/托盘（2026-08-12）：模块级持引用防 GC 图标消失；isQuitting 区分「关窗→托盘」与「真退出」
+let isQuitting = false
+let mainWindow: BrowserWindow | null = null
+let tray: Tray | null = null
+/** 关窗→托盘：给渲染层 saveNow 落盘留出时间（beforeunload 不触发于 hide，见 D7） */
+const HIDE_SAVE_DELAY_MS = 80
+
+/** M5 D4：托盘（方案 A：关窗→托盘驻留；菜单「打开/退出」，图标 = 品牌 logo 与打包 icon 同源） */
+function createTray(win: BrowserWindow): void {
+  const image = nativeImage.createFromPath(icon)
+  tray = new Tray(image)
+  tray.setToolTip('xiaomengresume')
+  tray.setContextMenu(
+    Menu.buildFromTemplate([
+      { label: '打开', click: () => { win.show(); win.focus() } },
+      { type: 'separator' },
+      { label: '退出', click: () => app.quit() }
+    ])
+  )
+}
+
+// 真退出（托盘「退出」/ 系统退出）放行 close；否则 close = 托盘驻留
+app.on('before-quit', () => {
+  isQuitting = true
+})
+
 // dev 调试辅助：允许外部 CDP 连接（配合 --remote-debugging-port 使用；生产无端口即无效）
 // 必须在 app ready 前调用（Chromium switch 在启动早期生效）
 app.commandLine.appendSwitch('remote-allow-origins', '*')
@@ -33,14 +61,18 @@ function themeArg(): string {
   return `--xm-theme=${theme}`
 }
 
-function createMainWindow(): BrowserWindow {
+async function createMainWindow(): Promise<BrowserWindow> {
+  // M5 D4：窗口状态记忆（位置/尺寸/最大化，多屏校验；独立 window-state.json 不碰 SettingsSchema）
+  const saved = await getWindowState({ width: 1280, height: 800 })
   const win = new BrowserWindow({
     title: 'xiaomengresume',
     icon, // 窗口图标（标题栏/任务栏/Alt-Tab）；打包后 exe 图标由 electron-builder build/icon.png 生成
-    // 2026-08-07 导航中枢 + 预览缩放：默认回到 1280×800；预览面板纸张 transform: scale
-    // 自适应完整展示，窗口不再需要 1900px 满足 50/50 + 纸张最小宽
-    width: 1280,
-    height: 800,
+    // M5 D4 无边框：自绘三按钮（最小化/最大化/关闭）+ 顶部拖拽区（App 根 window-drag-region）
+    frame: false,
+    width: saved.width,
+    height: saved.height,
+    x: saved.x,
+    y: saved.y,
     minWidth: 1024,
     minHeight: 640,
     show: false,
@@ -55,9 +87,34 @@ function createMainWindow(): BrowserWindow {
       additionalArguments: [themeArg()]
     }
   })
+  mainWindow = win
+  // 恢复最大化（ready-to-show 后 maximize，先 max 后 show 防闪跳）
+  applyMaximized(win, saved.isMaximized === true)
+  // 窗口状态防抖保存（resize/move → 500ms 落盘；close 前 flush）
+  trackWindowState(win)
 
   win.on('ready-to-show', () => {
     win.show()
+  })
+
+  // M5 D4：关窗 → 托盘驻留（方案 A）——非退出时拦截 close，通知渲染层保存（D7：hide 不触发
+  // beforeunload，须主动 send）后 hide；真退出（before-quit 置 isQuitting）不拦截
+  win.on('close', (e) => {
+    if (!isQuitting) {
+      e.preventDefault()
+      win.webContents.send('window:before-hide')
+      setTimeout(() => {
+        if (!win.isDestroyed()) win.hide()
+      }, HIDE_SAVE_DELAY_MS)
+    }
+  })
+  // 最大化态广播（渲染层按钮图标切换）
+  win.on('maximize', () => win.webContents.send('window:maximized', true))
+  win.on('unmaximize', () => win.webContents.send('window:maximized', false))
+  win.on('closed', () => {
+    mainWindow = null
+    tray?.destroy()
+    tray = null
   })
 
   // 外部链接一律走系统浏览器，不在应用内开窗
@@ -72,16 +129,20 @@ function createMainWindow(): BrowserWindow {
     win.loadFile(join(__dirname, '../renderer/index.html'))
   }
 
-  // 主窗口关闭 → 非 macOS 立即退出。
-  // 注意：隐藏的 PDF 打印窗口会让「window-all-closed」永不触发（它算一个活窗口），
-  // 因此退出必须挂在这里，而不是依赖 window-all-closed（否则关闭软件后进程残留）。
-  win.on('closed', () => {
-    if (process.platform !== 'darwin') {
-      app.quit()
-    }
-  })
-
+  createTray(win)
   return win
+}
+
+/** M5 D4：窗口控制 IPC（单向 send，无返回值） */
+function registerWindowControls(): void {
+  ipcMain.on(IPC.Window.Minimize, () => mainWindow?.minimize())
+  ipcMain.on(IPC.Window.MaximizeToggle, () => {
+    const w = mainWindow
+    if (!w) return
+    if (w.isMaximized()) w.unmaximize()
+    else w.maximize()
+  })
+  ipcMain.on(IPC.Window.Close, () => mainWindow?.close())
 }
 
 app.whenReady().then(() => {
@@ -91,7 +152,8 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  createMainWindow()
+  void createMainWindow()
+  registerWindowControls()
   // PDF 打印窗口按需懒创建（printHtmlToPdf 首次调用时建立），避免隐藏窗阻塞退出生命周期
   registerIpc()
 
@@ -120,7 +182,7 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     // 以「可见窗口」判断重建：隐藏的 PDF 打印窗口不应阻止主窗口重建（macOS 惯例）
     const hasVisible = BrowserWindow.getAllWindows().some((w) => w.isVisible())
-    if (!hasVisible) createMainWindow()
+    if (!hasVisible) void createMainWindow()
   })
 })
 

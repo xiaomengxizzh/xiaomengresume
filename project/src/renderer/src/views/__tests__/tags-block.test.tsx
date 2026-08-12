@@ -22,7 +22,11 @@ vi.mock('@tiptap/react', () => ({
 class MockResizeObserver { observe(): void {} unobserve(): void {} disconnect(): void {} }
 ;(globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = MockResizeObserver
 Element.prototype.scrollIntoView = (() => {}) as never
-;(window as unknown as { electronAPI: unknown }).electronAPI = { resumes: { save: vi.fn() } } as never
+;(window as unknown as { electronAPI: unknown }).electronAPI = {
+  resumes: { save: vi.fn() },
+  // M5 D4：useAutoSave 订阅 onBeforeHide（关窗→托盘前保存）
+  window: { onBeforeHide: vi.fn(() => vi.fn()) }
+} as never
 
 function resumeWithBasics() {
   const r = createEmptyResume()

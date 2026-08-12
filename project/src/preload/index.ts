@@ -170,6 +170,16 @@ const electronAPI = {
     /** R8：批量导入（多选 → 逐份落盘为独立新简历，无需三步核对） */
     runBatch: (): Promise<AiResult<ImportBatchResult>> => ipcRenderer.invoke(IPC.Import.RunBatch),
     onProgress: (cb: (p: ImportProgress) => void): (() => void) => subscribe('import:progress', cb)
+  },
+  window: {
+    /** M5 D4：窗口控制（无边框自绘三按钮）——最小化 / 最大化还原 / 关闭（→托盘） */
+    minimize: (): void => ipcRenderer.send(IPC.Window.Minimize),
+    maximizeToggle: (): void => ipcRenderer.send(IPC.Window.MaximizeToggle),
+    close: (): void => ipcRenderer.send(IPC.Window.Close),
+    /** 最大化态广播（主进程 win maximize/unmaximize → 渲染层图标切换） */
+    onMaximized: (cb: (maximized: boolean) => void): (() => void) => subscribe('window:maximized', cb),
+    /** 关窗→托盘前保存通知（主进程 close 拦截后发送；渲染层立即 saveNow） */
+    onBeforeHide: (cb: () => void): (() => void) => subscribe('window:before-hide', cb)
   }
 }
 

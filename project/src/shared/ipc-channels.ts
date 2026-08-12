@@ -131,6 +131,16 @@ export const IPC = {
   Logs: {
     /** 导出日志（userData/logs/*.log* → zip，二次扫描剔除 Key 痕迹） */
     Export: 'logs:export'
+  },
+  /** M5 窗口控制（D4 无边框 + 三按钮 + 托盘；2026-08-12 契约冻结，spike `plans/M5_无边框窗口_spike.md`）
+   *  事件：'window:maximized'（主→渲染 bool，图标态切换）/ 'window:before-hide'（关窗→托盘前通知渲染层保存） */
+  Window: {
+    /** 最小化到任务栏 */
+    Minimize: 'window:minimize',
+    /** 最大化 / 还原切换 */
+    MaximizeToggle: 'window:maximize-toggle',
+    /** 关闭（→ 托盘驻留；退出走托盘菜单 / before-quit） */
+    Close: 'window:close'
   }
 } as const
 

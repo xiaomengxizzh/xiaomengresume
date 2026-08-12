@@ -1394,3 +1394,35 @@ textarea,
   box-shadow: var(--shadow-card-press);
   pointer-events: none;
 }
+
+/* ── M5 D4 无边框窗口壳（2026-08-12）：顶部拖拽区 + 右上三按钮 + 视图让位 ── */
+
+.app-window-shell {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-top: 32px; /* 让出顶部拖拽区（窗口壳惯例，各视图统一下移） */
+  box-sizing: border-box;
+}
+
+/* 顶部拖拽带：fixed 全宽，-webkit-app-region drag（无边框窗口拖动）；下方视图让位 32px */
+.window-drag-region {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  -webkit-app-region: drag;
+  z-index: 40;
+}
+
+/* 右上三按钮（F18 §3.15.1 定案：距顶 12px 距右 12px；no-drag 可点击） */
+.window-controls {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 6px;
+  z-index: 50;
+  -webkit-app-region: no-drag;
+}

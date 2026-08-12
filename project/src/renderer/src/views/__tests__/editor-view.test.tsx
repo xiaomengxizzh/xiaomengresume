@@ -35,6 +35,8 @@ function mockElectronApi(): void {
     app: { ping: vi.fn(), getInfo: vi.fn() },
     print: { pdf: vi.fn() },
     ai: { streamTest: vi.fn(), onStreamChunk: vi.fn() },
+    // M5 D4：useAutoSave 订阅 onBeforeHide（关窗→托盘前保存）
+    window: { onBeforeHide: vi.fn(() => vi.fn()), onMaximized: vi.fn(() => vi.fn()) },
     resumes: {
       save: saveMock,
       open: vi.fn(),

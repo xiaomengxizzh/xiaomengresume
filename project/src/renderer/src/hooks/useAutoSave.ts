@@ -71,15 +71,21 @@ export function useAutoSave(): { state: SaveState; flush: () => Promise<boolean>
 
   // 关窗兜底：单向 send 立即保存最新 resume（P2：invoke 回执在窗口销毁前不保证送达，
   // send 消息入队即达主进程，主进程 resume:save-now 落盘后随退出流程完成）
+  // M5 D4：托盘模式 close→hide 不触发 beforeunload——另订阅 window:before-hide（主进程 close 拦截后发送）
   useEffect(() => {
-    const handler = (): void => {
+    const saveNow = (): void => {
       const current = latestRef.current
       if (current.resumeId) {
         window.electronAPI.resumes.saveNow(current.resumeId, current.resume)
       }
     }
-    window.addEventListener('beforeunload', handler)
-    return () => window.removeEventListener('beforeunload', handler)
+    const onUnload = (): void => saveNow()
+    const offBeforeHide = window.electronAPI.window.onBeforeHide(() => saveNow())
+    window.addEventListener('beforeunload', onUnload)
+    return () => {
+      window.removeEventListener('beforeunload', onUnload)
+      offBeforeHide()
+    }
   }, [])
 
   /** 立即保存最新 resume（导出前 / EditorView 卸载前调用，杜绝防抖窗内丢最后编辑） */
