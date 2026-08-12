@@ -443,7 +443,15 @@
       "resetDone": "Reset to {{dir}}",
       "change": "Change location",
       "reset": "Reset default",
-      "open": "Open folder"
+      "open": "Open folder",
+      "closeBehavior": {
+        "title": "On window close",
+        "options": {
+          "tray": "Minimize to tray",
+          "quit": "Close window"
+        },
+        "notSet": "Not set: you will be asked on first close"
+      }
     },
     "fonts": {
       "title": "Interface Font",

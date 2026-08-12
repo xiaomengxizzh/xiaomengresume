@@ -17,6 +17,13 @@ export function useThemeApplier(): void {
   const appearanceMode = useResumeStore((s) => s.settings.appearanceMode)
   const customPrimary = useResumeStore((s) => s.settings.customTheme?.primary)
   const uiFont = useResumeStore((s) => s.settings.uiFont)
+  const language = useResumeStore((s) => s.settings.language)
+
+  // M5-4 D1：语言切换接线（修复 2026-08-12——此前只持久化 settings.language 未调 changeLanguage）
+  useEffect(() => {
+    if (!language) return
+    void import('../i18n').then(({ default: i18n }) => i18n.changeLanguage(language))
+  }, [language])
 
   // M5-4 D5：界面字体 --ui-font（默认/系统 → 移除；选择字体 → 应用）
   useEffect(() => {

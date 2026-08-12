@@ -11,6 +11,8 @@ import type { StorageInfo, StorageSetResult } from '@shared/ipc-channels'
 
 export function SettingsStorage(): React.JSX.Element {
   const { t } = useTranslation()
+  const settings = useResumeStore((s) => s.settings)
+  const setSettings = useResumeStore((s) => s.setSettings)
   const [info, setInfo] = useState<StorageInfo | null>(null)
   const [notice, setNotice] = useState('')
 
@@ -67,6 +69,28 @@ export function SettingsStorage(): React.JSX.Element {
         <Button size="sm" variant="ghost" onClick={() => void window.electronAPI.storage.open()}>
           {t('settings.storage.open')}
         </Button>
+      </div>
+
+      {/* 2026-08-12 用户需求：关闭行为（最小化托盘 / 直接关闭；未设置时首次关窗弹窗询问） */}
+      <div className="mt-6">
+        <div className="mb-2 text-sm text-foreground/80">{t('settings.storage.closeBehavior.title')}</div>
+        <div className="flex gap-2">
+          {(['tray', 'quit'] as const).map((b) => (
+            <button
+              key={b}
+              type="button"
+              onClick={() => setSettings({ closeBehavior: b })}
+              className={`rounded-md border px-3 py-1.5 text-xs transition-colors ${
+                settings.closeBehavior === b ? 'border-foreground bg-selected/40 text-foreground' : 'border-border text-foreground/70 hover:bg-selected/30'
+              }`}
+            >
+              {t(`settings.storage.closeBehavior.options.${b}`)}
+            </button>
+          ))}
+        </div>
+        {!settings.closeBehavior ? (
+          <div className="mt-1 text-xs text-foreground/50">{t('settings.storage.closeBehavior.notSet')}</div>
+        ) : null}
       </div>
     </div>
   )

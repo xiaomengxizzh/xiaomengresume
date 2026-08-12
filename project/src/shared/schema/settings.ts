@@ -149,7 +149,10 @@ export const SettingsSchema = z.object({
     .object({
       primary: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional()
     })
-    .default(() => ({}))
+    .default(() => ({})),
+
+  /** M5-4 关闭行为（2026-08-12 用户需求：可选最小化托盘 or 直接关闭；缺省 undefined = 首次关窗弹窗询问） */
+  closeBehavior: z.enum(['tray', 'quit']).optional()
 })
 export type Settings = z.infer<typeof SettingsSchema>
 

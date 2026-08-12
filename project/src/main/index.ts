@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, Tray, Menu, nativeImage, ipcMain, protocol, session, nativeTheme, net } from 'electron'
+import { app, shell, BrowserWindow, Tray, Menu, nativeImage, ipcMain, protocol, session, nativeTheme, net, dialog } from 'electron'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { dirname, join, resolve } from 'node:path'
@@ -112,16 +112,38 @@ async function createMainWindow(): Promise<BrowserWindow> {
     win.show()
   })
 
-  // M5 D4：关窗 → 托盘驻留（方案 A）——非退出时拦截 close，通知渲染层保存（D7：hide 不触发
-  // beforeunload，须主动 send）后 hide；真退出（before-quit 置 isQuitting）不拦截
+  // M5 D4 + 2026-08-12：关窗行为——settings.closeBehavior 决定托盘驻留 / 直接关闭；
+  // 未设置（首次关窗）弹原生选择框（最小化托盘 / 直接关闭 + 下次不再询问）。
+  // 中文文案豁免：主进程无 i18n 资源（与 SECTION_TITLES 同类 CH4 豁免），按 settings.language 双语分支。
   win.on('close', (e) => {
-    if (!isQuitting) {
-      e.preventDefault()
-      win.webContents.send('window:before-hide')
-      setTimeout(() => {
-        if (!win.isDestroyed()) win.hide()
-      }, HIDE_SAVE_DELAY_MS)
-    }
+    if (isQuitting) return
+    e.preventDefault()
+    void (async (): Promise<void> => {
+      let behavior = store.get('closeBehavior')
+      if (!behavior) {
+        const isZh = (store.get('language') ?? 'zh-CN') === 'zh-CN'
+        const r = await dialog.showMessageBox(win, {
+          type: 'question',
+          title: 'xiaomengresume',
+          message: isZh ? '关闭窗口时，希望应用如何运行？' : 'When closing the window, how should the app behave?',
+          buttons: isZh ? ['最小化到托盘', '直接关闭'] : ['Minimize to tray', 'Close window'],
+          checkboxLabel: isZh ? '下次不再询问' : "Don't ask again",
+          defaultId: 0,
+          cancelId: 1
+        })
+        behavior = r.response === 0 ? 'tray' : 'quit'
+        if (r.checkboxChecked) store.set('closeBehavior', behavior)
+      }
+      if (behavior === 'tray') {
+        win.webContents.send('window:before-hide')
+        setTimeout(() => {
+          if (!win.isDestroyed()) win.hide()
+        }, HIDE_SAVE_DELAY_MS)
+      } else {
+        isQuitting = true
+        win.close() // 放行（isQuitting 已置，不再次拦截）
+      }
+    })()
   })
   // 最大化态广播（渲染层按钮图标切换）
   win.on('maximize', () => win.webContents.send('window:maximized', true))

@@ -443,7 +443,15 @@
       "resetDone": "已重置为 {{dir}}",
       "change": "更改位置",
       "reset": "重置默认",
-      "open": "打开文件夹"
+      "open": "打开文件夹",
+      "closeBehavior": {
+        "title": "关闭窗口时",
+        "options": {
+          "tray": "最小化到托盘",
+          "quit": "直接关闭"
+        },
+        "notSet": "未设置：首次关闭窗口时会询问"
+      }
     },
     "fonts": {
       "title": "界面字体",
