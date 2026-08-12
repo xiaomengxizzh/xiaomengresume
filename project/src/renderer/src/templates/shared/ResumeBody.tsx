@@ -48,15 +48,18 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
   const jump = useJump()
   const meta = getTemplate(layout?.templateId ?? variant)
   const preset: TemplatePreset = meta.preset
+  // M5 A3：全局模板覆盖层（SettingsSchema.templates[templateId]）——覆盖链：layout > 模板覆盖 > 预设
+  const templateOverride = useResumeStore((s) => s.settings.templates?.[meta.id])
   const titleVariant: TitleVariant = variant === 'classic' ? 'underline' : variant === 'modern' ? 'accent-bar' : 'compact'
 
-  const baseFont = lv(layout, 'baseFontSize', preset)
-  const lineHeight = lv(layout, 'lineHeight', preset)
-  const sectionGap = lv(layout, 'sectionSpacing', preset)
-  const paragraphGap = lv(layout, 'paragraphSpacing', preset)
-  const headerSize = lv(layout, 'headerSize', preset)
-  const pagePad = lv(layout, 'pagePadding', preset)
-  const fontFor = (section: string): string | undefined => resolveFontFamily(layout, section)
+  const baseFont = lv(layout, 'baseFontSize', preset, templateOverride)
+  const lineHeight = lv(layout, 'lineHeight', preset, templateOverride)
+  const sectionGap = lv(layout, 'sectionSpacing', preset, templateOverride)
+  const paragraphGap = lv(layout, 'paragraphSpacing', preset, templateOverride)
+  const headerSize = lv(layout, 'headerSize', preset, templateOverride)
+  const pagePad = lv(layout, 'pagePadding', preset, templateOverride)
+  // M5 A7 字体分离：本简历 layout.resumeFont > 模板默认 templateOverride.resumeFont > 系统
+  const fontFor = (section: string): string | undefined => resolveFontFamily(layout, section, templateOverride?.resumeFont)
 
   const rootStyle: CSSProperties = {
     fontSize: baseFont,
@@ -73,8 +76,9 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
   }
 
   // 2026-08-10：节标题样式 = shared titleStyleLogic 适配（TITLE_STYLES 已收敛，不再本地定义）
+  // M5 A3：模板覆盖 titleStyle 优先于 variant 默认（三选一 underline/accent-bar/compact）
   const secTitle = (children: React.ReactNode, size: number): React.JSX.Element => (
-    <h2 style={{ fontSize: `${size}px`, ...titleCss(titleStyleLogic(titleVariant)) }}>{children}</h2>
+    <h2 style={{ fontSize: `${size}px`, ...titleCss(titleStyleLogic(titleVariant, templateOverride?.titleStyle)) }}>{children}</h2>
   )
 
   const basics = resume.basics

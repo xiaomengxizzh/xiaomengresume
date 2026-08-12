@@ -31,9 +31,16 @@ export const TEMPLATE_PRESETS: Record<string, TemplatePreset> = {
   compact: { baseFontSize: 15, lineHeight: 1.4, pagePadding: 26, paragraphSpacing: 10, sectionSpacing: 12, headerSize: 15 }
 }
 
-/** layout 覆盖链（原 preset.ts lv + pdf/template.tsx lv 双份 → 收敛）：layout 字段 > 模板预设 */
-export function lv(layout: Layout | undefined, key: PresetKey, preset: TemplatePreset): number {
-  const v = layout?.[key]
+/** layout 覆盖链（原 preset.ts lv + pdf/template.tsx lv 双份 → 收敛）：
+ *  M5 定案三层：layout 字段 > 全局模板覆盖（SettingsSchema.templates[templateId]）> 模板预设。
+ *  override 为模板覆盖层数值子集（渲染层从 store settings 传入；shared 保持纯函数） */
+export function lv(
+  layout: Layout | undefined,
+  key: PresetKey,
+  preset: TemplatePreset,
+  override?: Partial<Record<PresetKey, number>>
+): number {
+  const v = layout?.[key] ?? override?.[key]
   return typeof v === 'number' ? v : preset[key]
 }
 
@@ -94,8 +101,9 @@ export interface TitleStyleLogic {
   marginBottom: number // px
 }
 
-export function titleStyleLogic(variant: TitleVariant): TitleStyleLogic {
-  switch (variant) {
+/** 节标题样式（M5 定案：模板覆盖 titleStyle 优先于 variant 默认，三选一 underline/accent-bar/compact） */
+export function titleStyleLogic(variant: TitleVariant, overrideTitleStyle?: 'underline' | 'accent-bar' | 'compact'): TitleStyleLogic {
+  switch (overrideTitleStyle ?? variant) {
     case 'accent-bar':
       return { fontWeight: 600, letterSpacing: 0.5, color: 'muted', textTransform: 'none', borderLeft: { width: 4, color: 'accent', paddingLeft: 8 }, paddingBottom: 2, marginBottom: 10 }
     case 'compact':

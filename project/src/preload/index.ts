@@ -180,6 +180,13 @@ const electronAPI = {
     onMaximized: (cb: (maximized: boolean) => void): (() => void) => subscribe('window:maximized', cb),
     /** 关窗→托盘前保存通知（主进程 close 拦截后发送；渲染层立即 saveNow） */
     onBeforeHide: (cb: () => void): (() => void) => subscribe('window:before-hide', cb)
+  },
+  settings: {
+    /** M5：读完整设置（渲染层唯一链路；模板覆盖层/外观/字体/存储 UI 共用） */
+    get: (): Promise<import('@shared/schema/settings').Settings> => ipcRenderer.invoke(IPC.Settings.Get),
+    /** M5：局部更新设置（merge + Zod 校验；返回更新后完整设置） */
+    set: (patch: Record<string, unknown>): Promise<import('@shared/schema/settings').Settings> =>
+      ipcRenderer.invoke(IPC.Settings.Set, patch)
   }
 }
 

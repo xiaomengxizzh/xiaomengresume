@@ -11,6 +11,7 @@ import * as path from 'node:path'
 import Store from 'electron-store'
 import { IPC, type AppInfo, type RecentResume, type ResumeSummary, type StorageInfo, type StorageSetResult } from '@shared/ipc-channels'
 import type { Settings } from '../../shared/schema/settings'
+import { SettingsSchema } from '../../shared/schema/settings'
 import { printHtmlToPdf } from '../print/pdf'
 import { registerExportIpc } from '../export/run'
 import { registerAiIpc } from '../ai/register-ai'
@@ -41,6 +42,17 @@ const store = new Store<Settings>()
 export function registerIpc(): void {
   // app:ping —— 通信冒烟
   ipcMain.handle(IPC.App.Ping, () => ({ pong: true, at: Date.now() }))
+
+  // ── M5 设置读写（2026-08-12；渲染层唯一 settings 链路——外观/模板/字体/存储 UI 共用）──
+  ipcMain.handle(IPC.Settings.Get, (): Settings => store.store as Settings)
+  ipcMain.handle(IPC.Settings.Set, (_e, patch: unknown): Settings => {
+    // 局部更新：merge + SettingsSchema 全量校验（defaults 补齐缺省），再逐键写回
+    const merged = SettingsSchema.parse({ ...store.store, ...(patch as object) })
+    for (const [k, v] of Object.entries(merged)) {
+      store.set(k as never, v as never)
+    }
+    return store.store as Settings
+  })
 
   // app:get-info —— 版本信息展示
   ipcMain.handle(IPC.App.GetInfo, (): AppInfo => {

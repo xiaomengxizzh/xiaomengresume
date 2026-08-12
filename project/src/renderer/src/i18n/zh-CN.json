@@ -417,6 +417,22 @@
     "emptyDesc": "点击右上角「新建岗位」创建第一份岗位，用于 AI 润色与匹配打分。"
   },
   "settings": {
+    "templates": {
+      "title": "模板设置",
+      "save": "保存",
+      "reset": "还原默认",
+      "baseFontSize": "正文字号",
+      "lineHeight": "行高",
+      "pagePadding": "页边距",
+      "paragraphSpacing": "段落间距",
+      "sectionSpacing": "区块间距",
+      "headerSize": "区块标题字号",
+      "resumeFont": "模板默认字体",
+      "fontSystem": "系统默认",
+      "themeColor": "主题色",
+      "titleStyle": "区块标题风格",
+      "titleStyleOptions": { "underline": "下划线", "accent-bar": "左侧色条", "compact": "紧凑" }
+    },
     "ai": {
       "title": "AI 设置",
       "providers": "AI 服务商",

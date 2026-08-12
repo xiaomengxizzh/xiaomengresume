@@ -58,6 +58,11 @@ IPC 通道契约（M0 冻结 · M1 扩展 · M2 F5 扩展 export:*）
 | Font | `font:import` | 导入字体（dialog 选 ttf/otf/woff/woff2 → 复制 userData/fonts/ → 注册 @font-face → 返回清单条目） |
 | Font | `font:remove` | 移除已导入字体（删文件 + 注销） |
 | Logs | `logs:export` | 导出日志（userData/logs/*.log* → zip，二次扫描剔除 Key 痕迹） |
+| Window | `window:minimize` | 最小化到任务栏 |
+| Window | `window:maximize-toggle` | 最大化 / 还原切换 |
+| Window | `window:close` | 关闭（→ 托盘驻留；退出走托盘菜单 / before-quit） |
+| Settings | `settings:get` | — |
+| Settings | `settings:set` | — |
 
 ## 分命名空间明细
 
@@ -165,6 +170,21 @@ M5 字体系统（技术栈 §3.7.4 手段 D：font:// 协议 + 导入字体管�
 M5 本地日志（技术栈 §3.11.1 #8：导出日志 zip，2026-08-12 契约冻结）
 
 - `Export` → `logs:export`：导出日志（userData/logs/*.log* → zip，二次扫描剔除 Key 痕迹）
+
+### Window
+
+M5 窗口控制（D4 无边框 + 三按钮 + 托盘；2026-08-12 契约冻结，spike `plans/M5_无边框窗口_spike.md`）
+
+- `Minimize` → `window:minimize`：最小化到任务栏
+- `MaximizeToggle` → `window:maximize-toggle`：最大化 / 还原切换
+- `Close` → `window:close`：关闭（→ 托盘驻留；退出走托盘菜单 / before-quit）
+
+### Settings
+
+M5 设置读写（2026-08-12 契约冻结；渲染层唯一 settings 访问链路——外观/模板/字体/存储 UI 共用）
+
+- `Get` → `settings:get`
+- `Set` → `settings:set`
 
 ## 返回类型
 

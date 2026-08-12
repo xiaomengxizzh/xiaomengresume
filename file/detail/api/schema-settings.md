@@ -35,6 +35,23 @@ z.object({
 })
 ```
 
+### `TemplateOverrideSchema`
+
+```ts
+z.object({
+  baseFontSize: z.number().min(9).max(24).optional(),
+  lineHeight: z.number().min(1).max(3).optional(),
+  pagePadding: z.number().min(0).max(80).optional(),
+  paragraphSpacing: z.number().min(0).max(40).optional(),
+  sectionSpacing: z.number().min(0).max(60).optional(),
+  headerSize: z.number().min(12).max(36).optional(),
+  resumeFont: z.string().optional(),
+  themeColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  /** 节标题风格（underline/accent-bar/compact 三选一，覆盖 variant 默认） */
+  titleStyle: z.enum(['underline', 'accent-bar', 'compact']).optional()
+})
+```
+
 ### `SettingsSchema`
 
 ```ts
@@ -78,22 +95,5 @@ z.object({
         modelId: z.string().max(256).optional(),
         enabled: z.boolean().default(false),
         createdAt: z.string()
-```
-
-### `TemplateOverrideSchema`
-
-```ts
-z.object({
-  baseFontSize: z.number().min(9).max(24).optional(),
-  lineHeight: z.number().min(1).max(3).optional(),
-  pagePadding: z.number().min(0).max(80).optional(),
-  paragraphSpacing: z.number().min(0).max(40).optional(),
-  sectionSpacing: z.number().min(0).max(60).optional(),
-  headerSize: z.number().min(12).max(36).optional(),
-  resumeFont: z.string().optional(),
-  themeColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
-  /** 节标题风格（underline/accent-bar/compact 三选一，覆盖 variant 默认） */
-  titleStyle: z.enum(['underline', 'accent-bar', 'compact']).optional()
-})
 ```
 

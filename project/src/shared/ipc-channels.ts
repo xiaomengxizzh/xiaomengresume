@@ -141,6 +141,13 @@ export const IPC = {
     MaximizeToggle: 'window:maximize-toggle',
     /** 关闭（→ 托盘驻留；退出走托盘菜单 / before-quit） */
     Close: 'window:close'
+  },
+  /** M5 设置读写（2026-08-12 契约冻结；渲染层唯一 settings 访问链路——外观/模板/字体/存储 UI 共用）
+   *  Get 返回完整 SettingsSchema（无 apiKey 字面量：providers apiKey 走 safeStorage 不在此表）；
+   *  Set 为局部更新 { patch }，主进程 merge + SettingsSchema.parse 校验 */
+  Settings: {
+    Get: 'settings:get',
+    Set: 'settings:set'
   }
 } as const
 

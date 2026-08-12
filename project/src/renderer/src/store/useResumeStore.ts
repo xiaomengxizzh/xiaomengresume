@@ -9,6 +9,8 @@
 import { create } from 'zustand'
 import type { Resume } from '@shared/schema/resume'
 import { createEmptyResume } from '@shared/schema/resume'
+import type { Settings } from '@shared/schema/settings'
+import { defaultSettings } from '@shared/schema/settings'
 import { immutableSetByPath, type FieldPath } from '@shared/paths'
 import { createHistoryManager } from './history'
 
@@ -35,6 +37,8 @@ interface ResumeState {
   privacyMode: boolean
   /** M3 F19/T2：AI 上下文（AI 屏「当前简历 + 岗位」选择器写入；编辑器润色按钮读取 jobId） */
   aiContext: { resumeId: string | null; jobId: string | null }
+  /** M5 设置（settings:get 启动加载；模板覆盖层/外观/字体消费；setSettings 本地 + 持久化） */
+  settings: Settings
 
   /** 提交级字段写入（失焦/回车/按钮触发；进 F3 撤销栈） */
   setField(path: FieldPath, value: unknown): void
@@ -49,6 +53,8 @@ interface ResumeState {
   setCurrentView(view: string): void
   /** M3 AI 上下文（部分更新；清空传 null） */
   setAiContext(ctx: { resumeId?: string | null; jobId?: string | null }): void
+  /** M5 设置：本地合并 + 异步持久化（settings:set 校验后回写完整设置；失败静默保本地） */
+  setSettings(patch: Partial<Settings>): void
   /** M3 F9：聚焦指定字段（匹配建议「去润色」跳转：切 section + 置 activeFieldPath） */
   focusField(field: string): void
   /** F16 隐私打码：切换隐私模式（不触碰 Zod 数据模型，只影响模板渲染层） */
@@ -121,6 +127,8 @@ export const useResumeStore = create<ResumeState>()((set, get) => ({
   currentView: 'welcome',
   privacyMode: false,
   aiContext: { resumeId: null, jobId: null },
+  // M5：设置初始 = 出厂默认；启动后 useAppBootstrap 经 settings:get 覆盖（含模板覆盖层）
+  settings: defaultSettings(),
 
   setField: (path, value) => {
     // 打字卡顿优化（2026-08-09）：不可变路径更新（O(路径深度)），替代全量 structuredClone——
@@ -184,6 +192,16 @@ export const useResumeStore = create<ResumeState>()((set, get) => ({
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
   setCurrentView: (view) => set({ currentView: view }),
   setAiContext: (ctx) => set((s) => ({ aiContext: { ...s.aiContext, ...ctx } })),
+  setSettings: (patch) => {
+    // 本地即时生效（模板覆盖层/外观即时消费）；持久化异步（主进程 merge+Zod 校验后回写完整设置保一致）
+    set((s) => ({ settings: { ...s.settings, ...patch } }))
+    void window.electronAPI.settings
+      .set(patch as Record<string, unknown>)
+      .then((remote) => set({ settings: remote }))
+      .catch(() => {
+        // 持久化失败保本地（下次启动回滚出厂，可接受；模板还原等幂等操作）
+      })
+  },
   focusField: (field) => {
     // 方括号路径规范：'work[0].summary' → section 'work'（与 @shared/paths 一致）
     const section = field.split(/[.[]/)[0] || 'basics'

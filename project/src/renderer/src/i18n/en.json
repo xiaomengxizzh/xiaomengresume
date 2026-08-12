@@ -417,6 +417,22 @@
     "emptyDesc": "Click “New job” in the top-right to create your first job, used for AI polish and matching."
   },
   "settings": {
+    "templates": {
+      "title": "Template Settings",
+      "save": "Save",
+      "reset": "Restore defaults",
+      "baseFontSize": "Base font size",
+      "lineHeight": "Line height",
+      "pagePadding": "Page padding",
+      "paragraphSpacing": "Paragraph spacing",
+      "sectionSpacing": "Section spacing",
+      "headerSize": "Section title size",
+      "resumeFont": "Default font",
+      "fontSystem": "System default",
+      "themeColor": "Accent color",
+      "titleStyle": "Section title style",
+      "titleStyleOptions": { "underline": "Underline", "accent-bar": "Left bar", "compact": "Compact" }
+    },
     "ai": {
       "title": "AI Settings",
       "providers": "AI providers",

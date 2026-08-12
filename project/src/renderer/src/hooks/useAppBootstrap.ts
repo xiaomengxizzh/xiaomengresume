@@ -50,6 +50,9 @@ export function useAppBootstrap(): void {
           const r = await window.electronAPI.resumes.open(recent[0].id)
           useResumeStore.getState().loadResume(recent[0].id, r)
         }
+        // M5 设置加载（模板覆盖层/外观/字体消费；settings:get 渲染层唯一链路）
+        const settings = await window.electronAPI.settings.get()
+        useResumeStore.getState().setSettings(settings)
       } catch {
         // 存储目录不可用/首启无数据：静默保持空简历
       }
