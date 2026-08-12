@@ -1,0 +1,19 @@
+{
+  "basics": {
+    "name": "Sourabh Bajaj",
+    "phone": "+1-123-456-7890",
+    "email": "sourabh@sourabhbajaj.com",
+    "address": null,
+    "location": null,
+    "website": "sourabhbajaj.com",
+    "birthDate": null,
+    "employmentStatus": null,
+    "headline": null
+  },
+  "counts": {
+    "education": 2,
+    "work": 2,
+    "projects": 0,
+    "skills": 0
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "basics": {
+    "name": "John Doe",
+    "phone": "+1 (234) 567 890",
+    "email": "john@doe.org",
+    "address": "street and number -- postcode city -- country",
+    "location": null,
+    "website": "www.johndoe.com",
+    "birthDate": null,
+    "employmentStatus": null,
+    "headline": "Resumé title"
+  },
+  "counts": {
+    "education": 1,
+    "work": 0,
+    "projects": 0,
+    "skills": 0
+  }
+}

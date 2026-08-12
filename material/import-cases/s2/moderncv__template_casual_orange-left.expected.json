@@ -1,0 +1,19 @@
+{
+  "basics": {
+    "name": "John Doe",
+    "phone": null,
+    "email": null,
+    "address": null,
+    "location": null,
+    "website": null,
+    "birthDate": null,
+    "employmentStatus": null,
+    "headline": "Resumé title"
+  },
+  "counts": {
+    "education": 2,
+    "work": 1,
+    "projects": 0,
+    "skills": 0
+  }
+}

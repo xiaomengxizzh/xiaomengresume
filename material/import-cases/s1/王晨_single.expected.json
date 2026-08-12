@@ -1,0 +1,19 @@
+{
+  "basics": {
+    "name": "王晨",
+    "phone": "13912345678",
+    "email": "wangchen@example.com",
+    "address": "上海市浦东新区张江路 88 号",
+    "location": "上海市浦东新区",
+    "website": null,
+    "birthDate": "1992-03",
+    "employmentStatus": "在职",
+    "headline": "销售经理（大客户方向）"
+  },
+  "counts": {
+    "education": 1,
+    "work": 2,
+    "projects": 1,
+    "skills": 5
+  }
+}

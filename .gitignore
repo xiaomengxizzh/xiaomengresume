@@ -27,6 +27,10 @@ __pycache__/
 # material 核验产物（PDF/PNG 大文件不入库；基准材料保持跟踪，2026-08-11 A4）
 /material/核验/
 
+# 导入测试集：真实简历样本与 clone 暂存不入库（隐私；s1/s2 自造/开源样本保持跟踪，2026-08-12）
+/material/import-cases/s3/
+/material/import-cases/.src-tmp/
+
 # UI 截图产物（AI 评估临时生成，不入库）
 ui_screenshots_full/
 

@@ -1,0 +1,19 @@
+{
+  "basics": {
+    "name": "Marissa Mayer",
+    "phone": "000-00-0000",
+    "email": "mmayer@yahoo-inc.com",
+    "address": null,
+    "location": "Sunnyvale, CA",
+    "website": "marissamayr.tumblr.com",
+    "birthDate": null,
+    "employmentStatus": null,
+    "headline": "Business Woman & Proud Geek"
+  },
+  "counts": {
+    "education": 1,
+    "work": 5,
+    "projects": 0,
+    "skills": 0
+  }
+}

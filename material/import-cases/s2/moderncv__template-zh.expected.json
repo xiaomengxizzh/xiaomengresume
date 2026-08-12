@@ -1,0 +1,19 @@
+{
+  "basics": {
+    "name": "龙 李",
+    "phone": null,
+    "email": null,
+    "address": null,
+    "location": null,
+    "website": null,
+    "birthDate": null,
+    "employmentStatus": null,
+    "headline": "简历题目"
+  },
+  "counts": {
+    "education": 1,
+    "work": 1,
+    "projects": 0,
+    "skills": 0
+  }
+}

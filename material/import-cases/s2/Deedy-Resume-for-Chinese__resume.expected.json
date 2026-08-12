@@ -1,0 +1,19 @@
+{
+  "basics": {
+    "name": "Gao Ce",
+    "phone": "1111 1111 111",
+    "email": "whoami@whoareyou.com",
+    "address": null,
+    "location": null,
+    "website": null,
+    "birthDate": null,
+    "employmentStatus": null,
+    "headline": null
+  },
+  "counts": {
+    "education": 2,
+    "work": 0,
+    "projects": 0,
+    "skills": 0
+  }
+}

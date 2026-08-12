@@ -1,0 +1,19 @@
+{
+  "basics": {
+    "name": "Stephen Xu",
+    "phone": "+1 (xxx) xxx-xxxx",
+    "email": "stxu@hmc.edu",
+    "address": null,
+    "location": "San Diego, CA",
+    "website": "github.com/stuxf",
+    "birthDate": null,
+    "employmentStatus": null,
+    "headline": null
+  },
+  "counts": {
+    "education": 1,
+    "work": 1,
+    "projects": 0,
+    "skills": 0
+  }
+}

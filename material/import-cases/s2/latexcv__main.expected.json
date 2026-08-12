@@ -1,0 +1,19 @@
+{
+  "basics": {
+    "name": "Jan Küster",
+    "phone": "+49 176 *** *** **",
+    "email": "info@jankuester.com",
+    "address": null,
+    "location": "Bremen, Germany",
+    "website": "www.jankuester.com",
+    "birthDate": null,
+    "employmentStatus": null,
+    "headline": "Consultant and Software Developer"
+  },
+  "counts": {
+    "education": 1,
+    "work": 2,
+    "projects": 0,
+    "skills": 0
+  }
+}

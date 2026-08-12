@@ -1,0 +1,19 @@
+{
+  "basics": {
+    "name": "Claud D. Park",
+    "phone": "(+82) 10-9030-1843",
+    "email": "posquit0.bj@gmail.com",
+    "address": null,
+    "location": "Mapo-gu, Seoul, Republic of Korea",
+    "website": "www.posquit0.com",
+    "birthDate": null,
+    "employmentStatus": null,
+    "headline": "DevOps Engineer · Software Architect"
+  },
+  "counts": {
+    "education": 1,
+    "work": 0,
+    "projects": 0,
+    "skills": 7
+  }
+}

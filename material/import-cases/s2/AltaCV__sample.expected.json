@@ -1,0 +1,19 @@
+{
+  "basics": {
+    "name": "YOUR NAME HERE",
+    "phone": "000-00-0000",
+    "email": "your_name@email.com",
+    "address": null,
+    "location": null,
+    "website": "www.homepage.com",
+    "birthDate": null,
+    "employmentStatus": null,
+    "headline": "Your Position or Tagline Here"
+  },
+  "counts": {
+    "education": 1,
+    "work": 2,
+    "projects": 0,
+    "skills": 0
+  }
+}

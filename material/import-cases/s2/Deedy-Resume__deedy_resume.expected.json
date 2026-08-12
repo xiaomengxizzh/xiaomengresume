@@ -1,0 +1,19 @@
+{
+  "basics": {
+    "name": "Debarghya Das",
+    "phone": "607.379.5733",
+    "email": "deedy@fb.com",
+    "address": null,
+    "location": null,
+    "website": "debarghyadas.com",
+    "birthDate": null,
+    "employmentStatus": null,
+    "headline": null
+  },
+  "counts": {
+    "education": 2,
+    "work": 3,
+    "projects": 0,
+    "skills": 0
+  }
+}

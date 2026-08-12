@@ -1,0 +1,90 @@
+{
+  "generatedAt": "2026-08-12T14:19:40.713Z",
+  "note": "S2 开源中英文样本；来源/许可见 README",
+  "samples": [
+    {
+      "file": "AltaCV__mmayer.pdf",
+      "pdfMagic": true
+    },
+    {
+      "file": "AltaCV__sample.pdf",
+      "pdfMagic": true
+    },
+    {
+      "file": "Awesome-CV__coverletter.pdf",
+      "pdfMagic": true
+    },
+    {
+      "file": "Awesome-CV__cv.pdf",
+      "pdfMagic": true
+    },
+    {
+      "file": "basic-typst-resume-template__example-resume.pdf",
+      "pdfMagic": true
+    },
+    {
+      "file": "data-science-tech-resume-template__data_science_tech_resume_template.pdf",
+      "pdfMagic": true
+    },
+    {
+      "file": "Deedy-Resume-for-Chinese__deedy_resume.pdf",
+      "pdfMagic": true
+    },
+    {
+      "file": "Deedy-Resume-for-Chinese__resume-cn.pdf",
+      "pdfMagic": true
+    },
+    {
+      "file": "Deedy-Resume-for-Chinese__resume.pdf",
+      "pdfMagic": true
+    },
+    {
+      "file": "Deedy-Resume__deedy_resume.pdf",
+      "pdfMagic": true
+    },
+    {
+      "file": "latexcv__main.pdf",
+      "pdfMagic": true
+    },
+    {
+      "file": "moderncv__template-multibib.pdf",
+      "pdfMagic": true
+    },
+    {
+      "file": "moderncv__template-zh.pdf",
+      "pdfMagic": true
+    },
+    {
+      "file": "moderncv__template_banking_red-fullrules-center.pdf",
+      "pdfMagic": true
+    },
+    {
+      "file": "moderncv__template_banking_red-norules.pdf",
+      "pdfMagic": true
+    },
+    {
+      "file": "moderncv__template_banking_red-shortrules-right.pdf",
+      "pdfMagic": true
+    },
+    {
+      "file": "moderncv__template_banking_red.pdf",
+      "pdfMagic": true
+    },
+    {
+      "file": "moderncv__template_casual_orange-left.pdf",
+      "pdfMagic": true
+    },
+    {
+      "file": "moderncv__template_casual_orange.pdf",
+      "pdfMagic": true
+    },
+    {
+      "file": "moderncv__template_fancy_purple.pdf",
+      "pdfMagic": true
+    },
+    {
+      "file": "resume__sourabh_bajaj_resume.pdf",
+      "pdfMagic": true
+    }
+  ]
+}
