@@ -462,7 +462,10 @@
           "quit": "直接关闭"
         },
         "notSet": "未设置：首次关闭窗口时会询问"
-      }
+      },
+      "exportLogs": "导出日志",
+      "logsExported": "日志已导出：{{path}}",
+      "logsNone": "暂无日志文件"
     },
     "fonts": {
       "title": "界面字体",

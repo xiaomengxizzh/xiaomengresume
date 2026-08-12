@@ -462,7 +462,10 @@
           "quit": "Close window"
         },
         "notSet": "Not set: you will be asked on first close"
-      }
+      },
+      "exportLogs": "Export logs",
+      "logsExported": "Logs exported: {{path}}",
+      "logsNone": "No log files yet"
     },
     "fonts": {
       "title": "Interface Font",

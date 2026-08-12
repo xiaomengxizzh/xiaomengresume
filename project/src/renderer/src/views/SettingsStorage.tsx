@@ -36,6 +36,11 @@ export function SettingsStorage(): React.JSX.Element {
     setNotice(t('settings.storage.resetDone', { dir }))
     await refresh()
   }
+  const exportLogs = async (): Promise<void> => {
+    const p = await window.electronAPI.logs.export()
+    if (p) setNotice(t('settings.storage.logsExported', { path: p }))
+    else setNotice(t('settings.storage.logsNone'))
+  }
 
   return (
     <div className="home-view">
@@ -68,6 +73,10 @@ export function SettingsStorage(): React.JSX.Element {
         </Button>
         <Button size="sm" variant="ghost" onClick={() => void window.electronAPI.storage.open()}>
           {t('settings.storage.open')}
+        </Button>
+        {/* M5-7 遗留处理：日志导出入口（关于页删除后补位于存储屏——数据/诊断语境） */}
+        <Button size="sm" variant="ghost" onClick={() => void exportLogs()}>
+          {t('settings.storage.exportLogs')}
         </Button>
       </div>
 
