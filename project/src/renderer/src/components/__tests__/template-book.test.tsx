@@ -1,7 +1,7 @@
 /**
  * template-book.test.tsx —— 图书式模板选择器交互回归（2026-08-12 界面调整批）
  * 断言：三卡取模循环（左=前一模板 / 中=当前 / 右=后一模板）、左右箭头切换触发 onSelect、
- * 点击卡触发 onOpen、中间大两侧小的尺寸态。
+ * 点击卡触发 onOpen、容器自适应布局（fallback 780：中≈297 侧≈165，中 1.8× 全显无裁切）。
  * 环境：jsdom（模板卡真实渲染需 scrollIntoView/ResizeObserver 兼容）。
  */
 // @vitest-environment jsdom
@@ -71,17 +71,31 @@ describe('TemplateBook 图书式选择器', () => {
     expect(onOpen).toHaveBeenCalledWith('modern')
   })
 
-  it('中间卡完整大 / 两侧卡露边小（scale 差异：中 0.4 两侧 0.22 → 宽 318 vs 175 被裁为 105）', () => {
+  it('容器自适应：fallback 780 时 中卡≈297（1.8×）侧卡≈165 全显（无 105px 裁切容器），最小侧卡宽 143 保护', () => {
     const { container } = render(
       <TemplateBook templates={TEMPLATES} selected="classic" onSelect={vi.fn()} onOpen={vi.fn()} />
     )
     const cards = container.querySelectorAll('[aria-hidden="true"]')
-    // TemplatePreviewCard 根节点 aria-hidden + 固定 width 样式（794×scale）
     const widths = Array.from(cards).map((el) => (el as HTMLElement).style.width)
-    expect(widths).toContain('318px') // 中间：794×0.4
-    expect(widths).toContain('175px') // 两侧：794×0.22
-    // 两侧露边容器宽 105（overflow 裁切）
-    const sideContainers = container.querySelectorAll('[style*="width: 105px"]')
-    expect(sideContainers).toHaveLength(2)
+    // 中卡 = 1.8 × 侧卡；fallback 780：s=(780−96−56)/3.8≈165.3 → 中≈297.5
+    expect(widths).toContain('297px')
+    expect(widths).toContain('165px')
+    // 不再有 105px 裁切容器（侧卡全显）
+    expect(container.querySelector('[style*="width: 105px"]')).toBeNull()
+    // 中卡宽度 > 侧卡宽度（突出感）
+    expect(widths.filter((w) => w === '297px')).toHaveLength(1)
+    expect(widths.filter((w) => w === '165px')).toHaveLength(2)
+  })
+
+  it('最小侧卡宽保护：容器很窄时侧卡不低于 143px（scale 0.18）', () => {
+    const { container } = render(
+      <TemplateBook templates={TEMPLATES} selected="classic" onSelect={vi.fn()} onOpen={vi.fn()} />
+    )
+    const sideButtons = container.querySelectorAll('button[title="紧凑单栏"], button[title="现代单栏"]')
+    expect(sideButtons).toHaveLength(2)
+    // fallback 780 下侧卡 165px ≥ 最小 143（当前分支验证 ≥ 最小值而非裁切）
+    sideButtons.forEach((el) => {
+      expect(parseInt((el as HTMLElement).style.width, 10)).toBeGreaterThanOrEqual(143)
+    })
   })
 })
