@@ -41,6 +41,9 @@ export const ImportMapSchema = z.object({
       birthDate: z.string().optional(),
       /** 2026-08-09 T3：在职状态（在投/离职等） */
       employmentStatus: z.string().optional(),
+      /** 2026-08-13 需求②：性别 / 年龄（正式基本字段） */
+      gender: z.string().optional(),
+      age: z.string().optional(),
       /** 个人简介（纯文本，映射到 basics.profile） */
       profile: z.string().optional(),
       /** 2026-08-10 导入标签全量：用户自定义基本信息标签（任意"标签:值"对，A 档模型直接输出；
@@ -254,6 +257,11 @@ export function importMapToResume(map: ImportMap): Resume {
     if (birthDate) r.basics.birthDate = birthDate
     const employmentStatus = clean(b.employmentStatus)
     if (employmentStatus) r.basics.employmentStatus = employmentStatus
+    // 2026-08-13 需求②：性别/年龄正式字段
+    const gender = clean(b.gender)
+    if (gender) r.basics.gender = gender
+    const age = clean(b.age)
+    if (age) r.basics.age = age
     const profile = clean(b.profile)
     if (profile) r.basics.profile = textToRichText(profile)
 

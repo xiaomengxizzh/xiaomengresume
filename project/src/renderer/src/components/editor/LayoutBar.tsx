@@ -69,6 +69,20 @@ export function LayoutBar(): React.JSX.Element {
     for (const k of SPACING_KEYS) setField(`layout.${k}`, compact[k as keyof TemplatePreset])
   }
 
+  // 2026-08-13 需求④：自动一页纸开关（fitToPage）——内容超高时等比重排压缩到一页
+  const fitToPage = layout?.fitToPage === true
+  const toggleFitToPage = (): void => setField('layout.fitToPage', !fitToPage)
+
+  // 2026-08-13 需求③：条目列表项目符号（listMark：none/dot/square/dash，用于强调分类）
+  const LIST_MARK_OPTIONS = [
+    { value: 'none', label: t('editor.layoutMarkNone') },
+    { value: 'dot', label: t('editor.layoutMarkDot') },
+    { value: 'square', label: t('editor.layoutMarkSquare') },
+    { value: 'dash', label: t('editor.layoutMarkDash') }
+  ]
+  const listMark = layout?.listMark ?? 'none'
+  const setListMark = (v: string): void => setField('layout.listMark', v)
+
   return (
     <div className="layout-bar">
       <button
@@ -96,6 +110,23 @@ export function LayoutBar(): React.JSX.Element {
           >
             {t('editor.layoutCompact')}
           </Button>
+          {/* 2026-08-13 需求④：自动一页纸开关（激活态高亮；内容超高时等比重排压缩到一页） */}
+          <Button size="sm" variant={fitToPage ? 'default' : 'outline'} onClick={toggleFitToPage} title={t('editor.layoutFitPageHint')}>
+            {t('editor.layoutFitPage')}
+          </Button>
+          {/* 2026-08-13 需求③：条目项目符号选择（强调分类） */}
+          <select
+            className="rounded-md border border-border bg-surface px-2 py-1 text-xs"
+            value={listMark}
+            onChange={(e) => setListMark(e.target.value)}
+            title={t('editor.layoutMarkHint')}
+          >
+            {LIST_MARK_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
           <Button size="sm" variant="outline" onClick={reset}>
             {t('editor.layoutReset')}
           </Button>

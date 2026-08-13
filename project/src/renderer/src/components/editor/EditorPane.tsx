@@ -408,7 +408,10 @@ function IconCombo({
       { icon: 'pin', label: labelForIcon('pin'), value: getString(b.location) },
       { icon: 'globe', label: labelForIcon('globe'), value: getString(b.website) },
       { icon: 'calendar', label: labelForIcon('calendar'), value: getString(b.birthDate) },
-      { icon: 'briefcase', label: labelForIcon('briefcase'), value: getString(b.employmentStatus) }
+      { icon: 'briefcase', label: labelForIcon('briefcase'), value: getString(b.employmentStatus) },
+      // 2026-08-13 需求②：性别/年龄正式字段（gender=user / age=star 图标）随标签格展示
+      { icon: 'user', label: labelForIcon('user'), value: getString(b.gender) },
+      { icon: 'star', label: labelForIcon('star'), value: getString(b.age) }
     ].filter((f) => f.value.length > 0)
     // 2026-08-10 修复：旧 infoItems（双数据源）并入 customFields——编辑区与简历显示统一为
     // customFields 单一来源（用户编辑/删除标签才真正反映到简历；原显示 infoItems 致编辑不生效）
@@ -452,7 +455,9 @@ function IconCombo({
         pin: 'location',
         globe: 'website',
         calendar: 'birthDate',
-        briefcase: 'employmentStatus'
+        briefcase: 'employmentStatus',
+        user: 'gender', // 2026-08-13 需求②：user 图标 = 性别
+        star: 'age' // 2026-08-13 需求②：star 图标 = 年龄
       }
       const field = iconToField[cur.icon ?? '']
       if (field) setField(`basics.${field}`, '')
@@ -893,7 +898,7 @@ const MODULE_ICONS: Record<string, string> = {
   languages: '🌐'
 }
 
-/** 自定义模块表单（非基本信息；可编辑标题 + 富文本正文 + 删除） */
+/** 自定义模块表单（非基本信息；可编辑标题 + 渲染模板 + 正文/条目/标签 + 删除） */
 function CustomSectionForm({ id }: { id: string }): React.JSX.Element {
   const { t } = useTranslation()
   const resume = useResumeStore((s) => s.resume)
@@ -901,19 +906,76 @@ function CustomSectionForm({ id }: { id: string }): React.JSX.Element {
   const idx = (resume.customSections ?? []).findIndex((c) => c.id === id)
   if (idx < 0) return <></>
   const section = resume.customSections![idx]
+  const tpl = section.template ?? 'text'
+  const path = (k: string): string => `customSections[${idx}].${k}`
 
   return (
     <SectionCard title={t('editor.section.custom')}>
       <FieldRow label={t('editor.module.title')}>
-        <TextField value={section.title} onCommit={(v) => setField(`customSections[${idx}].title`, v)} />
+        <TextField value={section.title} onCommit={(v) => setField(path('title'), v)} />
       </FieldRow>
-      <FieldRow label={t('editor.field.content')}>
-        <TiptapField
-          value={section.content as never}
-          onChange={(v) => setField(`customSections[${idx}].content`, v)}
-          onEditorReady={(ed) => registerFieldEditor(`customSections[${idx}].content`, ed)}
-        />
+      {/* 2026-08-13 需求①：渲染模板选择（text/entry/tag） */}
+      <FieldRow label={t('editor.module.template')}>
+        <div className="flex gap-2">
+          {(['text', 'entry', 'tag'] as const).map((tp) => (
+            <button
+              key={tp}
+              type="button"
+              onClick={() => setField(path('template'), tp)}
+              className={`rounded-md border px-3 py-1 text-xs transition-colors ${
+                tpl === tp ? 'border-foreground bg-selected/40 text-foreground' : 'border-border text-foreground/70 hover:bg-selected/30'
+              }`}
+            >
+              {t(`editor.module.template.${tp}`)}
+            </button>
+          ))}
+        </div>
       </FieldRow>
+      {tpl === 'text' ? (
+        <FieldRow label={t('editor.field.content')}>
+          <TiptapField
+            value={section.content as never}
+            onChange={(v) => setField(path('content'), v)}
+            onEditorReady={(ed) => registerFieldEditor(path('content'), ed)}
+          />
+        </FieldRow>
+      ) : null}
+      {tpl === 'entry' ? (
+        <div className="space-y-2">
+          {(section.entries ?? []).map((en, i) => (
+            <div key={i} className="rounded-md border border-border p-2">
+              <FieldRow label={t('editor.module.entryHead')}>
+                <TextField value={en.head} onCommit={(v) => setField(`${path('entries')}[${i}].head`, v)} />
+              </FieldRow>
+              <FieldRow label={t('editor.module.entrySub')}>
+                <TextField value={en.sub ?? ''} onCommit={(v) => setField(`${path('entries')}[${i}].sub`, v)} />
+              </FieldRow>
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={() => setField(path('entries'), (section.entries ?? []).filter((_, j) => j !== i))}
+              >
+                {t('editor.module.remove')}
+              </Button>
+            </div>
+          ))}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setField(path('entries'), [...(section.entries ?? []), { head: '', sub: '', desc: { type: 'doc', content: [] } as never }])}
+          >
+            {t('editor.module.addEntry')}
+          </Button>
+        </div>
+      ) : null}
+      {tpl === 'tag' ? (
+        <FieldRow label={t('editor.module.tags')}>
+          <TextField
+            value={(section.tags ?? []).join('、')}
+            onCommit={(v) => setField(path('tags'), v.split(/[、,，]/).map((s) => s.trim()).filter(Boolean))}
+          />
+        </FieldRow>
+      ) : null}
       <div className="mt-1 flex justify-end">
         <Button
           size="sm"
@@ -1149,7 +1211,13 @@ export function EditorPane(): React.JSX.Element {
               ))}
             </div>
             <div className="module-add-row">
-              <Button variant="outline" onClick={addCustomModule}>
+              {/* 2026-08-13 需求①：添加模块面板——未显示的内置模块（点击加入）+ 自定义模块 */}
+              {DEFAULT_MODULE_ORDER.filter((m) => !modules.includes(m)).map((m) => (
+                <Button key={m} size="sm" variant="outline" onClick={() => setField('layout.sectionOrder', modules.concat([m]))}>
+                  ＋ {t(`editor.section.${m}`)}
+                </Button>
+              ))}
+              <Button size="sm" variant="outline" onClick={addCustomModule}>
                 ＋ {t('editor.module.add')}
               </Button>
             </div>

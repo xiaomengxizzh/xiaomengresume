@@ -92,6 +92,9 @@ export const BasicsSchema = z.object({
   birthDate: DateStrSchema,
   /** 2026-08-07 增补（仅增不改）：在职状态（如「离职 / 在职」） */
   employmentStatus: z.string().optional(),
+  /** 2026-08-13 增补（仅增不改）：性别 / 年龄——正式基本字段（导入「性别/年龄」label 映射；用户可选用） */
+  gender: z.string().optional(),
+  age: z.string().optional(),
   /** 2026-08-07 增补（仅增不改）：自定义字段 */
   customFields: z.array(CustomFieldSchema).default([]),
   /** 2026-08-07 增补（仅增不改）：字段编排，缺省 = 按模板默认顺序全显示 */
@@ -213,17 +216,30 @@ export const LayoutSchema = z.object({
   /** 2026-08-09 R6 增补（仅增不改）：基本信息三透明模块（图片/姓名与职业/标签信息）编辑区排序，
    *  同时驱动预览/PDF 头部三块横向排列顺序（photo=图片、identity=姓名与职业、tags=标签信息）。
    *  缺省 = ['photo','identity','tags']（经典模板布局）。 */
-  basicsOrder: z.array(z.enum(['photo', 'identity', 'tags'])).optional()
+  basicsOrder: z.array(z.enum(['photo', 'identity', 'tags'])).optional(),
+  /** 2026-08-13 需求④（仅增不改）：自动一页纸——内容超高时等比重排字号/间距压缩到一页（默认关） */
+  fitToPage: z.boolean().optional(),
+  /** 2026-08-13 需求③（仅增不改）：条目列表项目符号样式（none=无 / dot=圆点 / square=方块 / dash=短横线） */
+  listMark: z.enum(['none', 'dot', 'square', 'dash']).optional()
 })
 export type Layout = z.infer<typeof LayoutSchema>
 
 /** 自定义模块（2026-08-09 增补，仅增不改）：用户新建的非基本信息模块（兴趣爱好/获奖等）。
- *  基本信息为固定模块不可新建；自定义模块可增删，显示顺序由 layout.sectionOrder 编排。 */
+ *  基本信息为固定模块不可新建；自定义模块可增删，显示顺序由 layout.sectionOrder 编排。
+ *  2026-08-13 需求①增补：template 选择渲染模板（text=纯文本 / entry=条目列表[教育/工作式] / tag=标签网格[技能式]），
+ *  默认 text 兼容旧数据（仅增不改）。 */
 export const CustomSectionSchema = z.object({
   id: Uuid,
   title: z.string().default(''),
   /** 富文本正文（Tiptap doc / 降级 HTML） */
-  content: RichTextSchema.optional()
+  content: RichTextSchema.optional(),
+  /** 2026-08-13：渲染模板（text/entry/tag）；缺省 text */
+  template: z.enum(['text', 'entry', 'tag']).optional(),
+  /** entry/tag 模板的条目数据（entry：{head,sub,desc}[]；tag：string[]）——缺省走 content 兜底 */
+  entries: z
+    .array(z.object({ head: z.string().default(''), sub: z.string().optional(), desc: RichTextSchema.optional() }))
+    .optional(),
+  tags: z.array(z.string()).optional()
 })
 export type CustomSection = z.infer<typeof CustomSectionSchema>
 
