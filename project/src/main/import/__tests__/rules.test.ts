@@ -240,4 +240,30 @@ describe('rulesToImportMap（组装 ImportMap → importMapToResume 收口）', 
     expect(labels).toContain('期望薪资')
     expect(resume.basics.customFields?.find((c) => c.label === '实习天数')?.value).toBe('3')
   })
+
+  it('2026-08-13 简历2 回归：校园经历 → projects 段（不进 education）+ 相关技能 → skills 段', () => {
+    const text = cleanText(
+      '张哲晗\n状态: 可实习6个月以上 邮箱: ctpzzh@163.com\n电话: 17872315328 地址: 济南\n性别: 男 年龄: 23岁\n' +
+        '教育经历\n山东大学 市场营销 · 硕士在读 2024/09 - 至今\n' +
+        '校园经历\n齐鲁粮油公共品牌调研项目 项目调研 2025/09 - 2026/01\n调研准备与问卷设计：设计问卷并回收样本\n' +
+        '相关技能\n市场研究工具：SPSS（信效度分析）\n内容制作：PPT（商业报告制作）'
+    )
+    const sections = splitBySectionAnchors(text)
+    const map = rulesToImportMap(sections)
+    // 校园经历归 projects，不污染 education
+    expect(map.education).toHaveLength(1)
+    expect(map.projects).toHaveLength(1)
+    expect((map.projects ?? [])[0]).toMatchObject({ name: '齐鲁粮油公共品牌调研项目' })
+    // 相关技能归 skills
+    expect(map.skills).toHaveLength(2)
+    // basics：电话/邮箱/姓名/位置 + 状态自定义标签
+    expect(map.basics?.phone).toBe('17872315328')
+    expect(map.basics?.email).toBe('ctpzzh@163.com')
+    expect(map.basics?.name).toBe('张哲晗')
+    expect(map.basics?.location).toBe('济南')
+    const labels = (map.basics?.customFields ?? []).map((c) => c.label)
+    expect(labels).toContain('状态')
+    expect(labels).toContain('性别')
+    expect(labels).not.toContain('地址') // 已映射到 location，不重复
+  })
 })

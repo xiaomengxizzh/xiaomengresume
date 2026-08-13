@@ -1,0 +1,19 @@
+{
+  "basics": {
+    "name": "张哲晗",
+    "phone": "17872315328",
+    "email": "ctpzzh@163.com",
+    "address": null,
+    "location": "济南",
+    "website": null,
+    "birthDate": null,
+    "employmentStatus": null,
+    "headline": null
+  },
+  "counts": {
+    "education": 2,
+    "work": 0,
+    "projects": 4,
+    "skills": 2
+  }
+}

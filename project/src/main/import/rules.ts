@@ -36,8 +36,8 @@ export const SECTION_ANCHORS: Record<LocalSection, { zh: string[]; en: string[] 
   summary: { zh: ['自我评价', '个人简介', '个人概述'], en: ['summary', 'objective', 'about'] },
   education: { zh: ['教育经历', '教育背景', '学历'], en: ['education', 'academic'] },
   work: { zh: ['工作经历', '实习经历', '工作经验'], en: ['experience', 'employment', 'work'] },
-  projects: { zh: ['项目经验', '项目经历'], en: ['projects', 'project experience'] },
-  skills: { zh: ['技能', '专业技能', '技能特长'], en: ['skills', 'technical skills'] },
+  projects: { zh: ['项目经验', '项目经历', '校园经历', '社会实践', '实践经历', '项目实践'], en: ['projects', 'project experience'] },
+  skills: { zh: ['技能', '专业技能', '技能特长', '相关技能'], en: ['skills', 'technical skills'] },
   certificates: { zh: ['证书', '资格认证'], en: ['certifications', 'certificates'] },
   languages: { zh: ['语言能力', '外语'], en: ['languages'] }
 }
@@ -294,16 +294,22 @@ export function rulesToImportMap(sections: ParsedSection[], pairs?: Array<{ labe
     // 空格分隔候选的动词/介词前缀（"优化 项目…"是描述行）
     const verbPrefix = /^(基于|采用|使用|支持|提供|优化|设计|主导|负责|参与|实现|维护|开发|搭建|推动|管理|通过|作为|具备|熟悉|掌握|精通|了解|协助|组织|协调|撰写|制定|集成)/
     for (const l of lines) {
-      if (fixedHits.has(l)) continue
-      // 2026-08-10：候选对规则 ① 冒号行
-      const m = l.match(/^([\u4e00-\u9fa5A-Za-z][\u4e00-\u9fa5A-Za-z0-9··]{0,10})[:：]\s*(.+)$/)
+      // 2026-08-13 修复：同行多字段漏抓——"电话: x 地址: 济南" 整行被 fixedHits 排除致地址丢。
+      // 剥离已消费的固定字段值（phone/email/website）后，剩余部分仍尝试 label:value 提取；
+      // 同时清理剥离后残留的 label 词（仅带冒号者——"电话: " "邮箱:"，防"电话调研"类词误删）。
+      let rest = l
+      for (const v of [phone, email, website]) if (v) rest = rest.split(v).join('')
+      rest = rest.replace(/(?:电话|手机|邮箱|邮件|网址|网站|邮编)\s*[:：]\s*/g, ' ').replace(/\s{2,}/g, ' ').trim()
+      // 候选对规则 ① 冒号行（剥离后）
+      const m = rest.match(/^([\u4e00-\u9fa5A-Za-z][\u4e00-\u9fa5A-Za-z0-9··]{0,10})[:：]\s*(.+)$/)
       if (m) {
         const label = m[1].trim()
         const value = m[2].trim()
         if (label && value) customs.push({ label: label.slice(0, 32), value: value.slice(0, 256) })
         continue
       }
-      // 2026-08-10：候选对规则 ② 空格分隔的短标签行（"实习天数 3"式，1+ 空格；不绑定固定字段）
+      if (fixedHits.has(l)) continue
+      // 候选对规则 ② 空格分隔的短标签行（"实习天数 3"式，1+ 空格；不绑定固定字段）
       const m2 = l.match(/^([\u4e00-\u9fa5A-Za-z]{1,8})\s+(\S.*)$/)
       if (m2) {
         const label = m2[1].trim()
@@ -321,6 +327,14 @@ export function rulesToImportMap(sections: ParsedSection[], pairs?: Array<{ labe
       if ((b.phone && value.includes(b.phone)) || (b.email && value.includes(b.email)) || (b.website && value.includes(b.website)) || (b.address && value.includes(b.address))) continue
       if (customs.some((c) => c.label === label && c.value === value)) continue
       customs.push({ label, value })
+    }
+    // 2026-08-13 修复：customFields 中 label=地址/现居/所在城市 且 location 未识别（无后缀城市如"济南"）→ 映射到 location 并从 customs 移除（防重复显示）
+    for (let i = customs.length - 1; i >= 0; i--) {
+      const c = customs[i]
+      if (!b.location && !b.address && /^(地址|现居|现住|居住地|所在城市|所在地)$/.test(c.label) && c.value) {
+        b.location = c.value.slice(0, 80)
+        customs.splice(i, 1)
+      }
     }
     if (customs.length > 0) b.customFields = customs
     if (b.phone || b.email || b.website || b.birthDate || b.address || b.location || (b.customFields && b.customFields.length > 0)) {
