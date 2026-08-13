@@ -11,7 +11,7 @@ import { useResumeStore } from '../../store/useResumeStore'
 import { getByPath, parsePath } from '@shared/paths'
 import { SKILL_LEVELS, LANGUAGE_PROFICIENCIES } from '@shared/schema/resume'
 import { FONT_OPTIONS } from '@shared/constants/fonts'
-import { Button, Select } from '../ui'
+import { Button, Dialog, Input, Select } from '../ui'
 import { TextField, DateField, SelectField } from '../fields'
 import { TiptapField } from '../tiptap/TiptapField'
 import { LayoutBar } from './LayoutBar'
@@ -1085,6 +1085,9 @@ export function EditorPane(): React.JSX.Element {
   const setField = useResumeStore((s) => s.setField)
   const [dragId, setDragId] = useState<string | null>(null)
   const [dropTarget, setDropTarget] = useState<string | null>(null)
+  // 2026-08-13 修复：新建模块弹窗（原 window.prompt 在 Electron 渲染进程未实现恒返回 null → 点击无反应）
+  const [moduleDlg, setModuleDlg] = useState(false)
+  const [moduleTitle, setModuleTitle] = useState('')
 
   const customIds = (resume.customSections ?? []).map((c) => c.id)
   const order = resume.layout?.sectionOrder?.length ? resume.layout.sectionOrder : DEFAULT_MODULE_ORDER
@@ -1135,15 +1138,21 @@ export function EditorPane(): React.JSX.Element {
   }
 
   const addCustomModule = (): void => {
-    const title = window.prompt(t('editor.module.prompt')) ?? ''
-    if (!title.trim()) return
+    // 2026-08-13 修复：弹窗输入标题（替代 window.prompt——Electron 渲染进程未实现，恒 null）
+    setModuleTitle('')
+    setModuleDlg(true)
+  }
+  const confirmAddCustomModule = (): void => {
+    const title = moduleTitle.trim()
+    if (!title) return
     const id = crypto.randomUUID()
     const next = [
       ...(resume.customSections ?? []),
-      { id, title: title.trim(), content: { type: 'doc', content: [] } as never }
+      { id, title, content: { type: 'doc', content: [] } as never }
     ]
     setField('customSections', next)
     setField('layout.sectionOrder', modules.concat([id]))
+    setModuleDlg(false)
   }
 
   return (
@@ -1266,6 +1275,28 @@ export function EditorPane(): React.JSX.Element {
           onClose={() => setAssist(null)}
         />
       ) : null}
+      {/* 2026-08-13 修复：新建自定义模块弹窗（替代 window.prompt——Electron 渲染进程未实现） */}
+      <Dialog open={moduleDlg} title={t('editor.module.add')} onClose={() => setModuleDlg(false)}>
+        <div className="space-y-3">
+          <Input
+            autoFocus
+            value={moduleTitle}
+            placeholder={t('editor.module.prompt')}
+            onChange={(e) => setModuleTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') confirmAddCustomModule()
+            }}
+          />
+          <div className="flex justify-end gap-2">
+            <Button size="sm" variant="ghost" onClick={() => setModuleDlg(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button size="sm" variant="default" disabled={!moduleTitle.trim()} onClick={confirmAddCustomModule}>
+              {t('common.save')}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   )
 }

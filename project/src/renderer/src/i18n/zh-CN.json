@@ -696,6 +696,7 @@
   "jobsManager": {
     "new": "新建岗位",
     "edit": "编辑岗位",
+    "saveFailed": "保存岗位失败：",
     "status": "岗位状态",
     "statusNotApplied": "未投",
     "statusApplying": "在投",

@@ -696,6 +696,7 @@
   "jobsManager": {
     "new": "New job",
     "edit": "Edit job",
+    "saveFailed": "Failed to save job: ",
     "status": "Status",
     "statusNotApplied": "Not applied",
     "statusApplying": "Applying",

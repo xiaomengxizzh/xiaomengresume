@@ -93,6 +93,10 @@ export function JobsManager(): React.JSX.Element {
       await syncBindings(payload.id, [...boundIds])
       setEditing(null)
       void reload()
+    } catch (e) {
+      // 2026-08-13 修复：错误静默（原 try/finally 无 catch，保存失败无任何反馈）
+      console.error('[JobsManager] 保存岗位失败:', e)
+      window.alert(`${t('jobsManager.saveFailed')}${e instanceof Error ? `\n${e.message}` : ''}`)
     } finally {
       setBusy(false)
     }
