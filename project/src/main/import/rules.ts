@@ -300,12 +300,18 @@ export function rulesToImportMap(sections: ParsedSection[], pairs?: Array<{ labe
       let rest = l
       for (const v of [phone, email, website]) if (v) rest = rest.split(v).join('')
       rest = rest.replace(/(?:电话|手机|邮箱|邮件|网址|网站|邮编)\s*[:：]\s*/g, ' ').replace(/\s{2,}/g, ' ').trim()
-      // 候选对规则 ① 冒号行（剥离后）
-      const m = rest.match(/^([\u4e00-\u9fa5A-Za-z][\u4e00-\u9fa5A-Za-z0-9··]{0,10})[:：]\s*(.+)$/)
-      if (m) {
-        const label = m[1].trim()
-        const value = m[2].trim()
-        if (label && value) customs.push({ label: label.slice(0, 32), value: value.slice(0, 256) })
+      // 候选对规则 ① 冒号行——全局 matchAll：一行可含多个 "label: 值" 对（"性别: 男 年龄: 23岁" 拆两条）；
+      // 值用负向前瞻：遇「中文词+冒号」（下一个 label 起点）即停，防贪婪吞掉后续对（"年龄" 不被吞进 "男" 的值）；
+      // "电话调研" 类词无冒号不误拆。
+      const pairsOfLine = [
+        ...rest.matchAll(/([\u4e00-\u9fa5A-Za-z][\u4e00-\u9fa5A-Za-z0-9··]{0,10})\s*[:：]\s*((?:(?![\u4e00-\u9fa5]{1,12}\s*[:：])[^:：\n])+)/g)
+      ]
+      if (pairsOfLine.length > 0) {
+        for (const mm of pairsOfLine) {
+          const label = mm[1].trim()
+          const value = mm[2].trim()
+          if (label && value) customs.push({ label: label.slice(0, 32), value: value.slice(0, 256) })
+        }
         continue
       }
       if (fixedHits.has(l)) continue

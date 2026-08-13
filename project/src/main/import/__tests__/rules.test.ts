@@ -264,6 +264,9 @@ describe('rulesToImportMap（组装 ImportMap → importMapToResume 收口）', 
     const labels = (map.basics?.customFields ?? []).map((c) => c.label)
     expect(labels).toContain('状态')
     expect(labels).toContain('性别')
+    expect(labels).toContain('年龄') // 2026-08-13 matchAll 拆分："性别: 男 年龄: 23岁" → 两条
+    expect(map.basics?.customFields?.find((c) => c.label === '性别')?.value).toBe('男')
+    expect(map.basics?.customFields?.find((c) => c.label === '年龄')?.value).toBe('23岁')
     expect(labels).not.toContain('地址') // 已映射到 location，不重复
   })
 })
