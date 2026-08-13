@@ -4,7 +4,7 @@
  * variant 差异：SecTitle 样式（underline / accent-bar / compact）+ 间距乘数 + 头部布局。
  * classic 对标 material/简历示例1.pdf（视觉细节在 variant==='classic' 分支完整保留）。
  */
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useResumeStore } from '../../store/useResumeStore'
 import { InfoIcon, type InfoIconId } from '../../components/icons/InfoIcons'
@@ -61,14 +61,48 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
   // M5 A7 字体分离：本简历 layout.resumeFont > 模板默认 templateOverride.resumeFont > 系统
   const fontFor = (section: string): string | undefined => resolveFontFamily(layout, section, templateOverride?.resumeFont)
 
+  // 2026-08-13 需求④：自动一页纸（等比重排）——fitToPage 开启且内容自然高 > 1123（A4）时，
+  // scale = 1123/contentH 应用到字号/间距；下限 0.6，低于则不压缩（退回多页由调用方提示）。
+  // 实现：外层容器 ResizeObserver 量「未缩放内容高」（scale=1 首帧）→ setState 触发二次渲染应用 scale。
+  const FIT_PAGE_H = 1123
+  const FIT_SCALE_MIN = 0.6
+  const fitToPage = layout?.fitToPage === true
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const [fitScale, setFitScale] = useState<number | null>(null) // null = 未测量（首帧 scale=1）
+  const measuredRef = useRef(false)
+  useEffect(() => {
+    if (!fitToPage || !bodyRef.current) return
+    const el = bodyRef.current
+    const ro = new ResizeObserver(() => {
+      if (measuredRef.current) return
+      const h = el.scrollHeight
+      if (h <= 0) return
+      measuredRef.current = true
+      const scale = Math.min(1, FIT_PAGE_H / h)
+      setFitScale(scale >= FIT_SCALE_MIN ? scale : 1) // 低于下限不压缩（等比重排下限保护）
+    })
+    ro.observe(el)
+    return () => {
+      ro.disconnect()
+      measuredRef.current = false
+      setFitScale(null)
+    }
+  }, [fitToPage])
+  const applyScale = fitToPage && fitScale !== null ? fitScale : 1
+  const scaled = (v: number): number => (applyScale === 1 ? v : Math.round(v * applyScale * 10) / 10)
+
+  // 2026-08-13 需求③：条目列表项目符号（layout.listMark；none/dot/square/dash，用于强调分类）
+  const LIST_MARKS: Record<string, string> = { none: '', dot: '•', square: '▪', dash: '–' }
+  const listMark = LIST_MARKS[layout?.listMark ?? 'none'] ?? ''
+
   const rootStyle: CSSProperties = {
-    fontSize: baseFont,
-    lineHeight,
-    padding: `${pagePad}px ${pagePad + (variant === 'classic' ? 24 : 20)}px`,
+    fontSize: scaled(baseFont),
+    lineHeight: applyScale === 1 ? lineHeight : Math.round(lineHeight * applyScale * 10) / 10,
+    padding: `${scaled(pagePad)}px ${scaled(pagePad + (variant === 'classic' ? 24 : 20))}px`,
     // B 档（2026-08-10）：分页时每个分页框都应用 padding——默认 box-decoration-break: slice
     // 只在首页框应用垂直 padding，页 2 起顶部贴边（实测 y0≈2pt）；clone 使每页顶底各留边距
     boxDecorationBreak: 'clone',
-    ['--rm-section-gap' as string]: `${sectionGap}px`,
+    ['--rm-section-gap' as string]: `${scaled(sectionGap)}px`,
     ['--rm-accent' as string]: layout?.themeColor ?? '#475569',
     // 2026-08-10：预览简历纸显式使用 system 字体栈（DengXian 优先，与 PDF 端 system→Deng 对齐），
     // 不再继承 body 的 UI 字体（微软雅黑）——消除两端默认字体不一致（P0-1）
@@ -77,8 +111,9 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
 
   // 2026-08-10：节标题样式 = shared titleStyleLogic 适配（TITLE_STYLES 已收敛，不再本地定义）
   // M5 A3：模板覆盖 titleStyle 优先于 variant 默认（三选一 underline/accent-bar/compact）
+  // 2026-08-13 需求④：fitToPage 时标题字号随缩放
   const secTitle = (children: React.ReactNode, size: number): React.JSX.Element => (
-    <h2 style={{ fontSize: `${size}px`, ...titleCss(titleStyleLogic(titleVariant, templateOverride?.titleStyle)) }}>{children}</h2>
+    <h2 style={{ fontSize: `${scaled(size)}px`, ...titleCss(titleStyleLogic(titleVariant, templateOverride?.titleStyle)) }}>{children}</h2>
   )
 
   const basics = resume.basics
@@ -171,10 +206,43 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
   const renderCustom = (id: string): React.JSX.Element | null => {
     const cs = resume.customSections?.find((c) => c.id === id)
     if (!cs) return null
+    const body = ((): React.JSX.Element | null => {
+      // 2026-08-13 需求①：自定义模块多模板——text=纯文本 / entry=条目列表（教育/工作式）/ tag=标签网格（技能式）
+      const tpl = cs.template ?? 'text'
+      if (tpl === 'entry' && (cs.entries?.length ?? 0) > 0) {
+        return (
+          <>
+            {cs.entries!.map((en, i) => (
+              <div key={i} style={{ marginBottom: `${entrySpacingLogic('work')}px` }}>
+                {entryHead(en.head || t('editor.section.custom'), en.sub ?? '', {
+                  fontSize: `${TYPE_SCALE.entryHeadEm}em`,
+                  fontWeight: 700
+                }, listMark)}
+                {en.desc ? (
+                  <div style={{ ...pStyle, marginTop: '4px' }} dangerouslySetInnerHTML={{ __html: richTextToHtml(en.desc) }} />
+                ) : null}
+              </div>
+            ))}
+          </>
+        )
+      }
+      if (tpl === 'tag' && (cs.tags?.length ?? 0) > 0) {
+        return (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            {cs.tags!.map((tag, i) => (
+              <span key={i} style={{ fontSize: `${TYPE_SCALE.skillEm}em`, padding: '2px 8px', border: '1px solid #e5e7eb', borderRadius: 4 }}>
+                {tag}
+              </span>
+            ))}
+          </div>
+        )
+      }
+      return cs.content ? <div style={pStyle} dangerouslySetInnerHTML={{ __html: richTextToHtml(cs.content) }} /> : null
+    })()
     return (
       <SectionBlock path={cs.id} onClick={() => jump(cs.id)} style={{ fontFamily: fontFor(cs.id) }} hint={t('preview.locateHint')}>
         {secTitle(cs.title || t('editor.section.custom'), headerSize)}
-        {cs.content ? <div style={pStyle} dangerouslySetInnerHTML={{ __html: richTextToHtml(cs.content) }} /> : null}
+        {body}
       </SectionBlock>
     )
   }
@@ -189,7 +257,7 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
               {entryHead(e.school, [fmtDate(e.startDate), e.endDate ? fmtDate(e.endDate) : ''].filter(Boolean).join(DATE_RANGE_SEP), {
                 fontSize: `${TYPE_SCALE.entryHeadEm}em`,
                 fontWeight: 700
-              })}
+              }, listMark)}
               <div style={{ fontSize: `${TYPE_SCALE.entrySubEm}em`, opacity: 0.8 }}>{[e.degree, e.major].filter(Boolean).join(' · ')}</div>
               {e.description ? (
                 <div style={{ ...pStyle, marginTop: '4px' }} dangerouslySetInnerHTML={{ __html: richTextToHtml(e.description) }} />
@@ -211,7 +279,7 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
               {entryHead(w.title || w.company, [fmtDate(w.startDate), w.current ? t('editor.field.current') : w.endDate ? fmtDate(w.endDate) : ''].filter(Boolean).join(DATE_RANGE_SEP), {
                 fontSize: `${TYPE_SCALE.entryHeadEm}em`,
                 fontWeight: 700
-              })}
+              }, listMark)}
               {w.title ? <div style={{ fontSize: `${TYPE_SCALE.entrySubEm}em`, opacity: 0.8 }}>{w.company}</div> : null}
               {w.summary ? (
                 <div style={{ ...pStyle, marginTop: '4px' }} dangerouslySetInnerHTML={{ __html: richTextToHtml(w.summary) }} />
@@ -233,7 +301,7 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
               {entryHead(p.role || p.name, [fmtDate(p.startDate), p.endDate ? fmtDate(p.endDate) : ''].filter(Boolean).join(DATE_RANGE_SEP), {
                 fontSize: `${TYPE_SCALE.entryHeadEm}em`,
                 fontWeight: 700
-              })}
+              }, listMark)}
               {p.role ? <div style={{ fontSize: `${TYPE_SCALE.entrySubEm}em`, opacity: 0.8 }}>{[p.name, p.organization].filter(Boolean).join(' · ')}</div> : null}
               {p.description ? (
                 <div style={{ ...pStyle, marginTop: '4px' }} dangerouslySetInnerHTML={{ __html: richTextToHtml(p.description) }} />
@@ -301,7 +369,7 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
     )
   }
   return (
-    <div className="preview-paper-body" data-redact={privacyMode ? 'on' : 'off'} style={rootStyle}>
+    <div ref={bodyRef} className="preview-paper-body" data-redact={privacyMode ? 'on' : 'off'} style={rootStyle}>
       {/* basics：左头像 | 中名字+职位 | 右基本信息（classic 三列；modern/compact 简化两列） */}
       <SectionBlock path="basics" onClick={() => jump('basics')} style={{ fontFamily: fontFor('basics') }} hint={t('preview.locateHint')}>
         <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
@@ -338,15 +406,15 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
               return (
                 <div key={bid} style={{ minWidth: 0, paddingTop: '2px' }}>
                   {basics.name ? (
-                    <h1 className="redact-field" style={{ fontSize: `${TYPE_SCALE.namePx[variant]}px`, fontWeight: 700, lineHeight: 1.2, marginBottom: '2px', color: '#111827' }}>{basics.name}</h1>
+                    <h1 className="redact-field" style={{ fontSize: `${scaled(TYPE_SCALE.namePx[variant])}px`, fontWeight: 700, lineHeight: 1.2, marginBottom: '2px', color: '#111827' }}>{basics.name}</h1>
                   ) : emptyHints ? (
                     /* 2026-08-11 Batch3 B6：空态预览占位（仅编辑预览 emptyHints 显示；导出不渲染，守「模板=打印」） */
-                    <div aria-hidden style={{ height: `${TYPE_SCALE.namePx[variant]}px`, width: 140, borderRadius: 4, border: '1.5px dashed rgba(0,0,0,0.18)', opacity: 0.6 }} />
+                    <div aria-hidden style={{ height: `${scaled(TYPE_SCALE.namePx[variant])}px`, width: 140, borderRadius: 4, border: '1.5px dashed rgba(0,0,0,0.18)', opacity: 0.6 }} />
                   ) : null}
                   {basics.headline ? (
-                    <div className="redact-field" style={{ fontSize: `${TYPE_SCALE.headlinePx[variant]}px`, opacity: 0.75, lineHeight: 1.4 }}>{basics.headline}</div>
+                    <div className="redact-field" style={{ fontSize: `${scaled(TYPE_SCALE.headlinePx[variant])}px`, opacity: 0.75, lineHeight: 1.4 }}>{basics.headline}</div>
                   ) : emptyHints ? (
-                    <div aria-hidden style={{ height: `${TYPE_SCALE.headlinePx[variant]}px`, width: 96, borderRadius: 4, border: '1.5px dashed rgba(0,0,0,0.18)', opacity: 0.6, marginTop: 4 }} />
+                    <div aria-hidden style={{ height: `${scaled(TYPE_SCALE.headlinePx[variant])}px`, width: 96, borderRadius: 4, border: '1.5px dashed rgba(0,0,0,0.18)', opacity: 0.6, marginTop: 4 }} />
                   ) : null}
                 </div>
               )

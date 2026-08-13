@@ -253,9 +253,19 @@ export const useResumeStore = create<ResumeState>()((set, get) => ({
     // 导入覆盖可一次撤销：记录导入前快照（新建模式记录空简历，undo 一次回空白）
     history.record(get().resume)
     const resumeId = get().resumeId ?? crypto.randomUUID()
+    // 2026-08-13 需求①：导入只显示简历已有的模块——按数据过滤 sectionOrder
+    //（无数据的内置模块不进排序；用户可后续「添加模块」手动补）
+    const hasData = (k: 'education' | 'work' | 'projects' | 'skills' | 'certificates' | 'languages'): boolean =>
+      (resume[k]?.length ?? 0) > 0
+    const defaultOrder = ['education', 'work', 'projects', 'skills', 'certificates', 'languages']
+    const customIds = (resume.customSections ?? []).map((c) => c.id)
+    const filteredOrder = (resume.layout?.sectionOrder ?? defaultOrder).filter(
+      (id) => customIds.includes(id) || (defaultOrder.includes(id) && hasData(id as 'education'))
+    )
+    const ordered = { ...resume, layout: { ...(resume.layout ?? {}), sectionOrder: filteredOrder } }
     set({
       resumeId,
-      resume: structuredClone(resume),
+      resume: structuredClone(ordered),
       activeSection: 'basics',
       activeFieldPath: null,
       lastEditedPath: null,

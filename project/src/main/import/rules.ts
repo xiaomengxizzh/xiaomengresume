@@ -328,8 +328,8 @@ export function rulesToImportMap(sections: ParsedSection[], pairs?: Array<{ labe
     }
     const customs: NonNullable<ImportMap['basics']>['customFields'] = []
     // 2026-08-10：knownLabels 仅含"固定映射集"（有专门字段）；籍贯/年龄/实习天数等自定义标签保留入库
-    // 2026-08-13：补 状态/在职状态/求职状态（已映射 employmentStatus，不进 customFields 防重复）
-    const knownLabels = new Set(['姓名', '电话', '手机', '邮箱', '邮件', '地址', '网址', '网站', '生日', '出生', '在职', '职业', '职位', '状态', '在职状态', '求职状态'])
+    // 2026-08-13：补 状态/在职状态/求职状态（已映射 employmentStatus）+ 性别/年龄（正式字段），不进 customFields 防重复
+    const knownLabels = new Set(['姓名', '电话', '手机', '邮箱', '邮件', '地址', '网址', '网站', '生日', '出生', '在职', '职业', '职位', '状态', '在职状态', '求职状态', '性别', '年龄'])
     // 空格分隔候选的动词/介词前缀（"优化 项目…"是描述行）
     const verbPrefix = /^(基于|采用|使用|支持|提供|优化|设计|主导|负责|参与|实现|维护|开发|搭建|推动|管理|通过|作为|具备|熟悉|掌握|精通|了解|协助|组织|协调|撰写|制定|集成)/
     for (const l of lines) {
@@ -389,6 +389,21 @@ export function rulesToImportMap(sections: ParsedSection[], pairs?: Array<{ labe
         }
       }
     }
+    // 2026-08-13 需求②：性别/年龄 → 正式基本字段（同行多字段用全局 matchAll 提取，同 customs 规则①；
+    // "性别: 男 年龄: 23岁" 拆 gender=男 + age=23岁；不进 customFields）
+    const labelValue = (kw: string): string | undefined => {
+      for (const l of lines) {
+        let rest = l
+        for (const v of [phone, email, website]) if (v) rest = rest.split(v).join('')
+        rest = rest.replace(/(?:电话|手机|邮箱|邮件|网址|网站|邮编)\s*[:：]\s*/g, ' ').replace(/\s{2,}/g, ' ').trim()
+        const re = new RegExp(`(?:${kw})\\s*[:：]\\s*((?:(?![\\u4e00-\\u9fa5]{1,12}\\s*[:：])[^:：\\n])+)`)
+        const m = rest.match(re)
+        if (m && m[1]?.trim()) return m[1].trim().slice(0, 32)
+      }
+      return undefined
+    }
+    if (!b.gender) b.gender = labelValue('性别')
+    if (!b.age) b.age = labelValue('年龄')
     if (customs.length > 0) b.customFields = customs
     if (b.phone || b.email || b.website || b.birthDate || b.address || b.location || (b.customFields && b.customFields.length > 0)) {
       const nameLine = lines.find((l) => !fixedHits.has(l) && l.trim().length > 0)

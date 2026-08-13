@@ -52,10 +52,17 @@ export function Placeholder({ label }: { label: string }): React.JSX.Element {
   return <div style={{ color: '#bbb', fontSize: '13px', fontStyle: 'italic' }}>{label}</div>
 }
 
-export function entryHead(left: string, right: string, style: CSSProperties): React.JSX.Element {
+export function entryHead(left: string, right: string, style: CSSProperties, mark?: string): React.JSX.Element {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', ...style }}>
-      <span>{left}</span>
+      <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: '6px' }}>
+        {mark ? (
+          <span aria-hidden style={{ fontSize: '0.85em', opacity: 0.7, flexShrink: 0 }}>
+            {mark}
+          </span>
+        ) : null}
+        <span>{left}</span>
+      </span>
       <span style={{ opacity: 0.65, fontWeight: 400, whiteSpace: 'nowrap' }}>{right}</span>
     </div>
   )

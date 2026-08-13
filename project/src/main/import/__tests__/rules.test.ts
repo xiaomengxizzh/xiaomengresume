@@ -203,9 +203,11 @@ describe('rulesToImportMap（组装 ImportMap → importMapToResume 收口）', 
     const resume = importMapToResume(map)
     expect(resume.basics.phone).toBe('13800138000')
     expect(resume.basics.email).toBe('zhangsan@example.com')
-    // 未知标签入库（电话/邮箱已知字段不入 customFields）
+    // 2026-08-13 需求②：年龄/性别为正式字段（不再进 customFields）
+    expect(resume.basics.age).toBe('35')
+    // 未知标签入库（电话/邮箱/年龄已知字段不入 customFields）
     const labels = (resume.basics.customFields ?? []).map((c) => c.label)
-    expect(labels).toContain('年龄')
+    expect(labels).not.toContain('年龄')
     expect(labels).toContain('QQ')
     expect(labels).toContain('籍贯')
     expect(labels).not.toContain('电话')
@@ -263,11 +265,12 @@ describe('rulesToImportMap（组装 ImportMap → importMapToResume 收口）', 
     expect(map.basics?.name).toBe('张哲晗')
     expect(map.basics?.location).toBe('济南')
     expect(map.basics?.employmentStatus).toBe('可实习6个月以上')
+    // 2026-08-13 需求②：性别/年龄 → 正式字段（"性别: 男 年龄: 23岁" 拆两条）
+    expect(map.basics?.gender).toBe('男')
+    expect(map.basics?.age).toBe('23岁')
     const labels = (map.basics?.customFields ?? []).map((c) => c.label)
-    expect(labels).toContain('性别')
-    expect(labels).toContain('年龄') // 2026-08-13 matchAll 拆分："性别: 男 年龄: 23岁" → 两条
-    expect(map.basics?.customFields?.find((c) => c.label === '性别')?.value).toBe('男')
-    expect(map.basics?.customFields?.find((c) => c.label === '年龄')?.value).toBe('23岁')
+    expect(labels).not.toContain('性别')
+    expect(labels).not.toContain('年龄')
     expect(labels).not.toContain('地址') // 已映射到 location，不重复
     expect(labels).not.toContain('状态') // 已映射 employmentStatus
   })
