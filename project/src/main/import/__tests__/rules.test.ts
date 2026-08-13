@@ -109,7 +109,8 @@ describe('detectDirtyLayout（脏排版判定）', () => {
 describe('parseDateSpan（日期跨度）', () => {
   it('YYYY-MM 至 YYYY-MM / YYYY 单年', () => {
     expect(parseDateSpan('2013-09 至 2017-06')).toEqual({ start: '2013-09', end: '2017-06', rest: '' })
-    expect(parseDateSpan('2020 工程师 某公司')).toEqual({ start: '2020', end: undefined, rest: '工程师 某公司' })
+    // 2026-08-13：裸单年（"2020 工程师"）不再误判为日期——"1535份" 等裸数字拒
+    expect(parseDateSpan('2020 工程师 某公司')).toEqual({ rest: '2020 工程师 某公司' })
   })
 })
 
@@ -256,17 +257,18 @@ describe('rulesToImportMap（组装 ImportMap → importMapToResume 收口）', 
     expect((map.projects ?? [])[0]).toMatchObject({ name: '齐鲁粮油公共品牌调研项目' })
     // 相关技能归 skills
     expect(map.skills).toHaveLength(2)
-    // basics：电话/邮箱/姓名/位置 + 状态自定义标签
+    // basics：电话/邮箱/姓名/位置 + 状态→employmentStatus（2026-08-13 修复：状态 label 直取全值，不进 customFields）
     expect(map.basics?.phone).toBe('17872315328')
     expect(map.basics?.email).toBe('ctpzzh@163.com')
     expect(map.basics?.name).toBe('张哲晗')
     expect(map.basics?.location).toBe('济南')
+    expect(map.basics?.employmentStatus).toBe('可实习6个月以上')
     const labels = (map.basics?.customFields ?? []).map((c) => c.label)
-    expect(labels).toContain('状态')
     expect(labels).toContain('性别')
     expect(labels).toContain('年龄') // 2026-08-13 matchAll 拆分："性别: 男 年龄: 23岁" → 两条
     expect(map.basics?.customFields?.find((c) => c.label === '性别')?.value).toBe('男')
     expect(map.basics?.customFields?.find((c) => c.label === '年龄')?.value).toBe('23岁')
     expect(labels).not.toContain('地址') // 已映射到 location，不重复
+    expect(labels).not.toContain('状态') // 已映射 employmentStatus
   })
 })

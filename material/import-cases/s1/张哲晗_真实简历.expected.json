@@ -7,13 +7,13 @@
     "location": "济南",
     "website": null,
     "birthDate": null,
-    "employmentStatus": null,
+    "employmentStatus": "可实习6个月以上",
     "headline": null
   },
   "counts": {
     "education": 2,
     "work": 0,
-    "projects": 4,
+    "projects": 3,
     "skills": 2
   }
 }

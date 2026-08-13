@@ -70,7 +70,9 @@ export function hasIndependentKeyword(text: string, kw: string): boolean {
   const before = i > 0 ? text[i - 1] : ''
   const after = i + kw.length < text.length ? text[i + kw.length] : ''
   if (/[\u4e00-\u9fff]/.test(kw)) {
-    return !/[\u4e00-\u9fff]/.test(before) && !/[\u4e00-\u9fff]/.test(after)
+    // 2026-08-13 修复：锚点词后跟冒号/空白也命中（"语言能力：CET-6"——after=：，原判非中文拒掉致段丢失）
+    const afterOk = !/[\u4e00-\u9fff]/.test(after) || /[:：\s]/.test(after)
+    return !/[\u4e00-\u9fff]/.test(before) && afterOk
   }
   return !/[a-zA-Z0-9]/.test(before) && !/[a-zA-Z0-9]/.test(after)
 }
@@ -103,6 +105,19 @@ function isValueOnly(v: string): boolean {
   return /^\d{6,}$/.test(v) || /^https?:\/\/|^www\./.test(v) || /@/.test(v) || /^\d{4}[年./-]\d{1,2}/.test(v)
 }
 
+/** 剥离锚点行前缀：去行首 bullet 符号 + 命中的锚点词（含其后冒号/空格），返回剩余内容（无则 ''） */
+function stripAnchorPrefix(line: string, id: LocalSection): string {
+  let t = line.trim().replace(/^[-•·*+\d.)、（\]]+/, '')
+  const kws = [...SECTION_ANCHORS[id].zh, ...SECTION_ANCHORS[id].en].sort((a, b) => b.length - a.length)
+  for (const kw of kws) {
+    if (t.startsWith(kw) || t.startsWith(kw + '：') || t.startsWith(kw + ':') || t.startsWith(kw + ' ')) {
+      t = t.slice(kw.length).replace(/^\s*[:：]?\s*/, '')
+      break
+    }
+  }
+  return t.trim()
+}
+
 /** 按锚点分段（锚点行本身不入内容，仅作分隔；无锚点行归 unclassified 暂存） */
 export function splitBySectionAnchors(text: string): ParsedSection[] {
   const sections: ParsedSection[] = []
@@ -123,7 +138,15 @@ export function splitBySectionAnchors(text: string): ParsedSection[] {
     if (!line) continue
     const anchor = matchAnchorLine(line)
     if (anchor) {
-      ensure(anchor) // 新 section 边界（锚点行本身不入内容）
+      ensure(anchor) // 新 section 边界
+      // 2026-08-13 修复：锚点行带内容（"语言能力：CET-6、CET-4"）——锚点词后冒号/空格的内容
+      // 不能整行丢弃，剩余内容作为该段首行加入（原 continue 致 languages 段恒空）
+      const rest = stripAnchorPrefix(line, anchor)
+      if (rest) {
+        const sec = ensure(anchor)
+        sec.rawText += (sec.rawText ? '\n' : '') + rest
+        sec.lines.push(rest)
+      }
       continue
     }
     const sec = ensure(lastId ?? 'unclassified')
@@ -156,25 +179,35 @@ export function detectDirtyLayout(text: string, sections: ParsedSection[]): stri
 
 /** 日期跨度提取：2013-09 至 2017-06 / 2020.01-2023 / 2016 年 9 月 – 2020 年 6 月 */
 export function parseDateSpan(s: string): { start?: string; end?: string; rest: string } {
-  const m = s.match(/(\d{4})(?:[-/.年](\d{1,2}))?(?:\s*[-–—至~到]\s*(\d{4})(?:[-/.年](\d{1,2}))?)?/)
+  // 2026-08-13 修复：裸 4 位数字（"回收1535份"）误判为年份 → 要求日期形态：
+  //   YYYY（后跟 / . 年 -月）| YYYY-至今 | YYYY[-/.]MM[-/.]? - YYYY... | 数字不裸用
+  const m = s.match(
+    /(\d{4})(?:[-/.年](\d{1,2}))?(?:\s*[-–—至~到]\s*(?:(\d{4})(?:[-/.年](\d{1,2}))?|至今|现在|今))?/
+  )
   if (!m) return { rest: s }
+  const raw = m[0]
+  const isBareYear = !m[2] && !m[3] // 单年且无月（"1535份"、"1535"）
+  // 裸单年仅在"YYYY 至今/现在/今"或作为跨度起点（后接 - 至）时才算日期；其余拒绝
+  if (isBareYear && !/^\s*[-–—至~到]\s*(?:至今|现在|今|\d{4})/.test(raw.slice(4)) && !/^\s*年/.test(raw.slice(4))) {
+    return { rest: s }
+  }
   const norm = (y?: string, mo?: string): string | undefined =>
     y ? (mo ? `${y}-${String(Number(mo)).padStart(2, '0')}` : y) : undefined
   const start = norm(m[1], m[2])
-  const end = m[3] ? norm(m[3], m[4]) : undefined
-  const rest = s.slice(0, m.index).trim() + ' ' + s.slice((m.index ?? 0) + m[0].length).trim()
+  const end = m[3] ? norm(m[3], m[4]) : m[1] && /^\s*[-–—至~到]\s*(?:至今|现在|今)$/.test(raw.slice(4)) ? undefined : undefined
+  const rest = s.slice(0, m.index).trim() + ' ' + s.slice((m.index ?? 0) + raw.length).trim()
   return { start, end, rest: rest.trim() }
 }
 
-/** 条目拆分：按空格/分隔符拆 token（粗粒度；首 token = 主体名） */
+/** 条目拆分：按空格/分隔符拆 token（粗粒度；首 token = 主体名）；2026-08-13 补 "·"（"学校 专业 · 学位"） */
 function splitTokens(rest: string): string[] {
   return rest
-    .split(/[\s,，、;；]+/)
+    .split(/[\s,，、;；·•]+/)
     .map((t) => t.trim())
     .filter(Boolean)
 }
 
-const TITLE_HINTS = ['工程师', '经理', '总监', '主管', '专员', '开发', '设计', '运营', '产品', '架构', '顾问', '助理', '实习生', '负责人']
+const TITLE_HINTS = ['工程师', '经理', '总监', '主管', '专员', '开发', '设计', '运营', '产品', '架构', '顾问', '助理', '实习生', '负责人', '调研', '审查', '分析', '制作', '执行', '管理', '策划', '研究员']
 
 /**
  * 流式构建数组条目（2026-08-09 修复：对照「项目导出简历示例」暴露的拆碎问题）：
@@ -241,8 +274,11 @@ export function rulesToImportMap(sections: ParsedSection[], pairs?: Array<{ labe
     const isDetailedAddr = (s: string): boolean => /(路|街|号|大厦|栋|大道|广场)/.test(s)
     const address = addrMatch && isDetailedAddr(addrMatch.raw) ? addrMatch.raw : undefined
     const location = addrMatch ? addrMatch.raw : undefined
-    // 状态：行内关键词（在职/离职等）
-    const status = lines.find((l) => /(在职|离职|待业|已离职|应届|退休)/.test(l))
+    // 状态：① "状态: 值" label 直取（"状态: 可实习6个月以上"）→ 值即状态；② 行内关键词（在职/离职等）
+    // 2026-08-13 修复：词表补 可实习/实习/求职/在读——原仅有 在职/离职/待业/应届/退休，"可实习6个月以上" 不命中
+    // 值用负向前瞻截断（遇下一 "label: " 即停，防贪婪吞同行"邮箱: …"）
+    const statusLabel = lines.find((l) => /^\s*(?:状态|在职状态|求职状态)\s*[:：]\s*((?:(?![\u4e00-\u9fa5]{1,12}\s*[:：])[^:：\n])+)/.test(l))
+    const status = statusLabel ? statusLabel.match(/^\s*(?:状态|在职状态|求职状态)\s*[:：]\s*((?:(?![\u4e00-\u9fa5]{1,12}\s*[:：])[^:：\n])+)/)?.[1]?.trim() : lines.find((l) => /(在职|离职|待业|已离职|应届|退休|可实习|实习中|求职|在读)/.test(l))
     // 生日：行内年月（2026-08-10 修正：material 示例"离职 2025/01"的 2025/01 即生日[json 证实]，
     // 原"排除含状态词行/纯日期行"误伤真生日——去掉整行排除，basics 段含年月格式行即生日；
     // 真离职日期行误捕风险由三步核对向导兜底）
@@ -270,7 +306,8 @@ export function rulesToImportMap(sections: ParsedSection[], pairs?: Array<{ labe
     }
     if (addrMatch) b.address = address?.replace(/^(现居|居住地|地址|现住)[:：]?\s*/i, '').slice(0, 80)
     if (location) b.location = location.replace(/^(现居|居住地|地址|现住|所在地)[:：]?\s*/i, '').slice(0, 80)
-    if (status) b.employmentStatus = status.match(/(在职|离职|待业|已离职|应届|退休)/)?.[0] ?? ''
+    // 2026-08-13 修复：label 直取（"状态: 可实习6个月以上"）用全值；行内关键词命中取关键词本身
+    if (status) b.employmentStatus = statusLabel ? status : status.match(/(在职|离职|待业|已离职|应届|退休|可实习|实习中|求职|在读)/)?.[0] ?? ''
     // 2026-08-10 导入标签全量：通用"标签: 值"行识别——未被固定字段命中的 label:value 行 → customFields
     // （用户自定义标签如"年龄/QQ/籍贯/婚育"等任意标签对；label ≤12 字符、冒号分隔；
     //  已知 6 类 label 已走固定字段 + 标准 icon，此处只收未知标签，避免重复显示）
@@ -284,13 +321,15 @@ export function rulesToImportMap(sections: ParsedSection[], pairs?: Array<{ labe
         (location && l.includes(location)) ||
         l === birth ||
         l === status ||
+        (statusLabel !== undefined && l === statusLabel) ||
         l === headline ||
         l === headlineRaw
       if (hit) fixedHits.add(l)
     }
     const customs: NonNullable<ImportMap['basics']>['customFields'] = []
     // 2026-08-10：knownLabels 仅含"固定映射集"（有专门字段）；籍贯/年龄/实习天数等自定义标签保留入库
-    const knownLabels = new Set(['姓名', '电话', '手机', '邮箱', '邮件', '地址', '网址', '网站', '生日', '出生', '在职', '职业', '职位'])
+    // 2026-08-13：补 状态/在职状态/求职状态（已映射 employmentStatus，不进 customFields 防重复）
+    const knownLabels = new Set(['姓名', '电话', '手机', '邮箱', '邮件', '地址', '网址', '网站', '生日', '出生', '在职', '职业', '职位', '状态', '在职状态', '求职状态'])
     // 空格分隔候选的动词/介词前缀（"优化 项目…"是描述行）
     const verbPrefix = /^(基于|采用|使用|支持|提供|优化|设计|主导|负责|参与|实现|维护|开发|搭建|推动|管理|通过|作为|具备|熟悉|掌握|精通|了解|协助|组织|协调|撰写|制定|集成)/
     for (const l of lines) {
@@ -310,7 +349,8 @@ export function rulesToImportMap(sections: ParsedSection[], pairs?: Array<{ labe
         for (const mm of pairsOfLine) {
           const label = mm[1].trim()
           const value = mm[2].trim()
-          if (label && value) customs.push({ label: label.slice(0, 32), value: value.slice(0, 256) })
+          // 2026-08-13：knownLabels（固定字段已映射）不进 customFields 防重复——规则①此前未查，补上
+          if (label && value && !knownLabels.has(label)) customs.push({ label: label.slice(0, 32), value: value.slice(0, 256) })
         }
         continue
       }
@@ -334,12 +374,19 @@ export function rulesToImportMap(sections: ParsedSection[], pairs?: Array<{ labe
       if (customs.some((c) => c.label === label && c.value === value)) continue
       customs.push({ label, value })
     }
-    // 2026-08-13 修复：customFields 中 label=地址/现居/所在城市 且 location 未识别（无后缀城市如"济南"）→ 映射到 location 并从 customs 移除（防重复显示）
-    for (let i = customs.length - 1; i >= 0; i--) {
-      const c = customs[i]
-      if (!b.location && !b.address && /^(地址|现居|现住|居住地|所在城市|所在地)$/.test(c.label) && c.value) {
-        b.location = c.value.slice(0, 80)
-        customs.splice(i, 1)
+    // 2026-08-13 修复：无后缀城市（"地址: 济南"）→ location——直接从 lines 提取 label=地址/现居 的 value，
+    // 不依赖 customs（地址在 knownLabels 已不进 customFields）；同行电话需先剥离（"电话: x 地址: 济南"）
+    if (!b.location && !b.address) {
+      for (const l of lines) {
+        let rest = l
+        for (const v of [phone, email, website]) if (v) rest = rest.split(v).join('')
+        // 清剥离后残留 label（"电话: "），与 customs 规则①同款
+        rest = rest.replace(/(?:电话|手机|邮箱|邮件|网址|网站|邮编)\s*[:：]\s*/g, ' ').replace(/\s{2,}/g, ' ').trim()
+        const m = rest.match(/^\s*(?:地址|现居|现住|居住地|所在城市|所在地)\s*[:：]\s*((?:(?![\u4e00-\u9fa5]{1,12}\s*[:：])[^:：\n])+)/)
+        if (m && m[1]?.trim()) {
+          b.location = m[1].trim().slice(0, 80)
+          break
+        }
       }
     }
     if (customs.length > 0) b.customFields = customs
@@ -361,6 +408,8 @@ export function rulesToImportMap(sections: ParsedSection[], pairs?: Array<{ labe
   }
 
   // education：日期行 = 新条目（school + 日期 + 剩余进 description）；要点行并入 description
+  // 2026-08-13 修复：解析"学校 专业 · 学位"结构——degree 从学位标记识别（在读/本科/硕士/博士/学士），
+  // major 取其余 token（"山东大学 市场营销 · 硕士在读" → school=山东大学 degree=硕士在读 major=市场营销）
   const education = pick('education')
   if (education) {
     const lines = education.lines.length ? education.lines : [...education.items, ...education.rawText.split('\n').filter(Boolean)]
@@ -369,8 +418,11 @@ export function rulesToImportMap(sections: ParsedSection[], pairs?: Array<{ labe
       (tokens, start, end) => {
         const school = tokens.shift()
         if (!school) return null
-        const desc = tokens.length ? tokens.join('，') : undefined
-        return { school, startDate: start, endDate: end, description: desc }
+        const DEGREE_RE = /(硕士|博士|本科|学士|专科|大专|在读|研究生)/i
+        const degreeIdx = tokens.findIndex((t) => DEGREE_RE.test(t))
+        const degree = degreeIdx >= 0 ? tokens.splice(degreeIdx, 1)[0] : undefined
+        const major = tokens.length ? tokens.join(' ') : undefined
+        return { school, degree, major, startDate: start, endDate: end }
       },
       (e, text) => appendBullet(e, 'description', text)
     )
@@ -451,10 +503,13 @@ export function rulesToImportMap(sections: ParsedSection[], pairs?: Array<{ labe
   if (languages) {
     const arr: NonNullable<ImportMap['languages']> = []
     for (const item of [...languages.items, ...languages.rawText.split('\n').filter(Boolean)]) {
-      const tokens = splitTokens(item)
-      const name = tokens.shift()
-      if (!name) continue
-      arr.push({ name })
+      // 2026-08-13 修复：同一行多个语言（"CET-6、CET-4"）按顿号/逗号拆成多条
+      for (const seg of item.split(/[、,，]/).map((s) => s.trim()).filter(Boolean)) {
+        const tokens = splitTokens(seg)
+        const name = tokens.shift()
+        if (!name) continue
+        arr.push({ name })
+      }
     }
     if (arr.length) map.languages = arr
   }
