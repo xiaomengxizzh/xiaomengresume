@@ -3,7 +3,7 @@ import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
   {
-    ignores: ['out/**', 'dist/**', 'node_modules/**', 'electron-dist/**']
+    ignores: ['out/**', 'dist/**', 'node_modules/**', 'electron-dist/**', 'temp-ui-audit/**']
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
