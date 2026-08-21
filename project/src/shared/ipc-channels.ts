@@ -81,7 +81,11 @@ export const IPC = {
     /** 绑定岗位（F19，v1.1 实现） */
     BindJob: 'resume:bind-job',
     /** 解绑岗位（F19，v1.1 实现） */
-    UnbindJob: 'resume:unbind-job'
+    UnbindJob: 'resume:unbind-job',
+    /** P1-10 版本时间线（2026-08-21）：枚举该简历 .bak 序列（updatedAt 倒序；数据层 backup-list.ts） */
+    ListBackups: 'resume:list-backups',
+    /** P1-10：读回指定备份（migrate 收口校验）→ 走 saveResume 完整三件套写回（产生新 .bak，可再撤销时间线） */
+    RecoverBackup: 'resume:recover-backup'
   },
   /** 简历聚合（F11 WP-T1 定案） */
   Resumes: {
@@ -177,6 +181,13 @@ export interface ResumeSummary {
   name: string
   updatedAt?: string
   boundJobIds: string[]
+}
+
+/** P1-10 版本时间线：备份元数据（resume:list-backups 返回项；file 原样传回 recover-backup） */
+export interface BackupMeta {
+  file: string
+  updatedAt: string
+  sizeBytes: number
 }
 
 /** 照片读取参数（2026-08-11 B1）：photoRef = resume.basics.photo 引用值（'photos/<id>.<ext>'） */

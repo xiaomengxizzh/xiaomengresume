@@ -5,7 +5,7 @@
  * F3 统一撤销栈（2026-08-08 修复 P1）：禁用 Tiptap 内部 UndoRedo，Ctrl+Z/Y 全部走
  * store 50 步栈，消除双栈双向污染（详见 useEditor 注释）。
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useEditor, EditorContent, type Editor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
@@ -48,6 +48,11 @@ function ToolBtn({
 export function TiptapField({ value, onChange, onEditorReady }: TiptapFieldProps): React.JSX.Element {
   const [linkUrl, setLinkUrl] = useState('')
   const [linkOpen, setLinkOpen] = useState(false)
+  // P1-6 字数统计：ref 直写 DOM（不走 React state，防每次按键触发整字段 re-render）
+  const countRef = useRef<HTMLSpanElement>(null)
+  const syncCount = (ed: Editor): void => {
+    if (countRef.current) countRef.current.textContent = String(ed.getText().length)
+  }
 
   const editor = useEditor({
     extensions: [
@@ -63,6 +68,7 @@ export function TiptapField({ value, onChange, onEditorReady }: TiptapFieldProps
     onUpdate: ({ editor }) => {
       const json = editor.getJSON()
       onChange({ type: 'doc', content: json.content ?? [] })
+      syncCount(editor)
     }
   })
 
@@ -70,6 +76,11 @@ export function TiptapField({ value, onChange, onEditorReady }: TiptapFieldProps
   useEffect(() => {
     if (editor && onEditorReady) onEditorReady(editor)
   }, [editor, onEditorReady])
+
+  // P1-6：初载/外部同步后刷新字数
+  useEffect(() => {
+    if (editor) syncCount(editor)
+  }, [editor, value])
 
   // 外部 value 变化（撤销/重做/加载/HTML 降级快照）→ 同步编辑器。
   // P1/P2 修复：移除 isFocused 拦截——统一撤销栈后 store undo 在 Tiptap 聚焦时也必须
@@ -154,6 +165,16 @@ export function TiptapField({ value, onChange, onEditorReady }: TiptapFieldProps
             <path d="M14 11a5 5 0 0 0-7.07 0l-2.83 2.83a5 5 0 0 0 7.07 7.07L13 19" />
           </svg>
         </ToolBtn>
+        {/* P1-6：代码块（StarterKit 自带 codeBlock 节点，此前无入口；渲染端 richtext-html 已补） */}
+        <ToolBtn
+          title="</>"
+          active={editor?.isActive('codeBlock')}
+          onMouseDown={() => editor?.chain().focus().toggleCodeBlock().run()}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M8 6l-6 6 6 6M16 6l6 6-6 6" />
+          </svg>
+        </ToolBtn>
       </div>
       {linkOpen ? (
         <div className="flex items-center gap-1 border-b border-border/70 px-2 py-1">
@@ -174,6 +195,11 @@ export function TiptapField({ value, onChange, onEditorReady }: TiptapFieldProps
         </div>
       ) : null}
       <EditorContent editor={editor} className="tiptap-content px-3 py-2 text-sm" />
+      <div className="flex justify-end border-t border-border/50 px-3 py-0.5">
+        <span ref={countRef} className="text-[10px] tabular-nums text-foreground/35" aria-hidden>
+          0
+        </span>
+      </div>
     </div>
   )
 }

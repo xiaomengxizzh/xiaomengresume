@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import {
   IPC,
   type AppInfo,
+  type BackupMeta,
   type RecentResume,
   type ResumeSummary,
   type JobSummary,
@@ -149,7 +150,12 @@ const electronAPI = {
     bindJob: (resumeId: string, jobId: string): Promise<Resume> =>
       ipcRenderer.invoke(IPC.Resume.BindJob, { resumeId, jobId }),
     unbindJob: (resumeId: string, jobId: string): Promise<Resume> =>
-      ipcRenderer.invoke(IPC.Resume.UnbindJob, { resumeId, jobId })
+      ipcRenderer.invoke(IPC.Resume.UnbindJob, { resumeId, jobId }),
+    /** P1-10 版本时间线：.bak 序列（新→旧） */
+    listBackups: (id: string): Promise<BackupMeta[]> => ipcRenderer.invoke(IPC.Resume.ListBackups, id),
+    /** P1-10：恢复指定备份（主进程走 saveResume 完整三件套写回） */
+    recoverBackup: (id: string, file: string): Promise<Resume> =>
+      ipcRenderer.invoke(IPC.Resume.RecoverBackup, { id, file })
   },
   backup: {
     exportZip: (): Promise<string | null> => ipcRenderer.invoke(IPC.Backup.Export),

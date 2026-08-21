@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next'
 import { useResumeStore } from '../store/useResumeStore'
 import { ResumesList } from './ResumesList'
 import { Button } from '../components/ui'
+import { reportIpcError } from '../components/ui/toast'
 import type { ImportBatchResult } from '@shared/ipc-channels'
 
 export function ResumesManager(): React.JSX.Element {
@@ -43,6 +44,9 @@ export function ResumesManager(): React.JSX.Element {
       setSelected(new Set())
       setSelectMode(false)
       setReloadTick((v) => v + 1)
+    } catch (e) {
+      // P1-11：批量删除失败不再静默
+      reportIpcError(t('common.opFailed'), e)
     } finally {
       setBusy(false)
     }

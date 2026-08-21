@@ -41,6 +41,8 @@ IPC 通道契约（M0 冻结 · M1 扩展 · M2 F5 扩展 export:*）
 | Resume | `resume:read-photo` | — |
 | Resume | `resume:bind-job` | 绑定岗位（F19，v1.1 实现） |
 | Resume | `resume:unbind-job` | 解绑岗位（F19，v1.1 实现） |
+| Resume | `resume:list-backups` | P1-10 版本时间线（2026-08-21）：枚举该简历 .bak 序列（updatedAt 倒序；数据层 backup-list.ts） |
+| Resume | `resume:recover-backup` | P1-10：读回指定备份（migrate 收口校验）→ 走 saveResume 完整三件套写回（产生新 .bak，可再撤销时间线） |
 | Resumes | `resumes:recent` | 最近简历列表（按 lastActivityAt 倒序） |
 | Backup | `backup:export` | — |
 | Backup | `backup:import` | — |
@@ -118,6 +120,8 @@ AI 通道（M0 流式验证；M3 扩展四分区 + 服务商配置。流式增�
 - `ReadPhoto` → `resume:read-photo`
 - `BindJob` → `resume:bind-job`：绑定岗位（F19，v1.1 实现）
 - `UnbindJob` → `resume:unbind-job`：解绑岗位（F19，v1.1 实现）
+- `ListBackups` → `resume:list-backups`：P1-10 版本时间线（2026-08-21）：枚举该简历 .bak 序列（updatedAt 倒序；数据层 backup-list.ts）
+- `RecoverBackup` → `resume:recover-backup`：P1-10：读回指定备份（migrate 收口校验）→ 走 saveResume 完整三件套写回（产生新 .bak，可再撤销时间线）
 
 ### Resumes
 
@@ -215,6 +219,14 @@ id: string
 name: string
 updatedAt?: string
 boundJobIds: string[]
+```
+
+### `BackupMeta`
+
+```ts
+file: string
+updatedAt: string
+sizeBytes: number
 ```
 
 ### `ReadPhotoArgs`

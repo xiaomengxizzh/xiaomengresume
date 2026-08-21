@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useResumeStore } from '../store/useResumeStore'
 import { Button, Dialog, EmptyState } from '../components/ui'
+import { reportIpcError } from '../components/ui/toast'
 import type { JobSummary, ResumeSummary } from '@shared/ipc-channels'
 import type { Job } from '@shared/schema/job'
 
@@ -112,6 +113,9 @@ export function JobsManager(): React.JSX.Element {
       await Promise.all(ids.map((id) => window.electronAPI.jobs.delete(id)))
       setSel(new Set())
       void reload()
+    } catch (e) {
+      // P1-11：批量删除失败不再静默（原 try/finally 无 catch → unhandled rejection）
+      reportIpcError(t('common.opFailed'), e)
     } finally {
       setBusy(false)
     }

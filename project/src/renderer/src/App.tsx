@@ -15,6 +15,7 @@ import { SettingsAppearance } from './views/SettingsAppearance'
 import { SettingsStorage } from './views/SettingsStorage'
 import { SettingsTemplates } from './views/SettingsTemplates'
 import { WelcomeView } from './views/WelcomeView'
+import { ToastHost } from './components/ui/toast'
 import { NewResumeView } from './views/NewResumeView'
 import { ResumesManager } from './views/ResumesManager'
 import { JobsManager } from './views/JobsManager'
@@ -175,6 +176,8 @@ export default function App(): React.JSX.Element {
           <Suspense fallback={<ViewLoading />}>{renderView()}</Suspense>
         </main>
       </div>
+      {/* P1-11：全局轻提示宿主（IPC 错误统一上报等） */}
+      <ToastHost />
     </div>
   )
 }

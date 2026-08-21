@@ -56,6 +56,18 @@ function marksToHtml(text: string, marks: unknown[]): string {
   return out
 }
 
+/** 递归收集纯文本（codeBlock 用：保留换行，不渲染 marks/嵌套结构） */
+function plainTextOf(nodes: unknown[]): string {
+  return nodes
+    .map((n) => {
+      const t = n as RichTextNode
+      if (t.type === 'text') return t.text ?? ''
+      if (t.type === 'hardBreak') return '\n'
+      return plainTextOf(t.content ?? [])
+    })
+    .join('')
+}
+
 function nodeToHtml(node: unknown): string {
   const n = node as RichTextNode
   switch (n.type) {
@@ -67,6 +79,10 @@ function nodeToHtml(node: unknown): string {
       return `<ol>${nodesToHtml(n.content ?? [])}</ol>`
     case 'listItem':
       return `<li>${nodesToHtml(n.content ?? [])}</li>`
+    // P1-6（2026-08-21）：codeBlock 渲染——此前白名单外被丢弃（编辑器可产出但预览/PDF 不显示的缺口）。
+    // 内联样式：简历纸面固定浅底等宽；printToPDF 单引擎与预览同源，一处修复两端生效。
+    case 'codeBlock':
+      return `<pre style="white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,'Cascadia Mono',Consolas,monospace;font-size:0.92em;background:#f4f4f2;border:1px solid #e5e5e2;border-radius:4px;padding:6px 8px;margin:4px 0;">${escapeHtml(plainTextOf(n.content ?? []))}</pre>`
     case 'text':
       return marksToHtml(n.text ?? '', n.marks ?? [])
     case 'hardBreak':

@@ -275,8 +275,9 @@ function PhotoBlock(): React.JSX.Element {
     reader.onload = (): void => {
       const img = new Image()
       img.onload = (): void => {
-        // canvas 降采样：最长边 ≤800px 后压缩，控制体积
-        const MAX = 800
+        // P1-8 前置压缩收紧（2026-08-21）：头像场景最长边 ≤400px 足够；质量 0.7 起，
+        // >150KB 循环降质（下限 0.4）——大图出 dataURL 前置瘦身，减轻历史栈/自动保存/写盘负担。
+        const MAX = 400
         let { width, height } = img
         if (width > MAX || height > MAX) {
           const ratio = Math.min(MAX / width, MAX / height)
@@ -289,8 +290,14 @@ function PhotoBlock(): React.JSX.Element {
         const ctx = canvas.getContext('2d')
         if (!ctx) return
         ctx.drawImage(img, 0, 0, width, height)
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
-        if (dataUrl.length > 2 * 1024 * 1024) return // >2MB 放弃（D15）
+        const LIMIT = 150 * 1024
+        let quality = 0.7
+        let dataUrl = canvas.toDataURL('image/jpeg', quality)
+        while (dataUrl.length > LIMIT && quality > 0.4) {
+          quality -= 0.1
+          dataUrl = canvas.toDataURL('image/jpeg', quality)
+        }
+        if (dataUrl.length > LIMIT) return // 降质到下限仍超限 → 放弃（提示用户换小图）
         setField('basics.photo', dataUrl)
         setField('basics.photoWidth', width)
         setField('basics.photoHeight', height)
@@ -1136,28 +1143,52 @@ function CustomSectionForm({ id }: { id: string }): React.JSX.Element {
   const tpl = section.template ?? 'text'
   const path = (k: string): string => `customSections[${idx}].${k}`
 
+  // P1-7：按当前模板填充演示数据（i18n 文案；覆盖对应字段，其余模板的数据保留不删）
+  const para = (text: string): unknown => ({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] })
+  const fillSample = (): void => {
+    if (tpl === 'text') setField(path('content'), para(t('editor.module.sample.text')))
+    else if (tpl === 'entry')
+      setField(path('entries'), [
+        {
+          head: t('editor.module.sample.entryHead'),
+          sub: t('editor.module.sample.entrySub'),
+          desc: para(t('editor.module.sample.entryDesc'))
+        }
+      ])
+    else setField(path('tags'), [t('editor.module.sample.tag1'), t('editor.module.sample.tag2'), t('editor.module.sample.tag3')])
+  }
+
   return (
     <SectionCard title={t('editor.section.custom')}>
       <FieldRow label={t('editor.module.title')}>
         <TextField value={section.title} onCommit={(v) => setField(path('title'), v)} />
       </FieldRow>
-      {/* 2026-08-13 需求①：渲染模板选择（text/entry/tag） */}
+      {/* P1-7（2026-08-21）：三模板卡片化切换（图标+名称+描述；数据字段并存 optional，切换不丢内容） */}
       <FieldRow label={t('editor.module.template')}>
-        <div className="flex gap-2">
+        <div className="flex w-full gap-2">
           {(['text', 'entry', 'tag'] as const).map((tp) => (
             <button
               key={tp}
               type="button"
               onClick={() => setField(path('template'), tp)}
-              className={`rounded-md border px-3 py-1 text-xs transition-colors ${
-                tpl === tp ? 'border-foreground bg-selected/40 text-foreground' : 'border-border text-foreground/70 hover:bg-selected/30'
+              title={t(`editor.module.templateDesc.${tp}`)}
+              className={`flex flex-1 flex-col items-start gap-0.5 rounded-lg border px-2.5 py-1.5 text-left transition-colors ${
+                tpl === tp
+                  ? 'border-foreground bg-selected/40 text-foreground'
+                  : 'border-border text-foreground/70 hover:bg-selected/30'
               }`}
             >
-              {t(`editor.module.template.${tp}`)}
+              <span className="text-xs font-medium">{t(`editor.module.template.${tp}`)}</span>
+              <span className="text-[10px] leading-tight text-foreground/50">{t(`editor.module.templateDesc.${tp}`)}</span>
             </button>
           ))}
         </div>
       </FieldRow>
+      <div className="flex justify-end">
+        <Button size="sm" variant="outline" onClick={fillSample}>
+          {t('editor.module.fillSample')}
+        </Button>
+      </div>
       {tpl === 'text' ? (
         <FieldRow label={t('editor.field.content')}>
           <TiptapField

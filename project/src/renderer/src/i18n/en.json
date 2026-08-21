@@ -201,7 +201,22 @@
       "entryHead": "Headline",
       "entrySub": "Subtitle",
       "addEntry": "+ Add entry",
-      "tags": "Tags (comma separated)"
+      "tags": "Tags (comma separated)",
+      "fillSample": "Fill with sample",
+      "sample": {
+        "text": "Avid runner and writer; won first prize in the campus speech contest.",
+        "entryHead": "Campus Debate Team",
+        "entrySub": "Lead debater · 2023–2024",
+        "entryDesc": "Won third place in the inter-college league; led research and case writing.",
+        "tag1": "Data Analysis",
+        "tag2": "Teamwork",
+        "tag3": "CET-6"
+      },
+      "templateDesc": {
+        "text": "Plain paragraph, good for a description",
+        "entry": "Entries with head, sub and description",
+        "tag": "Tag cloud for keywords"
+      }
     },
     "resumeNamePlaceholder": "Untitled resume",
     "autoSaved": "Auto-saved",
@@ -339,7 +354,9 @@
     "cancel": "Cancel",
     "save": "Save",
     "retry": "Retry",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "opFailed": "Operation failed, please retry",
+    "loadFailed": "Load failed"
   },
   "export": {
     "title": "Export",
@@ -696,7 +713,16 @@
     "loadError": "Failed to load resume list",
     "loadErrorDesc": "Could not read the resume list. Please retry; if it persists, check storage folder permissions.",
     "retry": "Retry",
-    "emptyRecentDesc": "Recently opened resumes will appear here."
+    "emptyRecentDesc": "Recently opened resumes will appear here.",
+    "searchPlaceholder": "Search resumes…",
+    "noMatch": "No matching resumes",
+    "noMatchDesc": "No resume contains \"{{q}}\"",
+    "history": "History",
+    "historyTitle": "History — {{name}}",
+    "recover": "Restore",
+    "recoverConfirm": "Restore to this version? Current content will be backed up first.",
+    "recovered": "Restored (current content was backed up)",
+    "noBackups": "No backups yet"
   },
   "resumesJobs": {
     "rename": "Rename",

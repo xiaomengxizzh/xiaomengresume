@@ -201,7 +201,22 @@
       "entryHead": "标题",
       "entrySub": "副标题",
       "addEntry": "＋ 添加条目",
-      "tags": "标签（顿号分隔）"
+      "tags": "标签（顿号分隔）",
+      "fillSample": "填充示例",
+      "sample": {
+        "text": "兴趣广泛，长期坚持长跑与写作；曾获校级演讲比赛一等奖。",
+        "entryHead": "校园辩论队",
+        "entrySub": "主力辩手 · 2023–2024",
+        "entryDesc": "代表学院参加校际联赛并获得季军，负责资料搜集与立论撰写。",
+        "tag1": "数据分析",
+        "tag2": "团队协作",
+        "tag3": "英语六级"
+      },
+      "templateDesc": {
+        "text": "纯文本段落，适合一段描述",
+        "entry": "标题 + 副标题 + 描述的条目列表",
+        "tag": "标签云，适合关键词罗列"
+      }
     },
     "resumeNamePlaceholder": "未命名简历",
     "autoSaved": "已自动保存",
@@ -339,7 +354,9 @@
     "cancel": "取消",
     "save": "保存",
     "retry": "重试",
-    "loading": "加载中…"
+    "loading": "加载中…",
+    "opFailed": "操作失败，请重试",
+    "loadFailed": "加载失败"
   },
   "export": {
     "title": "导出",
@@ -696,7 +713,16 @@
     "loadError": "简历列表加载失败",
     "loadErrorDesc": "无法读取简历列表，请重试；若持续失败请检查存储目录权限。",
     "retry": "重试",
-    "emptyRecentDesc": "最近打开的简历会显示在这里。"
+    "emptyRecentDesc": "最近打开的简历会显示在这里。",
+    "searchPlaceholder": "搜索简历…",
+    "noMatch": "无匹配简历",
+    "noMatchDesc": "没有找到包含「{{q}}」的简历",
+    "history": "历史版本",
+    "historyTitle": "历史版本 — {{name}}",
+    "recover": "恢复此版本",
+    "recoverConfirm": "恢复到该版本？当前内容会先自动备份，可在恢复后再次撤销。",
+    "recovered": "已恢复（当前内容已自动备份）",
+    "noBackups": "暂无历史版本"
   },
   "resumesJobs": {
     "rename": "重命名",

@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useResumeStore } from '../../store/useResumeStore'
+import { reportIpcError } from '../ui/toast'
 import type { ResumeSummary, JobSummary } from '@shared/ipc-channels'
 
 export function AiContextBar(): React.JSX.Element {
@@ -18,8 +19,15 @@ export function AiContextBar(): React.JSX.Element {
   const [jobs, setJobs] = useState<JobSummary[]>([])
 
   useEffect(() => {
-    void window.electronAPI.resumes.list().then(setResumes).catch(() => {})
-    void window.electronAPI.jobs.list().then(setJobs).catch(() => {})
+    // P1-11：选择器数据加载失败不再静默（下拉为空用户无从知晓原因）
+    void window.electronAPI.resumes
+      .list()
+      .then(setResumes)
+      .catch((e: unknown) => reportIpcError(t('common.loadFailed'), e))
+    void window.electronAPI.jobs
+      .list()
+      .then(setJobs)
+      .catch((e: unknown) => reportIpcError(t('common.loadFailed'), e))
   }, [])
 
   const boundJobIds = resumes.find((r) => r.id === resumeId)?.boundJobIds ?? []

@@ -9,7 +9,7 @@ import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { promises as fs } from 'node:fs'
 import * as path from 'node:path'
 import Store from 'electron-store'
-import { IPC, type AppInfo, type RecentResume, type ResumeSummary, type StorageInfo, type StorageSetResult } from '@shared/ipc-channels'
+import { IPC, type AppInfo, type BackupMeta, type RecentResume, type ResumeSummary, type StorageInfo, type StorageSetResult } from '@shared/ipc-channels'
 import type { Settings } from '../../shared/schema/settings'
 import { SettingsSchema } from '../../shared/schema/settings'
 import { printHtmlToPdf } from '../print/pdf'
@@ -35,6 +35,7 @@ import { listJobs, getJob, saveJob, deleteJob } from '../files/job-store'
 import { createSampleResume } from '../files/sample-resume'
 import { getStorageDir, clearStorageFallback } from '../files/resume-store'
 import { readPhotoFile } from '../files/photo-store'
+import { listBackups, readBackup } from '../files/backup-list'
 import { saveFontFile, deleteFontFile, type ImportedFontFile } from '../files/font-store'
 import { createZip, type ZipEntry } from '../files/zip'
 import { migrateStorage } from '../files/storage-migrate'
@@ -192,6 +193,15 @@ export function registerIpc(): void {
   // 崩溃恢复（三件套 a）—— 启动时渲染进程调用
   ipcMain.handle(IPC.Resume.ScanRecovery, async (): Promise<string[]> => scanPendingRecovery())
   ipcMain.handle(IPC.Resume.Recover, async (_evt, id: string) => recoverPending(id))
+
+  // P1-10 版本时间线（2026-08-21）：.bak 序列枚举 + 恢复（读回校验后走 saveResume 完整三件套写回）
+  ipcMain.handle(IPC.Resume.ListBackups, async (_evt, id: string): Promise<BackupMeta[]> =>
+    listBackups(getStorageDir(), id)
+  )
+  ipcMain.handle(IPC.Resume.RecoverBackup, async (_evt, payload: { id: string; file: string }) => {
+    const resume = await readBackup(getStorageDir(), payload.id, payload.file)
+    return saveResume(payload.id, resume)
+  })
 
   // 内置示例简历（M1 补口）：新 uuid + 写盘（三件套 + meta 补齐）→ 返回可直接 loadResume
   ipcMain.handle(IPC.Resume.CreateSample, async (): Promise<{ id: string; resume: unknown }> => {
