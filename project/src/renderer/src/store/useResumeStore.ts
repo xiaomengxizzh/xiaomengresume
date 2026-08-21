@@ -47,6 +47,12 @@ interface ResumeState {
   duplicateItem(section: string, index: number): void
   removeItem(section: string, index: number): void
   toggleItemVisible(section: string, index: number): void
+  /** 迭代优化批 P0-4：批量显隐（单历史步，一次撤销） */
+  setAllItemsVisible(section: string, visible: boolean): void
+  /** 迭代优化批 P0-4：批量删除指定索引集合（单历史步；越界索引忽略） */
+  removeItems(section: string, indices: number[]): void
+  /** 迭代优化批 P0-1：条目重排 from→to（clamp 边界；单历史步；键盘 Alt+Up/Down 与拖拽共用） */
+  moveItem(section: string, from: number, to: number): void
   setActiveSection(section: string | null): void
   setActiveFieldPath(path: FieldPath | null): void
   toggleSidebar(): void
@@ -55,6 +61,8 @@ interface ResumeState {
   setAiContext(ctx: { resumeId?: string | null; jobId?: string | null }): void
   /** M5 设置：本地合并 + 异步持久化（settings:set 校验后回写完整设置；失败静默保本地） */
   setSettings(patch: Partial<Settings>): void
+  /** P1-13 模板实时预览（2026-08-21 拍板推翻 A2「保存后更新」）：仅本地合并，不触发 settings:set 持久化；保存仍走 setSettings */
+  patchSettingsLocal(patch: Partial<Settings>): void
   /** M3 F9：聚焦指定字段（匹配建议「去润色」跳转：切 section + 置 activeFieldPath） */
   focusField(field: string): void
   /** F16 隐私打码：切换隐私模式（不触碰 Zod 数据模型，只影响模板渲染层） */
@@ -188,6 +196,45 @@ export const useResumeStore = create<ResumeState>()((set, get) => ({
     set({ resume: next, historyTick: get().historyTick + 1 })
   },
 
+  // ── 迭代优化批 P0-4/P0-1（2026-08-21）：批量显隐 / 批量删除 / 条目重排 —— 均单历史步 ──
+  setAllItemsVisible: (section, visible) => {
+    if (!LIST_SECTIONS.includes(section as (typeof LIST_SECTIONS)[number])) return
+    const next = cloneResume(get().resume)
+    const arr = next[section as keyof Resume]
+    if (!Array.isArray(arr) || arr.length === 0) return
+    history.record(get().resume)
+    for (const item of arr as Array<{ visible?: boolean }>) item.visible = visible
+    set({ resume: next, historyTick: get().historyTick + 1 })
+  },
+
+  removeItems: (section, indices) => {
+    if (!LIST_SECTIONS.includes(section as (typeof LIST_SECTIONS)[number])) return
+    const next = cloneResume(get().resume)
+    const arr = next[section as keyof Resume]
+    if (!Array.isArray(arr)) return
+    const drop = new Set(indices.filter((i) => Number.isInteger(i) && i >= 0 && i < arr.length))
+    if (drop.size === 0) return
+    history.record(get().resume)
+    ;(next as unknown as Record<string, unknown>)[section] = (arr as unknown[]).filter(
+      (_, i) => !drop.has(i)
+    )
+    set({ resume: next, historyTick: get().historyTick + 1 })
+  },
+
+  moveItem: (section, from, to) => {
+    if (!LIST_SECTIONS.includes(section as (typeof LIST_SECTIONS)[number])) return
+    const next = cloneResume(get().resume)
+    const arr = next[section as keyof Resume]
+    if (!Array.isArray(arr) || from < 0 || from >= arr.length) return
+    const target = Math.max(0, Math.min((arr as unknown[]).length - 1, to))
+    if (target === from) return
+    history.record(get().resume)
+    const list = arr as unknown[]
+    const [item] = list.splice(from, 1)
+    list.splice(target, 0, item)
+    set({ resume: next, historyTick: get().historyTick + 1 })
+  },
+
   setActiveSection: (section: string | null) => set({ activeSection: section }),
   setActiveFieldPath: (path) => set({ activeFieldPath: path }),
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
@@ -202,6 +249,10 @@ export const useResumeStore = create<ResumeState>()((set, get) => ({
       .catch(() => {
         // 持久化失败保本地（下次启动回滚出厂，可接受；模板还原等幂等操作）
       })
+  },
+  patchSettingsLocal: (patch) => {
+    // P1-13 模板实时预览：仅本地合并驱动预览，绝不触发持久化（保存才走 setSettings）
+    set((s) => ({ settings: { ...s.settings, ...patch } }))
   },
   focusField: (field) => {
     // 方括号路径规范：'work[0].summary' → section 'work'（与 @shared/paths 一致）

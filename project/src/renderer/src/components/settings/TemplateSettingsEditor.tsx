@@ -1,11 +1,12 @@
 /**
  * TemplateSettingsEditor —— M5 A4 全局模板参数编辑（模板设置主功能）
  * 编辑对象 = SettingsSchema.templates[templateId]（用户覆盖层）；出厂值 = TEMPLATE_PRESETS + 默认。
- * 交互（A2 定案）：本地草稿编辑 → 点「保存」才写入 store/持久化 → 预览更新（非实时联动）。
+ * 交互（P1-13 实时预览，2026-08-21 用户拍板推翻 A2「保存后更新」）：草稿 300ms 防抖仅本地合并
+ * 驱动预览实时联动；持久化仍只在点「保存」时发生；卸载未保存自动回滚。
  * 「还原」= 清该模板覆盖回出厂。
  * 入口接入在 M5-5 模板设置屏；本组件可独立渲染（供 M5-5 复用）。
  */
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useResumeStore } from '../../store/useResumeStore'
 import { TEMPLATE_PRESETS } from '@shared/templates/layout'
@@ -50,17 +51,47 @@ export function TemplateSettingsEditor({ templateId }: Props): React.JSX.Element
   }))
   const hasOverride = useMemo(() => Boolean(settings.templates?.[templateId]), [settings.templates, templateId])
 
+  // ── P1-13 模板实时预览（2026-08-21 用户拍板推翻 A2「保存后更新」语义）──
+  // 草稿变化 300ms 防抖「仅本地合并」（patchSettingsLocal，不触发 settings:set 持久化）驱动右侧真实渲染预览；
+  // 持久化仍只在「保存」时发生；卸载未保存 → 回滚进入前快照（已保存则快照已更新，回滚无副作用）。
+  // 脏判定相对首帧草稿：防「出厂值被固化为显式覆盖层」（无覆盖时仅浏览滑杆不产生 templates 键）。
+  const initialDraftRef = useRef(draft)
+  const snapshotRef = useRef<Record<string, TemplateOverride> | undefined>(settings.templates)
+  const stripUndef = (o: TemplateOverride): TemplateOverride =>
+    Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as TemplateOverride
+  const isDirty = useMemo(
+    () => JSON.stringify(stripUndef(draft)) !== JSON.stringify(stripUndef(initialDraftRef.current)),
+    [draft]
+  )
+  useEffect(() => {
+    if (!isDirty) return
+    const timer = setTimeout(() => {
+      useResumeStore.getState().patchSettingsLocal({
+        templates: { ...(snapshotRef.current ?? {}), [templateId]: stripUndef(draft) }
+      })
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [isDirty, draft, templateId])
+  // 卸载回滚（cleanup 读 ref 最新值：保存过 = 已保存快照；未保存 = 进入前快照）
+  useEffect(() => {
+    return () => {
+      useResumeStore.getState().patchSettingsLocal({ templates: snapshotRef.current })
+    }
+  }, [])
+
   const save = (): void => {
-    setSettings({
-      templates: { ...(settings.templates ?? {}), [templateId]: draft }
-    })
+    const nextTemplates = { ...(settings.templates ?? {}), [templateId]: stripUndef(draft) }
+    setSettings({ templates: nextTemplates })
+    snapshotRef.current = nextTemplates
+    initialDraftRef.current = draft
   }
   const reset = (): void => {
     const next = { ...(settings.templates ?? {}) }
     delete next[templateId]
     setSettings({ templates: next })
-    // 本地草稿回出厂（预览即时反映还原；若只想还原后仍可编辑，草稿保留出厂值）
-    setDraft({
+    snapshotRef.current = next
+    // 本地草稿回出厂（预览即时反映还原）；基线同步为出厂草稿 → isDirty 归零，防抖 effect 不回写覆盖层
+    const factoryDraft: TemplateOverride = {
       baseFontSize: preset.baseFontSize,
       lineHeight: preset.lineHeight,
       pagePadding: preset.pagePadding,
@@ -70,7 +101,9 @@ export function TemplateSettingsEditor({ templateId }: Props): React.JSX.Element
       resumeFont: 'system',
       themeColor: '#475569',
       titleStyle: undefined
-    })
+    }
+    initialDraftRef.current = factoryDraft
+    setDraft(factoryDraft)
   }
 
   const num = (key: keyof TemplateOverride): number => (draft[key] as number) ?? preset[key as keyof typeof preset] ?? 0

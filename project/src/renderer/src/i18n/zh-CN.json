@@ -205,7 +205,40 @@
     },
     "resumeNamePlaceholder": "未命名简历",
     "autoSaved": "已自动保存",
-    "entryHidden": "已隐藏"
+    "entryHidden": "已隐藏",
+    "resetSectionFonts": "重置单元字体",
+    "resetSectionFontsHint": "清除所有单元级字体覆盖，恢复使用顶栏全局字体",
+    "photo": {
+      "width": "照片宽度",
+      "height": "照片高度"
+    },
+    "tag": {
+      "moveUp": "上移",
+      "moveDown": "下移"
+    },
+    "batch": {
+      "showAll": "全部显示",
+      "hideAll": "全部隐藏",
+      "delete": "批量删除",
+      "exit": "取消",
+      "selectAll": "全选",
+      "deleteSelected": "删除所选",
+      "selectedCount": "已选 {{n}}/{{total}} 项",
+      "addFirst": "添加第一条",
+      "emptyDesc": "从添加第一条开始，内容实时同步右侧预览",
+      "reorderHint": "拖拽移动，或 Alt+上/下方向键排序"
+    }
+  },
+  "validation": {
+    "email": {
+      "invalid": "邮箱格式无效"
+    },
+    "phone": {
+      "invalid": "电话格式无效"
+    },
+    "website": {
+      "invalid": "网址格式无效"
+    }
   },
   "themeColor": {
     "preset": {

@@ -127,6 +127,15 @@ export function LayoutBar(): React.JSX.Element {
               </option>
             ))}
           </select>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setField('layout.sectionFonts', {})}
+            disabled={!layout?.sectionFonts || Object.keys(layout.sectionFonts).length === 0}
+            title={t('editor.resetSectionFontsHint')}
+          >
+            {t('editor.resetSectionFonts')}
+          </Button>
           <Button size="sm" variant="outline" onClick={reset}>
             {t('editor.layoutReset')}
           </Button>

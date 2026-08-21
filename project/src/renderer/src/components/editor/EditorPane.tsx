@@ -11,10 +11,11 @@ import { useResumeStore } from '../../store/useResumeStore'
 import { getByPath, parsePath } from '@shared/paths'
 import { SKILL_LEVELS, LANGUAGE_PROFICIENCIES } from '@shared/schema/resume'
 import { FONT_OPTIONS } from '@shared/constants/fonts'
-import { Button, Dialog, Input, Select } from '../ui'
+import { Button, Dialog, EmptyState, Input, Select } from '../ui'
 import { TextField, DateField, SelectField } from '../fields'
 import { TiptapField } from '../tiptap/TiptapField'
 import { LayoutBar } from './LayoutBar'
+import { BatchBar, EntryDragHandle, useEntryBatch } from './entry-batch'
 import { ICON_CHOICES } from './IconPicker'
 import { InfoIcon } from '../icons/InfoIcons'
 import { AiAssistPanel } from './AiAssistPanel'
@@ -132,6 +133,10 @@ export function EntryCard({
   showLabel,
   hideLabel,
   showVisibility = true,
+  dragHandle,
+  selectCheckbox,
+  onDragOverCard,
+  onDropCard,
   children
 }: {
   title: string
@@ -143,12 +148,20 @@ export function EntryCard({
   hideLabel: string
   /** 仅 education/work/projects 有 visible 字段（F1 2026-08-07 增补），其余 section 不显示开关 */
   showVisibility?: boolean
+  /** P0-1：条目拖拽手柄（渲染在头部最左；拖放落点由外层 Form 经 onDragOverCard/onDropCard 承接） */
+  dragHandle?: ReactNode
+  /** P0-4：批量删除选择模式复选框 */
+  selectCheckbox?: ReactNode
+  onDragOverCard?: (e: React.DragEvent) => void
+  onDropCard?: () => void
   children: ReactNode
 }): React.JSX.Element {
   const { t } = useTranslation()
   return (
-    <div className="entry-card">
+    <div className="entry-card" onDragOver={onDragOverCard} onDrop={onDropCard}>
       <div className="entry-card-header">
+        {selectCheckbox}
+        {dragHandle}
         <span className="entry-title">{title || '…'}</span>
         {visible === false ? (
           <span className="shrink-0 rounded-full bg-border/50 px-1.5 py-0.5 text-[10px] text-foreground/55">
@@ -206,6 +219,51 @@ function getString(value: unknown): string {
 /* ── 基本信息三透明模块（2026-08-09 R6：图片/姓名与职业/标签信息，主分区内联编辑 + 可拖拽排序） ── */
 
 /** 图片模块（照片选择；canvas 压缩 ≤2MB → dataURL） */
+/** P0-3 照片尺寸滑块（40~400 与 schema 一致）：拖动仅改本地 state，松手/失焦才 setField 入历史栈 */
+function PhotoSlider({
+  labelKey,
+  value,
+  onCommit
+}: {
+  labelKey: string
+  value: number
+  onCommit: (v: number) => void
+}): React.JSX.Element {
+  const { t } = useTranslation()
+  const [local, setLocal] = useState(value)
+  useEffect(() => setLocal(value), [value])
+  return (
+    <label className="flex items-center gap-1 text-xs text-foreground/70">
+      <span>{t(labelKey)}</span>
+      <input
+        type="range"
+        min={40}
+        max={400}
+        step={1}
+        value={local}
+        onChange={(e) => setLocal(Number(e.target.value))}
+        onPointerUp={() => onCommit(local)}
+        onKeyUp={(e) => {
+          if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) onCommit(local)
+        }}
+        onBlur={() => onCommit(local)}
+        className="w-24 accent-[var(--foreground)]"
+      />
+      <span className="w-8 tabular-nums">{local}</span>
+    </label>
+  )
+}
+
+/** P0-2 标签值格式校验（UI 层轻提示，对齐偏差①「格式校验归 UI 层」口径；按 icon 推断类型，onBlur 触发） */
+export function validateTagValue(icon: string, value: string): string | null {
+  const v = value.trim()
+  if (!v) return null
+  if (icon === 'mail' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'validation.email.invalid'
+  if (icon === 'phone' && !/^[+()\d][\d\s()-]{4,19}$/.test(v)) return 'validation.phone.invalid'
+  if ((icon === 'globe' || icon === 'link') && !/^(https?:\/\/)?[\w-]+(\.[\w-]+)+/.test(v)) return 'validation.website.invalid'
+  return null
+}
+
 function PhotoBlock(): React.JSX.Element {
   const { t } = useTranslation()
   const setField = useResumeStore((s) => s.setField)
@@ -266,9 +324,21 @@ function PhotoBlock(): React.JSX.Element {
         />
       </label>
       {resume.basics.photo ? (
-        <Button size="sm" variant="ghost" onClick={() => setField('basics.photo', '')}>
-          {t('editor.action.remove')}
-        </Button>
+        <>
+          <PhotoSlider
+            labelKey="editor.photo.width"
+            value={resume.basics.photoWidth ?? 110}
+            onCommit={(v) => setField('basics.photoWidth', v)}
+          />
+          <PhotoSlider
+            labelKey="editor.photo.height"
+            value={resume.basics.photoHeight ?? 110}
+            onCommit={(v) => setField('basics.photoHeight', v)}
+          />
+          <Button size="sm" variant="ghost" onClick={() => setField('basics.photo', '')}>
+            {t('editor.action.remove')}
+          </Button>
+        </>
       ) : null}
     </div>
   )
@@ -374,6 +444,16 @@ function IconCombo({
   const resumeId = useResumeStore((s) => s.resumeId)
   const MAX_TAGS = 8
   const fields = (customFields as Array<{ id: string; label: string; value: string; icon?: string }> | undefined) ?? []
+  // P0-2：标签值 onBlur 校验错误（i18n key）；P0-3：排序/去重
+  const [tagErr, setTagErr] = useState<Record<number, string | null>>({})
+
+  const moveTag = (i: number, dir: -1 | 1): void => {
+    const j = i + dir
+    if (j < 0 || j >= fields.length) return
+    const next = [...fields]
+    ;[next[i], next[j]] = [next[j], next[i]]
+    setField('basics.customFields', next)
+  }
   // 2026-08-10 修复：注入仅一次（同一简历删除全部标签后不重注入旧字段）
   const injectedRef = useRef<string | null>(null)
 
@@ -483,11 +563,36 @@ function IconCombo({
           return (
             <div
               key={'tag-' + i}
-              className={`flex flex-col gap-1.5 rounded-lg border px-2 py-1.5 ${f ? 'border-border' : 'border-dashed border-border/70'}`}
+              className={`flex flex-col gap-1.5 rounded-lg border px-2 py-1.5 ${
+                f ? (f.label && fields.some((x, xi) => xi !== i && x.label && x.label === f.label) ? 'border-danger' : 'border-border') : 'border-dashed border-border/70'
+              }`}
             >
               <div className="flex items-center gap-1.5">
                 <span className="text-[11px] text-foreground/40">{i + 1}</span>
                 {/* 2026-08-10 需求 2：图案标签 combobox——文本框输 label + 下拉箭头列选图案 */}
+                {/* P0-3：上移/下移排序（仅已填格显示；边界格 invisible 保持 DOM 稳定） */}
+                {f ? (
+                  <>
+                    <button
+                      type="button"
+                      className={`shrink-0 px-0.5 text-[11px] ${i === 0 ? 'invisible' : 'text-foreground/40 transition-colors hover:text-foreground'}`}
+                      title={t('editor.tag.moveUp')}
+                      aria-label={t('editor.tag.moveUp')}
+                      onClick={() => moveTag(i, -1)}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      className={`shrink-0 px-0.5 text-[11px] ${i >= fields.length - 1 ? 'invisible' : 'text-foreground/40 transition-colors hover:text-foreground'}`}
+                      title={t('editor.tag.moveDown')}
+                      aria-label={t('editor.tag.moveDown')}
+                      onClick={() => moveTag(i, 1)}
+                    >
+                      ↓
+                    </button>
+                  </>
+                ) : null}
                 <IconCombo
                   icon={f?.icon ?? ''}
                   label={f?.label ?? ''}
@@ -512,11 +617,22 @@ function IconCombo({
                 </button>
               </div>
               <input
-                className={`min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-foreground/50 ${f ? '' : 'invisible'}`}
+                className={`min-w-0 flex-1 rounded-lg border bg-surface px-2 py-1.5 text-sm outline-none focus:border-foreground/50 ${
+                  f ? (tagErr[i] ? 'border-danger' : 'border-border') : 'invisible border-border'
+                }`}
                 value={f?.value ?? ''}
                 placeholder={f?.label || t('editor.field.customTitle')}
-                onChange={(e) => f && setTag(i, { value: e.target.value })}
+                onChange={(e) => {
+                  if (!f) return
+                  setTag(i, { value: e.target.value })
+                  if (tagErr[i]) setTagErr((p) => ({ ...p, [i]: null }))
+                }}
+                onBlur={(e) => {
+                  if (!f) return
+                  setTagErr((p) => ({ ...p, [i]: validateTagValue(f.icon ?? '', e.target.value) }))
+                }}
               />
+              {tagErr[i] ? <span className="text-[10px] text-danger">{t(tagErr[i])}</span> : null}
             </div>
           )
         })}
@@ -577,7 +693,10 @@ function SummaryForm(): React.JSX.Element {
 function EducationForm(): React.JSX.Element {
   const { t } = useTranslation()
   const items = useResumeStore((s) => s.resume.education)
-  const { appendItem, duplicateItem, removeItem, toggleItemVisible } = useResumeStore.getState()
+  const { appendItem, duplicateItem, removeItem, toggleItemVisible, moveItem } = useResumeStore.getState()
+  // P0-4/P0-1：批量操作 + 条目拖拽（选择态/拖拽源为局部 UI state，操作走 store 单历史步）
+  const batch = useEntryBatch('education')
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
 
   return (
     <SectionCard
@@ -588,7 +707,21 @@ function EducationForm(): React.JSX.Element {
       onPolish={() => openAssist?.('polish', POLISH_FIELDS.education)}
       onGrammar={() => openAssist?.('grammar', POLISH_FIELDS.education)}
     >
-      {items.length === 0 ? <div className="py-4 text-center text-xs text-foreground/50">{t('editor.emptySection')}</div> : null}
+      {items.length === 0 ? (
+        <EmptyState
+          title={t('editor.emptySection')}
+          desc={t('editor.batch.emptyDesc')}
+          action={{
+            label: t('editor.batch.addFirst'),
+            onClick: () => {
+              appendItem('education', undefined)
+              useResumeStore.getState().focusField(`education[${items.length}].school`)
+            }
+          }}
+        />
+      ) : (
+        <BatchBar batch={batch} hasVisibility />
+      )}
       {items.map((item, i) => (
         <EntryCard
           key={item.id}
@@ -599,6 +732,26 @@ function EducationForm(): React.JSX.Element {
           onRemove={() => removeItem('education', i)}
           showLabel={t('editor.action.show')}
           hideLabel={t('editor.action.hide')}
+          dragHandle={
+            <EntryDragHandle
+              index={i}
+              onDragStart={setDragIndex}
+              onDragEnd={() => setDragIndex(null)}
+              onMove={(from, d) => moveItem('education', from, from + d)}
+            />
+          }
+          selectCheckbox={
+            batch.selectMode ? (
+              <input type="checkbox" className="accent-foreground" checked={batch.selected.has(i)} onChange={() => batch.toggle(i)} aria-label={`${i + 1}`} />
+            ) : null
+          }
+          onDragOverCard={(e) => {
+            if (dragIndex !== null && e.dataTransfer.types.includes('text/plain')) e.preventDefault()
+          }}
+          onDropCard={() => {
+            if (dragIndex !== null && dragIndex !== i) moveItem('education', dragIndex, i)
+            setDragIndex(null)
+          }}
         >
           <div className="grid grid-cols-2 gap-x-3">
             <FieldRow label={t('editor.field.school')}>
@@ -639,7 +792,10 @@ function EducationForm(): React.JSX.Element {
 function WorkForm(): React.JSX.Element {
   const { t } = useTranslation()
   const items = useResumeStore((s) => s.resume.work)
-  const { appendItem, duplicateItem, removeItem, toggleItemVisible } = useResumeStore.getState()
+  const { appendItem, duplicateItem, removeItem, toggleItemVisible, moveItem } = useResumeStore.getState()
+  // P0-4/P0-1：批量操作 + 条目拖拽（同 EducationForm）
+  const batch = useEntryBatch('work')
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
 
   return (
     <SectionCard
@@ -650,7 +806,21 @@ function WorkForm(): React.JSX.Element {
       onPolish={() => openAssist?.('polish', POLISH_FIELDS.work)}
       onGrammar={() => openAssist?.('grammar', POLISH_FIELDS.work)}
     >
-      {items.length === 0 ? <div className="py-4 text-center text-xs text-foreground/50">{t('editor.emptySection')}</div> : null}
+      {items.length === 0 ? (
+        <EmptyState
+          title={t('editor.emptySection')}
+          desc={t('editor.batch.emptyDesc')}
+          action={{
+            label: t('editor.batch.addFirst'),
+            onClick: () => {
+              appendItem('work', undefined)
+              useResumeStore.getState().focusField(`work[${items.length}].company`)
+            }
+          }}
+        />
+      ) : (
+        <BatchBar batch={batch} hasVisibility />
+      )}
       {items.map((item, i) => (
         <EntryCard
           key={item.id}
@@ -661,6 +831,26 @@ function WorkForm(): React.JSX.Element {
           onRemove={() => removeItem('work', i)}
           showLabel={t('editor.action.show')}
           hideLabel={t('editor.action.hide')}
+          dragHandle={
+            <EntryDragHandle
+              index={i}
+              onDragStart={setDragIndex}
+              onDragEnd={() => setDragIndex(null)}
+              onMove={(from, d) => moveItem('work', from, from + d)}
+            />
+          }
+          selectCheckbox={
+            batch.selectMode ? (
+              <input type="checkbox" className="accent-foreground" checked={batch.selected.has(i)} onChange={() => batch.toggle(i)} aria-label={`${i + 1}`} />
+            ) : null
+          }
+          onDragOverCard={(e) => {
+            if (dragIndex !== null && e.dataTransfer.types.includes('text/plain')) e.preventDefault()
+          }}
+          onDropCard={() => {
+            if (dragIndex !== null && dragIndex !== i) moveItem('work', dragIndex, i)
+            setDragIndex(null)
+          }}
         >
           <div className="grid grid-cols-2 gap-x-3">
             <FieldRow label={t('editor.field.company')}>
@@ -706,7 +896,10 @@ function WorkForm(): React.JSX.Element {
 function ProjectsForm(): React.JSX.Element {
   const { t } = useTranslation()
   const items = useResumeStore((s) => s.resume.projects)
-  const { appendItem, duplicateItem, removeItem, toggleItemVisible } = useResumeStore.getState()
+  const { appendItem, duplicateItem, removeItem, toggleItemVisible, moveItem } = useResumeStore.getState()
+  // P0-4/P0-1：批量操作 + 条目拖拽（同 EducationForm）
+  const batch = useEntryBatch('projects')
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
 
   return (
     <SectionCard
@@ -717,7 +910,21 @@ function ProjectsForm(): React.JSX.Element {
       onPolish={() => openAssist?.('polish', POLISH_FIELDS.projects)}
       onGrammar={() => openAssist?.('grammar', POLISH_FIELDS.projects)}
     >
-      {items.length === 0 ? <div className="py-4 text-center text-xs text-foreground/50">{t('editor.emptySection')}</div> : null}
+      {items.length === 0 ? (
+        <EmptyState
+          title={t('editor.emptySection')}
+          desc={t('editor.batch.emptyDesc')}
+          action={{
+            label: t('editor.batch.addFirst'),
+            onClick: () => {
+              appendItem('projects', undefined)
+              useResumeStore.getState().focusField(`projects[${items.length}].name`)
+            }
+          }}
+        />
+      ) : (
+        <BatchBar batch={batch} hasVisibility />
+      )}
       {items.map((item, i) => (
         <EntryCard
           key={item.id}
@@ -728,6 +935,26 @@ function ProjectsForm(): React.JSX.Element {
           onRemove={() => removeItem('projects', i)}
           showLabel={t('editor.action.show')}
           hideLabel={t('editor.action.hide')}
+          dragHandle={
+            <EntryDragHandle
+              index={i}
+              onDragStart={setDragIndex}
+              onDragEnd={() => setDragIndex(null)}
+              onMove={(from, d) => moveItem('projects', from, from + d)}
+            />
+          }
+          selectCheckbox={
+            batch.selectMode ? (
+              <input type="checkbox" className="accent-foreground" checked={batch.selected.has(i)} onChange={() => batch.toggle(i)} aria-label={`${i + 1}`} />
+            ) : null
+          }
+          onDragOverCard={(e) => {
+            if (dragIndex !== null && e.dataTransfer.types.includes('text/plain')) e.preventDefault()
+          }}
+          onDropCard={() => {
+            if (dragIndex !== null && dragIndex !== i) moveItem('projects', dragIndex, i)
+            setDragIndex(null)
+          }}
         >
           <div className="grid grid-cols-2 gap-x-3">
             <FieldRow label={t('editor.field.projectName')}>

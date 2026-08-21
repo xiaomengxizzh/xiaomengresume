@@ -205,7 +205,40 @@
     },
     "resumeNamePlaceholder": "Untitled resume",
     "autoSaved": "Auto-saved",
-    "entryHidden": "Hidden"
+    "entryHidden": "Hidden",
+    "resetSectionFonts": "Reset section fonts",
+    "resetSectionFontsHint": "Clear all per-section font overrides and fall back to the global font",
+    "photo": {
+      "width": "Photo width",
+      "height": "Photo height"
+    },
+    "tag": {
+      "moveUp": "Move up",
+      "moveDown": "Move down"
+    },
+    "batch": {
+      "showAll": "Show all",
+      "hideAll": "Hide all",
+      "delete": "Batch delete",
+      "exit": "Cancel",
+      "selectAll": "Select all",
+      "deleteSelected": "Delete selected",
+      "selectedCount": "{{n}}/{{total}} selected",
+      "addFirst": "Add first entry",
+      "emptyDesc": "Start with the first entry — it syncs to the preview live",
+      "reorderHint": "Drag to move, or Alt+Up/Down to reorder"
+    }
+  },
+  "validation": {
+    "email": {
+      "invalid": "Invalid email format"
+    },
+    "phone": {
+      "invalid": "Invalid phone number"
+    },
+    "website": {
+      "invalid": "Invalid website URL"
+    }
   },
   "themeColor": {
     "preset": {
