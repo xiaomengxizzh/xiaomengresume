@@ -510,7 +510,8 @@
       "language": "界面语言",
       "customTheme": "自定义主题",
       "customHex": "自定义颜色",
-      "customReset": "恢复默认"
+      "customReset": "恢复默认",
+      "modeSystemHint": "仅深色主题支持跟随系统"
     },
     "storage": {
       "title": "存储位置",
@@ -566,7 +567,8 @@
         "compact": "紧凑"
       },
       "reset": "还原",
-      "save": "保存"
+      "save": "保存",
+      "defaultTemplateHint": "新建简历时预选；点击下方卡片则是编辑该模板参数"
     },
     "ai": {
       "title": "AI 设置",

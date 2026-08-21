@@ -63,7 +63,8 @@ export function AiScreenLayout({ icon, title, actions, backTo, children }: AiScr
 
   return (
     <div className="flex h-full flex-col">
-      <AiContextBar />
+      {/* UI 诊断 A2（2026-08-21）：选择器并入标题栏（compact 模式），消除「选择器条+标题条」双条带堆叠；
+          主操作紧邻其依赖的简历/岗位选择器，操作流不再跨条带跳跃 */}
       <div className="flex items-center gap-3 border-b border-border/70 px-4 py-2.5">
         {backTo ? (
           <button
@@ -78,7 +79,10 @@ export function AiScreenLayout({ icon, title, actions, backTo, children }: AiScr
           <AiIcon k={icon} />
         </span>
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-        <div className="ml-auto flex items-center gap-2">{actions}</div>
+        <div className="ml-auto flex items-center gap-2">
+          <AiContextBar compact />
+          {actions}
+        </div>
       </div>
       {/* 2026-08-09：内容容器居中 + max-w 自适应（小窗口自动收窄，宽窗口不拉伸卡片） */}
       <div className="mx-auto w-full max-w-[var(--ui-ai-shell-max-width)] flex-1 overflow-y-auto px-4 py-4">{children}</div>

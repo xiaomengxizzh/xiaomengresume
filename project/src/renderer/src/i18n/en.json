@@ -510,7 +510,8 @@
       "language": "Language",
       "customTheme": "Custom theme",
       "customHex": "Custom color",
-      "customReset": "Reset"
+      "customReset": "Reset",
+      "modeSystemHint": "Only the dark theme can follow the system"
     },
     "storage": {
       "title": "Storage Location",
@@ -566,7 +567,8 @@
         "compact": "Compact"
       },
       "reset": "Reset",
-      "save": "Save"
+      "save": "Save",
+      "defaultTemplateHint": "Preselected for new resumes; click a card below to edit its parameters"
     },
     "ai": {
       "title": "AI Settings",

@@ -21,7 +21,8 @@ export function ResumesList({
   selectable = false,
   selected,
   onToggle,
-  onToggleAll
+  onToggleAll,
+  embedded = false
 }: {
   mode?: 'all' | 'recent'
   /** 2026-08-09 T2：选择模式（批量删除）——行首显示复选框 + 顶部全选 */
@@ -29,6 +30,8 @@ export function ResumesList({
   selected?: Set<string>
   onToggle?: (id: string) => void
   onToggleAll?: (ids: string[]) => void
+  /** UI 诊断 A1：嵌入宿主（ResumesManager T-shell 已有返回+标题）时隐藏本组件头部行，消除双头部 */
+  embedded?: boolean
 }): React.JSX.Element {
   const { t } = useTranslation()
   const loadResume = useResumeStore((s) => s.loadResumeIntoEditor)
@@ -114,14 +117,19 @@ export function ResumesList({
   return (
     <div className="home-view">
       <div className="flex items-center gap-2">
-        <button
-          type="button"
-          className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-foreground/70 transition-colors hover:bg-border/40 hover:text-foreground"
-          onClick={() => setCurrentView('resumes-home')}
-        >
-          ← {t('common.back')}
-        </button>
-        <h2 className="home-title">{mode === 'recent' ? t('navSub.openResume') : t('homeCard.manage')}</h2>
+        {/* embedded（宿主 T-shell 已有返回+标题）时隐藏返回+标题，仅留搜索框行——消除双头部 */}
+        {embedded ? null : (
+          <button
+            type="button"
+            className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-foreground/70 transition-colors hover:bg-border/40 hover:text-foreground"
+            onClick={() => setCurrentView('resumes-home')}
+          >
+            ← {t('common.back')}
+          </button>
+        )}
+        {embedded ? null : (
+          <h2 className="home-title">{mode === 'recent' ? t('navSub.openResume') : t('homeCard.manage')}</h2>
+        )}
         {items && items.length > 0 ? (
           <input
             type="search"
@@ -135,22 +143,29 @@ export function ResumesList({
       </div>
       {error ? (
         // P1-5：错误态组件化——友好文案 + 重试，不裸显 IPC 错误原文
-        <EmptyState
-          error
-          title={t('resumeList.loadError')}
-          desc={t('resumeList.loadErrorDesc')}
-          secondary={{ label: t('resumeList.retry'), onClick: () => setReloadTick((v) => v + 1) }}
-        />
+        <div className="flex min-h-[55vh] items-center justify-center">
+          <EmptyState
+            error
+            title={t('resumeList.loadError')}
+            desc={t('resumeList.loadErrorDesc')}
+            secondary={{ label: t('resumeList.retry'), onClick: () => setReloadTick((v) => v + 1) }}
+          />
+        </div>
       ) : items === null ? (
         <p className="text-xs text-foreground/60">…</p>
       ) : items.length === 0 ? (
-        <EmptyState
-          title={t('homeEmpty.resumes')}
-          desc={mode === 'recent' ? t('resumeList.emptyRecentDesc') : undefined}
-          action={{ label: t('navSub.newBlank'), onClick: createBlank }}
-        />
+        // UI 诊断 A3：空态垂直居中（原悬在上 1/3，下方 60% 空白）
+        <div className="flex min-h-[55vh] items-center justify-center">
+          <EmptyState
+            title={t('homeEmpty.resumes')}
+            desc={mode === 'recent' ? t('resumeList.emptyRecentDesc') : undefined}
+            action={{ label: t('navSub.newBlank'), onClick: createBlank }}
+          />
+        </div>
       ) : filtered.length === 0 ? (
-        <EmptyState title={t('resumeList.noMatch')} desc={t('resumeList.noMatchDesc', { q: query })} />
+        <div className="flex min-h-[55vh] items-center justify-center">
+          <EmptyState title={t('resumeList.noMatch')} desc={t('resumeList.noMatchDesc', { q: query })} />
+        </div>
       ) : (
         <div className="resume-list">
           {selectable && filtered.length > 0 ? (

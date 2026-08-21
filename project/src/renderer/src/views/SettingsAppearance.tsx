@@ -75,7 +75,7 @@ export function SettingsAppearance(): React.JSX.Element {
       </div>
 
       {/* D1：4 色主题单选（300ms 实时预览由 useThemeApplier 处理） */}
-      <div className="mb-4">
+      <div className="mb-4 max-w-[var(--ui-content-max-width)]">
         <div className="mb-2 text-sm text-foreground/80">{t('settings.appearance.theme')}</div>
         <div className="grid grid-cols-4 gap-2">
           {APPEARANCES.map((a) => (
@@ -95,14 +95,20 @@ export function SettingsAppearance(): React.JSX.Element {
       </div>
 
       {/* D1：跟随系统（仅 dark 有效；其余三色固定） */}
-      <div className="mb-4">
-        <div className="mb-2 text-sm text-foreground/80">{t('settings.appearance.mode')}</div>
+      <div className="mb-4 max-w-[var(--ui-content-max-width)]">
+        <div className="mb-2 text-sm text-foreground/80">
+          {t('settings.appearance.mode')}
+          {settings.appearance !== 'dark' ? (
+            <span className="ml-2 text-xs text-foreground/45">{t('settings.appearance.modeSystemHint')}</span>
+          ) : null}
+        </div>
         <div className="flex gap-2">
           {(['fixed', 'system'] as const).map((m) => (
             <button
               key={m}
               type="button"
               disabled={settings.appearance !== 'dark' && m === 'system'}
+              title={settings.appearance !== 'dark' && m === 'system' ? t('settings.appearance.modeSystemHint') : undefined}
               onClick={() => setSettings({ appearanceMode: m })}
               className={`rounded-md border px-3 py-1 text-xs transition-colors disabled:opacity-40 ${
                 settings.appearanceMode === m ? 'border-foreground bg-selected/40 text-foreground' : 'border-border text-foreground/70'
@@ -115,7 +121,7 @@ export function SettingsAppearance(): React.JSX.Element {
       </div>
 
       {/* D1：语言（F13 T5：仅切 UI 文案） */}
-      <div className="mb-4">
+      <div className="mb-4 max-w-[var(--ui-content-max-width)]">
         <div className="mb-2 text-sm text-foreground/80">{t('settings.appearance.language')}</div>
         <div className="flex gap-2">
           {(['zh-CN', 'en'] as const).map((l) => (
@@ -134,7 +140,7 @@ export function SettingsAppearance(): React.JSX.Element {
       </div>
 
       {/* D2：自定义主题（primary 派生全套令牌，deriveTokens 护栏保证对比度） */}
-      <div className="mb-4">
+      <div className="mb-4 max-w-[var(--ui-content-max-width)]">
         <div className="mb-2 text-sm text-foreground/80">{t('settings.appearance.customTheme')}</div>
         <div className="flex flex-wrap items-center gap-2">
           {THEME_COLOR_PRESETS.map((c) => (

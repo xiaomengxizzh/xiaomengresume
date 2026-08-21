@@ -66,9 +66,13 @@ export function SettingsTemplates(): React.JSX.Element {
         <h2 className="home-title">{t('settings.templates.title')}</h2>
       </div>
 
-      {/* A6：默认模板（新建空白预选，即时生效） */}
+      {/* A6：默认模板（新建空白预选，即时生效）；UI 诊断：与图书卡语义区分说明——
+          此处选「新建时预选哪个」，下方图书卡是「进入编辑该模板参数」 */}
       <div>
-        <div className="mb-2 text-sm text-foreground/80">{t('settings.templates.defaultTemplate')}</div>
+        <div className="mb-2 text-sm text-foreground/80">
+          {t('settings.templates.defaultTemplate')}
+          <span className="ml-2 text-xs text-foreground/45">{t('settings.templates.defaultTemplateHint')}</span>
+        </div>
         <div className="flex gap-2">
           {TEMPLATE_IDS.map((id) => (
             <button

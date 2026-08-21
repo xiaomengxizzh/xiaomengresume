@@ -147,6 +147,7 @@ export function ResumesManager(): React.JSX.Element {
           selected={selected}
           onToggle={toggle}
           onToggleAll={toggleAll}
+          embedded
         />
       </div>
     </div>
