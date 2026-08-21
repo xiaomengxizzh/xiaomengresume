@@ -50,8 +50,10 @@ export function TopBar({ onExport }: { onExport?: () => void }): React.JSX.Eleme
           onChange={(e) => setField('title', e.target.value)}
         />
       </div>
+      {/* UI-2 顶栏三组分隔：身份（名称）| 外观（模板/主题色/字体）| 操作（隐私/导出） */}
+      <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-border" />
       <TemplateBar />
-      <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-border" />
+      <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-border" />
       {/* M2 F16 隐私开关（Ctrl+Shift+P 快捷键同效） */}
       <button
         type="button"

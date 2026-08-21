@@ -27,8 +27,8 @@ export type PresetKey = keyof TemplatePreset
 
 export const TEMPLATE_PRESETS: Record<string, TemplatePreset> = {
   classic: { baseFontSize: 16, lineHeight: 1.8, pagePadding: 32, paragraphSpacing: 12, sectionSpacing: 16, headerSize: 18 },
-  modern: { baseFontSize: 16, lineHeight: 1.6, pagePadding: 36, paragraphSpacing: 14, sectionSpacing: 20, headerSize: 17 },
-  compact: { baseFontSize: 15, lineHeight: 1.4, pagePadding: 26, paragraphSpacing: 10, sectionSpacing: 12, headerSize: 15 }
+  modern: { baseFontSize: 16, lineHeight: 1.7, pagePadding: 40, paragraphSpacing: 15, sectionSpacing: 24, headerSize: 19 },
+  compact: { baseFontSize: 15, lineHeight: 1.4, pagePadding: 22, paragraphSpacing: 9, sectionSpacing: 10, headerSize: 14 }
 }
 
 /** layout 覆盖链（原 preset.ts lv + pdf/template.tsx lv 双份 → 收敛）：
@@ -171,8 +171,8 @@ export function truncateContactValue(v: string): string {
 export const LIST_MARK_LOGIC = {
   bullet: '• ',
   ordered: (n: number): string => `${n}. `,
-  /** 缩进（px；对齐预览 skills ul paddingLeft 18px） */
-  indent: 18
+  /** 缩进（px；UI-3 收紧 18→12——原缩进过深吃掉 A4 有效行宽） */
+  indent: 12
 } as const
 
 /* ── 紧凑排版（2026-08-10 任务4：仅覆盖间距变量，不动字号/内容；允许内容溢出多页，禁 scale/截断） ── */

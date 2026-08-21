@@ -32,4 +32,6 @@ export const uiLayout = {
   cardPaddingY: 14,
   /** 编辑区模块卡网格间距（px） */
   moduleGridGap: 14,
+  /** AI 屏/新建向导内容壳最大宽度（px；UI-4 收敛原散写 max-w-[680px]×3） */
+  aiShellMaxWidth: 680,
 } as const

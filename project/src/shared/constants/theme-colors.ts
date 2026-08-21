@@ -15,3 +15,6 @@ export const THEME_COLOR_PRESETS: Array<{ value: string; labelKey: string }> = [
   { value: '#7C3AED', labelKey: 'themeColor.preset.purple' },
   { value: '#DB2777', labelKey: 'themeColor.preset.pink' }
 ]
+
+/** 模板默认主题色单一来源（UI-4 收敛：原散布 TemplateBar/TemplateSettingsEditor/ResumeBody 等 10 处） */
+export const DEFAULT_THEME_COLOR = THEME_COLOR_PRESETS[0].value

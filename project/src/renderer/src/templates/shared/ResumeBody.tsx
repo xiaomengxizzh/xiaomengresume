@@ -8,11 +8,17 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useResumeStore } from '../../store/useResumeStore'
 import { InfoIcon, type InfoIconId } from '../../components/icons/InfoIcons'
-import avatarUrl from '../../assets/avatar.png'
+/** UI-3：'avatar' 占位剪影（浅灰人形，dataURL SVG；替代原品牌 logo——纸面观感冲突） */
+export const AVATAR_PLACEHOLDER_SVG =
+  "data:image/svg+xml," +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 110"><rect width="110" height="110" fill="#EEF1F4"/><circle cx="55" cy="42" r="20" fill="#C3CCD5"/><path d="M15 110c0-22 18-36 40-36s40 14 40 36z" fill="#C3CCD5"/></svg>'
+  )
 import { richTextToHtml } from '../../preview/richtext-html'
 import { getTemplate, type TemplateId } from '../registry'
 import { lv, resolveFontFamily, type TemplatePreset } from './preset'
 import type { Resume } from '@shared/schema/resume'
+import { DEFAULT_THEME_COLOR } from '@shared/constants/theme-colors'
 import { SectionBlock, Placeholder, entryHead, fmtDate, useJump } from './primitives'
 import { useThrottledResume } from '../../hooks/useThrottledResume'
 // 2026-08-10 架构收敛批：排版逻辑值单一事实源（与 PDF 端同源引用）
@@ -103,7 +109,7 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
     // 只在首页框应用垂直 padding，页 2 起顶部贴边（实测 y0≈2pt）；clone 使每页顶底各留边距
     boxDecorationBreak: 'clone',
     ['--rm-section-gap' as string]: `${scaled(sectionGap)}px`,
-    ['--rm-accent' as string]: layout?.themeColor ?? '#475569',
+    ['--rm-accent' as string]: layout?.themeColor ?? DEFAULT_THEME_COLOR,
     // 2026-08-10：预览简历纸显式使用 system 字体栈（DengXian 优先，与 PDF 端 system→Deng 对齐），
     // 不再继承 body 的 UI 字体（微软雅黑）——消除两端默认字体不一致（P0-1）
     fontFamily: fontFor('basics') ?? "'DengXian', 'Microsoft YaHei', 'SimHei', 'PingFang SC', 'Noto Sans CJK SC', sans-serif"
@@ -143,7 +149,9 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
   const photoSrc: string | null = ((): string | null => {
     if (typeof rawPhoto !== 'string' || rawPhoto.trim().length === 0) return null
     const v = rawPhoto.trim()
-    if (v === 'avatar' || v === '/avatar.png' || v === 'avatar.png') return avatarUrl
+    // UI-3（2026-08-21 诊断 A2）：'avatar' 占位由品牌 logo 改中性人形剪影——
+    // 原纯黑 logo 大块与纸面浅灰细线风格冲突，默认观感突兀；剪影浅灰双端一致（printToPDF 同源）
+    if (v === 'avatar' || v === '/avatar.png' || v === 'avatar.png') return AVATAR_PLACEHOLDER_SVG
     if (v.startsWith('data:')) return v
     return refPhoto
   })()

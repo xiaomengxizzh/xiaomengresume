@@ -196,7 +196,7 @@ export function TiptapField({ value, onChange, onEditorReady }: TiptapFieldProps
       ) : null}
       <EditorContent editor={editor} className="tiptap-content px-3 py-2 text-sm" />
       <div className="flex justify-end border-t border-border/50 px-3 py-0.5">
-        <span ref={countRef} className="text-[10px] tabular-nums text-foreground/35" aria-hidden>
+        <span ref={countRef} className="text-[10px] tabular-nums text-foreground/45" aria-hidden>
           0
         </span>
       </div>

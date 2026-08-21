@@ -41,7 +41,7 @@ export function NewResumeView(): React.JSX.Element {
   if (showTemplates) {
     return (
       <div className="flex h-full items-center justify-center p-8">
-        <div className="w-full max-w-[680px]">
+        <div className="w-full max-w-[var(--ui-ai-shell-max-width)]">
           <div className="mb-4 flex items-center gap-2">
             <button
               type="button"
@@ -92,7 +92,7 @@ export function NewResumeView(): React.JSX.Element {
 
   return (
     <div className="flex h-full items-center justify-center p-8">
-      <div className="w-full max-w-[680px]">
+      <div className="w-full max-w-[var(--ui-ai-shell-max-width)]">
         <div className="mb-4 flex items-center gap-2">
           <button
             type="button"

@@ -81,7 +81,7 @@ export function AiScreenLayout({ icon, title, actions, backTo, children }: AiScr
         <div className="ml-auto flex items-center gap-2">{actions}</div>
       </div>
       {/* 2026-08-09：内容容器居中 + max-w 自适应（小窗口自动收窄，宽窗口不拉伸卡片） */}
-      <div className="mx-auto w-full max-w-[680px] flex-1 overflow-y-auto px-4 py-4">{children}</div>
+      <div className="mx-auto w-full max-w-[var(--ui-ai-shell-max-width)] flex-1 overflow-y-auto px-4 py-4">{children}</div>
     </div>
   )
 }

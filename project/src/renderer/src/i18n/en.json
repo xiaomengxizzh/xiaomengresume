@@ -356,7 +356,9 @@
     "retry": "Retry",
     "loading": "Loading…",
     "opFailed": "Operation failed, please retry",
-    "loadFailed": "Load failed"
+    "loadFailed": "Load failed",
+    "viewCrashed": "Something went wrong",
+    "viewCrashedDesc": "This section failed to display. Your data is safe. Try again; if it keeps happening, please export logs and report."
   },
   "export": {
     "title": "Export",

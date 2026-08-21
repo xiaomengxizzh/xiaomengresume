@@ -1,387 +1,387 @@
 {
- "schemaVersion": 1,
- "basics": {
-  "name": "王晨",
-  "englishName": "Chen Wang",
-  "phone": "13912345678",
-  "email": "wangchen@example.com",
-  "address": "上海市浦东新区张江路 88 号",
-  "location": "上海市浦东新区",
-  "website": "",
-  "photo": "avatar",
-  "headline": "销售经理（大客户方向）",
-  "profile": {
-   "type": "doc",
-   "content": [
-    {
-     "type": "paragraph",
-     "content": [
+  "schemaVersion": 1,
+  "basics": {
+    "name": "王晨",
+    "englishName": "Chen Wang",
+    "phone": "13912345678",
+    "email": "wangchen@example.com",
+    "address": "上海市浦东新区张江路 88 号",
+    "location": "上海市浦东新区",
+    "website": "",
+    "photo": "avatar",
+    "headline": "销售经理（大客户方向）",
+    "profile": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "求职意向明确，期望在大客户销售与管理岗位上持续深耕，以长期主义经营客户关系与团队成长。"
+            }
+          ]
+        }
+      ]
+    },
+    "birthDate": "1992-03",
+    "employmentStatus": "在职",
+    "customFields": [
       {
-       "type": "text",
-       "text": "8 年 B2B 大客户销售与团队管理经验，专注企业服务与软件行业，具备从线索到回款的完整销售闭环能力。"
-      }
-     ]
-    }
-   ]
-  },
-  "birthDate": "1992-03",
-  "employmentStatus": "在职",
-  "customFields": [
-   {
-    "id": "f0a1b2c3-0000-4000-8000-000000000001",
-    "label": "电话",
-    "value": "13912345678",
-    "icon": "phone"
-   },
-   {
-    "id": "f0a1b2c3-0000-4000-8000-000000000002",
-    "label": "邮箱",
-    "value": "wangchen@example.com",
-    "icon": "mail"
-   },
-   {
-    "id": "f0a1b2c3-0000-4000-8000-000000000003",
-    "label": "地址",
-    "value": "上海市浦东新区",
-    "icon": "pin"
-   },
-   {
-    "id": "f0a1b2c3-0000-4000-8000-000000000004",
-    "label": "在职状态",
-    "value": "在职",
-    "icon": "briefcase"
-   }
-  ],
-  "fieldOrder": [
-   {
-    "key": "name",
-    "visible": true,
-    "order": 0
-   },
-   {
-    "key": "headline",
-    "visible": true,
-    "order": 1
-   },
-   {
-    "key": "employmentStatus",
-    "visible": true,
-    "order": 2
-   },
-   {
-    "key": "email",
-    "visible": true,
-    "order": 3
-   },
-   {
-    "key": "phone",
-    "visible": true,
-    "order": 4
-   },
-   {
-    "key": "location",
-    "visible": true,
-    "order": 5
-   }
-  ],
-  "photoWidth": 110,
-  "photoHeight": 110,
-  "infoItems": []
- },
- "summary": {
-  "content": {
-   "type": "doc",
-   "content": [
-    {
-     "type": "paragraph",
-     "content": [
+        "id": "f0a1b2c3-0000-4000-8000-000000000001",
+        "label": "电话",
+        "value": "13912345678",
+        "icon": "phone"
+      },
       {
-       "type": "text",
-       "text": "8 年 B2B 大客户销售经验，累计签约金额超 8000 万，带领 12 人销售团队连续 3 年达成季度目标。擅长大客户攻坚、解决方案式销售与团队培养，熟悉 SaaS 与企服行业打法。"
+        "id": "f0a1b2c3-0000-4000-8000-000000000002",
+        "label": "邮箱",
+        "value": "wangchen@example.com",
+        "icon": "mail"
+      },
+      {
+        "id": "f0a1b2c3-0000-4000-8000-000000000003",
+        "label": "地址",
+        "value": "上海市浦东新区",
+        "icon": "pin"
+      },
+      {
+        "id": "f0a1b2c3-0000-4000-8000-000000000004",
+        "label": "在职状态",
+        "value": "在职",
+        "icon": "briefcase"
       }
-     ]
+    ],
+    "fieldOrder": [
+      {
+        "key": "name",
+        "visible": true,
+        "order": 0
+      },
+      {
+        "key": "headline",
+        "visible": true,
+        "order": 1
+      },
+      {
+        "key": "employmentStatus",
+        "visible": true,
+        "order": 2
+      },
+      {
+        "key": "email",
+        "visible": true,
+        "order": 3
+      },
+      {
+        "key": "phone",
+        "visible": true,
+        "order": 4
+      },
+      {
+        "key": "location",
+        "visible": true,
+        "order": 5
+      }
+    ],
+    "photoWidth": 110,
+    "photoHeight": 110,
+    "infoItems": []
+  },
+  "summary": {
+    "content": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "8 年 B2B 大客户销售经验，累计签约金额超 8000 万，带领 12 人销售团队连续 3 年达成季度目标。擅长大客户攻坚、解决方案式销售与团队培养，熟悉 SaaS 与企服行业打法。"
+            }
+          ]
+        }
+      ]
     }
-   ]
-  }
- },
- "education": [
-  {
-   "id": "11111111-1111-4111-8111-111111111111",
-   "school": "上海大学",
-   "degree": "本科",
-   "major": "市场营销",
-   "startDate": "2010-09",
-   "endDate": "2014-06",
-   "location": "上海",
-   "gpa": "3.5/4.0",
-   "description": {
-    "type": "doc",
-    "content": [
-     {
-      "type": "bulletList",
-      "content": [
-       {
-        "type": "listItem",
-        "content": [
-         {
-          "type": "paragraph",
-          "content": [
-           {
-            "type": "text",
-            "text": "主修市场营销、消费者行为学、商务谈判"
-           }
-          ]
-         }
-        ]
-       },
-       {
-        "type": "listItem",
-        "content": [
-         {
-          "type": "paragraph",
-          "content": [
-           {
-            "type": "text",
-            "text": "担任校学生会外联部部长，组织 20+ 场校企活动"
-           }
-          ]
-         }
-        ]
-       }
-      ]
-     }
-    ]
-   },
-   "visible": true
-  }
- ],
- "work": [
-  {
-   "id": "22222222-2222-4222-8222-222222222222",
-   "company": "云帆企业服务有限公司",
-   "title": "销售经理",
-   "location": "上海",
-   "startDate": "2019-07",
-   "endDate": "",
-   "current": true,
-   "summary": {
-    "type": "doc",
-    "content": [
-     {
-      "type": "bulletList",
-      "content": [
-       {
-        "type": "listItem",
-        "content": [
-         {
-          "type": "paragraph",
-          "content": [
-           {
-            "type": "text",
-            "text": "负责华东区大客户销售，年度签约额 3500 万，连续 3 年超额完成目标（达成率 112%）"
-           }
-          ]
-         }
-        ]
-       },
-       {
-        "type": "listItem",
-        "content": [
-         {
-          "type": "paragraph",
-          "content": [
-           {
-            "type": "text",
-            "text": "主导 8 个百万级大客户攻坚，覆盖制造、零售行业，客户续约率提升至 90%"
-           }
-          ]
-         }
-        ]
-       },
-       {
-        "type": "listItem",
-        "content": [
-         {
-          "type": "paragraph",
-          "content": [
-           {
-            "type": "text",
-            "text": "搭建 12 人销售团队，输出标准打单 SOP，新人 90 天出单率提升 40%"
-           }
-          ]
-         }
-        ]
-       }
-      ]
-     }
-    ]
-   }
   },
-  {
-   "id": "22222222-2222-4222-8222-222222222223",
-   "company": "恒信软件科技有限公司",
-   "title": "大客户经理",
-   "location": "上海",
-   "startDate": "2014-07",
-   "endDate": "2019-06",
-   "current": false,
-   "summary": {
-    "type": "doc",
-    "content": [
-     {
-      "type": "bulletList",
-      "content": [
-       {
-        "type": "listItem",
+  "education": [
+    {
+      "id": "11111111-1111-4111-8111-111111111111",
+      "school": "上海大学",
+      "degree": "本科",
+      "major": "市场营销",
+      "startDate": "2010-09",
+      "endDate": "2014-06",
+      "location": "上海",
+      "gpa": "3.5/4.0",
+      "description": {
+        "type": "doc",
         "content": [
-         {
-          "type": "paragraph",
-          "content": [
-           {
-            "type": "text",
-            "text": "从 0 到 1 开拓 SaaS 客户市场，累计签约 60+ 企业客户，金额 4500 万"
-           }
-          ]
-         }
+          {
+            "type": "bulletList",
+            "content": [
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "主修市场营销、消费者行为学、商务谈判"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "担任校学生会外联部部长，组织 20+ 场校企活动"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
         ]
-       },
-       {
-        "type": "listItem",
+      },
+      "visible": true
+    }
+  ],
+  "work": [
+    {
+      "id": "22222222-2222-4222-8222-222222222222",
+      "company": "云帆企业服务有限公司",
+      "title": "销售经理",
+      "location": "上海",
+      "startDate": "2019-07",
+      "endDate": "",
+      "current": true,
+      "summary": {
+        "type": "doc",
         "content": [
-         {
-          "type": "paragraph",
-          "content": [
-           {
-            "type": "text",
-            "text": "负责客户需求调研与解决方案演示，独立完成投标、商务谈判与合同签署"
-           }
-          ]
-         }
+          {
+            "type": "bulletList",
+            "content": [
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "负责华东区大客户销售，年度签约额 3500 万，连续 3 年超额完成目标（达成率 112%）"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "主导 8 个百万级大客户攻坚，覆盖制造、零售行业，客户续约率提升至 90%"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "搭建 12 人销售团队，输出标准打单 SOP，新人 90 天出单率提升 40%"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
         ]
-       },
-       {
-        "type": "listItem",
+      }
+    },
+    {
+      "id": "22222222-2222-4222-8222-222222222223",
+      "company": "恒信软件科技有限公司",
+      "title": "大客户经理",
+      "location": "上海",
+      "startDate": "2014-07",
+      "endDate": "2019-06",
+      "current": false,
+      "summary": {
+        "type": "doc",
         "content": [
-         {
-          "type": "paragraph",
-          "content": [
-           {
-            "type": "text",
-            "text": "获年度最佳销售（2017、2018），晋升大客户经理"
-           }
-          ]
-         }
+          {
+            "type": "bulletList",
+            "content": [
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "从 0 到 1 开拓 SaaS 客户市场，累计签约 60+ 企业客户，金额 4500 万"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "负责客户需求调研与解决方案演示，独立完成投标、商务谈判与合同签署"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "获年度最佳销售（2017、2018），晋升大客户经理"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
         ]
-       }
-      ]
-     }
-    ]
-   }
-  }
- ],
- "projects": [
-  {
-   "id": "44444444-4444-4444-8444-444444444444",
-   "name": "大客户健康度看板",
-   "role": "项目负责人",
-   "organization": "云帆企业服务有限公司",
-   "startDate": "2022-03",
-   "endDate": "2022-09",
-   "url": "",
-   "description": {
-    "type": "doc",
-    "content": [
-     {
-      "type": "bulletList",
-      "content": [
-       {
-        "type": "listItem",
+      }
+    }
+  ],
+  "projects": [
+    {
+      "id": "44444444-4444-4444-8444-444444444444",
+      "name": "大客户健康度看板",
+      "role": "项目负责人",
+      "organization": "云帆企业服务有限公司",
+      "startDate": "2022-03",
+      "endDate": "2022-09",
+      "url": "",
+      "description": {
+        "type": "doc",
         "content": [
-         {
-          "type": "paragraph",
-          "content": [
-           {
-            "type": "text",
-            "text": "推动销售、交付、CSM 三方共建客户健康度指标体系，覆盖 200+ 存量客户"
-           }
-          ]
-         }
+          {
+            "type": "bulletList",
+            "content": [
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "推动销售、交付、CSM 三方共建客户健康度指标体系，覆盖 200+ 存量客户"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "以数据驱动续约预警，续约预警准确率提升至 85%，挽回 3 个流失风险客户"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
         ]
-       },
-       {
-        "type": "listItem",
-        "content": [
-         {
-          "type": "paragraph",
-          "content": [
-           {
-            "type": "text",
-            "text": "以数据驱动续约预警，续约预警准确率提升至 85%，挽回 3 个流失风险客户"
-           }
-          ]
-         }
-        ]
-       }
-      ]
-     }
-    ]
-   }
-  }
- ],
- "skills": [
-  {
-   "id": "66666666-6666-4666-8666-666666666666",
-   "name": "大客户攻坚与谈判",
-   "category": "销售能力",
-   "level": "精通"
+      }
+    }
+  ],
+  "skills": [
+    {
+      "id": "66666666-6666-4666-8666-666666666666",
+      "name": "大客户攻坚与谈判",
+      "category": "销售能力",
+      "level": "精通"
+    },
+    {
+      "id": "66666666-6666-4666-8666-666666666667",
+      "name": "解决方案式销售（SaaS/企服）",
+      "category": "销售能力",
+      "level": "精通"
+    },
+    {
+      "id": "66666666-6666-4666-8666-666666666668",
+      "name": "CRM / 销售漏斗管理",
+      "category": "工具与方法",
+      "level": "熟练"
+    },
+    {
+      "id": "66666666-6666-4666-8666-666666666669",
+      "name": "数据分析与经营报表",
+      "category": "工具与方法",
+      "level": "熟练"
+    },
+    {
+      "id": "66666666-6666-4666-8666-666666666670",
+      "name": "团队搭建与培养",
+      "category": "管理能力",
+      "level": "熟练"
+    }
+  ],
+  "certificates": [],
+  "languages": [
+    {
+      "id": "88888888-8888-4888-8888-888888888888",
+      "name": "英语",
+      "proficiency": "熟练"
+    }
+  ],
+  "layout": {
+    "templateId": "classic",
+    "themeColor": "#475569",
+    "baseFontSize": 16,
+    "pagePadding": 32,
+    "paragraphSpacing": 12,
+    "lineHeight": 1.8,
+    "sectionSpacing": 16,
+    "headerSize": 18,
+    "resumeFont": "system"
   },
-  {
-   "id": "66666666-6666-4666-8666-666666666667",
-   "name": "解决方案式销售（SaaS/企服）",
-   "category": "销售能力",
-   "level": "精通"
-  },
-  {
-   "id": "66666666-6666-4666-8666-666666666668",
-   "name": "CRM / 销售漏斗管理",
-   "category": "工具与方法",
-   "level": "熟练"
-  },
-  {
-   "id": "66666666-6666-4666-8666-666666666669",
-   "name": "数据分析与经营报表",
-   "category": "工具与方法",
-   "level": "熟练"
-  },
-  {
-   "id": "66666666-6666-4666-8666-666666666670",
-   "name": "团队搭建与培养",
-   "category": "管理能力",
-   "level": "熟练"
+  "boundJobIds": [],
+  "meta": {
+    "createdAt": "2026-08-12T00:00:00.000Z",
+    "updatedAt": "2026-08-12T00:00:00.000Z"
   }
- ],
- "certificates": [],
- "languages": [
-  {
-   "id": "88888888-8888-4888-8888-888888888888",
-   "name": "英语",
-   "proficiency": "熟练"
-  }
- ],
- "layout": {
-  "templateId": "classic",
-  "themeColor": "#475569",
-  "baseFontSize": 16,
-  "pagePadding": 32,
-  "paragraphSpacing": 12,
-  "lineHeight": 1.8,
-  "sectionSpacing": 16,
-  "headerSize": 18,
-  "resumeFont": "system"
- },
- "boundJobIds": [],
- "meta": {
-  "createdAt": "2026-08-12T00:00:00.000Z",
-  "updatedAt": "2026-08-12T00:00:00.000Z"
- }
 }

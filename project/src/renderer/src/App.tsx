@@ -16,6 +16,7 @@ import { SettingsStorage } from './views/SettingsStorage'
 import { SettingsTemplates } from './views/SettingsTemplates'
 import { WelcomeView } from './views/WelcomeView'
 import { ToastHost } from './components/ui/toast'
+import { ViewErrorBoundary } from './components/ui/error-boundary'
 import { NewResumeView } from './views/NewResumeView'
 import { ResumesManager } from './views/ResumesManager'
 import { JobsManager } from './views/JobsManager'
@@ -172,8 +173,11 @@ export default function App(): React.JSX.Element {
         <NavBar />
         {/* M5-7 D10 axe landmark：右侧内容区唯一 main（全路由恒有；不嵌其他 landmark） */}
         <main className="main-area">
-          {/* A3：lazy 视图在 Suspense 内加载（fallback 防白屏） */}
-          <Suspense fallback={<ViewLoading />}>{renderView()}</Suspense>
+          {/* A3：lazy 视图在 Suspense 内加载（fallback 防白屏）；UI-1：视图级错误边界——
+              渲染期异常只毁当前视图（兜底 UI + 重试），不再整页白屏 */}
+          <ViewErrorBoundary>
+            <Suspense fallback={<ViewLoading />}>{renderView()}</Suspense>
+          </ViewErrorBoundary>
         </main>
       </div>
       {/* P1-11：全局轻提示宿主（IPC 错误统一上报等） */}

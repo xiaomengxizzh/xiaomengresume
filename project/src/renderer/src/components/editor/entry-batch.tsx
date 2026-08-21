@@ -136,7 +136,7 @@ export function EntryDragHandle({
       role="button"
       tabIndex={0}
       aria-label={t('editor.batch.reorderHint')}
-      className="module-drag-handle cursor-grab select-none text-[10px] leading-none text-foreground/35 hover:text-foreground/70"
+      className="module-drag-handle cursor-grab select-none text-[10px] leading-none text-foreground/55 hover:text-foreground"
       onDragStart={(e) => {
         e.dataTransfer.setData('text/plain', String(index))
         e.dataTransfer.effectAllowed = 'move'

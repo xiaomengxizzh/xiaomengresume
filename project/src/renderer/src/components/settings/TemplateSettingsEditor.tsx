@@ -13,7 +13,7 @@ import { TEMPLATE_PRESETS } from '@shared/templates/layout'
 import { FONT_OPTIONS } from '@shared/constants/fonts'
 import type { TemplateOverride } from '@shared/schema/settings'
 import { Button } from '../ui'
-import { THEME_COLOR_PRESETS } from '@shared/constants/theme-colors'
+import { DEFAULT_THEME_COLOR, THEME_COLOR_PRESETS } from '@shared/constants/theme-colors'
 
 interface Props {
   templateId: string
@@ -46,7 +46,7 @@ export function TemplateSettingsEditor({ templateId }: Props): React.JSX.Element
     sectionSpacing: preset.sectionSpacing,
     headerSize: preset.headerSize,
     resumeFont: settings.templates?.[templateId]?.resumeFont ?? 'system',
-    themeColor: settings.templates?.[templateId]?.themeColor ?? '#475569',
+    themeColor: settings.templates?.[templateId]?.themeColor ?? DEFAULT_THEME_COLOR,
     titleStyle: settings.templates?.[templateId]?.titleStyle
   }))
   const hasOverride = useMemo(() => Boolean(settings.templates?.[templateId]), [settings.templates, templateId])
@@ -99,7 +99,7 @@ export function TemplateSettingsEditor({ templateId }: Props): React.JSX.Element
       sectionSpacing: preset.sectionSpacing,
       headerSize: preset.headerSize,
       resumeFont: 'system',
-      themeColor: '#475569',
+      themeColor: DEFAULT_THEME_COLOR,
       titleStyle: undefined
     }
     initialDraftRef.current = factoryDraft

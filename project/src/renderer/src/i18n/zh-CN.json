@@ -356,7 +356,9 @@
     "retry": "重试",
     "loading": "加载中…",
     "opFailed": "操作失败，请重试",
-    "loadFailed": "加载失败"
+    "loadFailed": "加载失败",
+    "viewCrashed": "页面出了点问题",
+    "viewCrashedDesc": "当前功能区未能正常显示，你的数据不受影响。可尝试重试；若反复出现请导出日志反馈。"
   },
   "export": {
     "title": "导出",
