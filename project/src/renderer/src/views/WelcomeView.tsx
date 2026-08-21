@@ -4,9 +4,11 @@
  * 2026-08-10：去紫色渐变背景容器（纯图标展示，图标=原容器尺寸）+ 删隐私声明文案。
  * 进入编辑器默认展示本页（store currentView 初始 'welcome'），不预载任何简历功能区。
  */
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useResumeStore } from '../store/useResumeStore'
 import { Button } from '../components/ui'
+import { WizardDialog } from '../components/wizard/WizardDialog'
 
 /** 品牌标志：material/图标_圆角.png（圆角版，与 public/icon.png 同源；品牌唯一标识） */
 function BrandLogo(): React.JSX.Element {
@@ -16,6 +18,7 @@ function BrandLogo(): React.JSX.Element {
 export function WelcomeView(): React.JSX.Element {
   const { t } = useTranslation()
   const setCurrentView = useResumeStore((s) => s.setCurrentView)
+  const [wizardOpen, setWizardOpen] = useState(false)
 
   return (
     <div className="flex h-full items-center justify-center p-8">
@@ -35,8 +38,13 @@ export function WelcomeView(): React.JSX.Element {
           <Button variant="outline" onClick={() => setCurrentView('resumes-recent')}>
             {t('welcome.openResume')}
           </Button>
+          {/* 使用向导：第三入口，ghost 次要视觉 */}
+          <Button variant="ghost" onClick={() => setWizardOpen(true)}>
+            {t('welcome.wizard')}
+          </Button>
         </div>
       </div>
+      <WizardDialog open={wizardOpen} onClose={() => setWizardOpen(false)} />
     </div>
   )
 }

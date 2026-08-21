@@ -8,6 +8,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useResumeStore } from '../../store/useResumeStore'
+import { WizardDialog } from '../wizard/WizardDialog'
 
 type MainKey = 'resume' | 'ai' | 'settings'
 
@@ -65,6 +66,17 @@ function MainIcon({ k }: { k: MainKey }): React.JSX.Element {
   )
 }
 
+/** 使用向导图标：圆形问号线框（24×24 stroke 1.5，风格对齐 MainIcon；描边参数由 .nav-wizard svg 提供） */
+function WizardIcon(): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
+      <path d="M12 17h.01" />
+    </svg>
+  )
+}
+
 function SubList({ k, currentView, setCurrentView, open }: { k: MainKey; currentView: string; setCurrentView: (v: string) => void; open: boolean }): React.JSX.Element {
   const { t } = useTranslation()
   return (
@@ -95,6 +107,8 @@ export function NavBar(): React.JSX.Element {
   const toggleSidebar = useResumeStore((s) => s.toggleSidebar)
   const setCurrentView = useResumeStore((s) => s.setCurrentView)
   const [openMain, setOpenMain] = useState<MainKey | null>(null)
+  // 使用向导弹窗开关（collapsed 收起态提前 return，无此入口）
+  const [wizardOpen, setWizardOpen] = useState(false)
 
   if (collapsed) {
     return (
@@ -147,10 +161,16 @@ export function NavBar(): React.JSX.Element {
         {t('nav.brand')}
       </div>
       <div className="nav-list">{MAIN_ORDER.map(renderItem)}</div>
+      {/* 使用向导：底部常驻次要入口（.nav-wizard，视觉弱于主项） */}
+      <button type="button" className="nav-wizard" aria-label={t('nav.wizard')} onClick={() => setWizardOpen(true)}>
+        <WizardIcon />
+        <span className="nav-wizard-label">{t('nav.wizard')}</span>
+      </button>
       <div className="nav-spacer" />
       <button type="button" className="nav-collapse-btn" title={t('nav.collapse')} onClick={toggleSidebar}>
         «
       </button>
+      <WizardDialog open={wizardOpen} onClose={() => setWizardOpen(false)} />
     </nav>
   )
 }

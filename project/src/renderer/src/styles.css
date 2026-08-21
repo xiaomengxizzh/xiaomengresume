@@ -974,6 +974,49 @@ body {
   color: var(--foreground);
 }
 
+/* 使用向导：导航底部常驻次要入口（2026-08-21 向导弹窗 D1-L1 B3）。
+   图标/文案列与主项左对齐（padding-left/gap 同 .nav-main-text），颜色降级为次要视觉不抢主项 */
+.nav-wizard {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 4px 8px 0;
+  padding: 8px 8px 8px 16px;
+  background: none;
+  border: none;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-family: inherit;
+  color: color-mix(in srgb, var(--foreground) 60%, var(--card));
+  text-align: left;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.nav-wizard:hover {
+  background-color: color-mix(in srgb, var(--selected) 40%, var(--card));
+  color: var(--foreground);
+}
+
+.nav-wizard svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.nav-wizard-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
 /* ── 主功能区（参考图 .main-content；右内容区背景 = 主题主背景色 var(--background)，与侧栏白卡区分）── */
 .main-area {
   background: var(--background);
