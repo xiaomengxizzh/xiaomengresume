@@ -362,40 +362,40 @@
       "new-resume": {
         "title": "How do I create a new resume?",
         "step1": "Click “New Resume” on the welcome page or in the Resume section on the left.",
-        "step2": "Choose “Create blank” and pick a template — you can set it as the default while you're at it.",
+        "step2": "Choose “New blank resume” and pick a template — you can set it as the default while you're at it.",
         "step3": "Enter the editor and start with the Basics section.",
         "hint": "Once you see the module cards appear in the editor, your resume is ready."
       },
       "import-resume": {
         "title": "How do I import an existing resume (PDF/Word)?",
         "step1": "Click “New Resume” and choose “Import existing”.",
-        "step2": "Pick a PDF or Word file and fields are recognized automatically (smart recognition if AI is configured, rule-based fallback otherwise). The Resume Management page supports import too.",
+        "step2": "Pick a PDF or Word file and fields are recognized automatically (smart recognition if AI is configured, rule-based fallback otherwise). The Resume manager page also offers batch import — multiple files become separate resumes right away, with no review steps.",
         "step3": "Nothing is written until you confirm each item in the three-step review wizard.",
         "hint": "After all three review steps are confirmed, your resume opens in the editor."
       },
       "template-color": {
         "title": "How do I change templates and colors?",
-        "step1": "Open “Settings → Templates” to preview all three templates and adjust font size, spacing and more.",
-        "step2": "Switch theme colors right from the editor top bar; the default template for new resumes is set there too.",
+        "step1": "Open “Settings → Template Settings” to preview all three templates and adjust font size, spacing and more.",
+        "step2": "Switch the current resume's theme color right from the editor top bar; the default template for new resumes is chosen under “Settings → Template Settings”.",
         "hint": "Previews update live, and saved settings apply to later exports."
       },
       "ai-usage": {
         "title": "How do the AI features work, and what do I need?",
-        "step1": "AI is bring-your-own-key: enter your own API key under “Settings → AI”; it is encrypted and stored on this device only.",
-        "step2": "Four tools are included: grammar check, self-introduction drafting with English translation, polishing, and job match scoring.",
+        "step1": "AI is bring-your-own-key: enter your own API key under “Settings → AI Settings”; it is encrypted and stored on this device only.",
+        "step2": "Four tools are included: grammar correction, self-introduction drafting with English translation, polishing, and job match scoring.",
         "step3": "Every AI result is written into your resume only after you confirm it.",
         "hint": "Once your key is set up, all four tools become available in the AI section."
       },
       "export-pdf": {
         "title": "How do I export a PDF?",
         "step1": "Open a resume to enter the editor.",
-        "step2": "Click “Export” in the top bar; optionally enable privacy masking (sensitive info is exported behind masks).",
+        "step2": "Click “Export” in the top bar. If you turn on “Privacy mode” (Ctrl+Shift+P) first, sensitive info is exported behind masks.",
         "step3": "Exports use the same template as the preview — what you see is what you get.",
-        "hint": "You're done when you see the “Export successful” message."
+        "hint": "Once you click Export and the dialog closes on its own, your file has been saved to the chosen folder."
       },
       "manage-resumes": {
         "title": "How do I manage multiple resumes?",
-        "step1": "Resume Management on the left supports renaming, deleting and searching.",
+        "step1": "Resume manager on the left supports searching, opening and bulk deletion; to rename a resume, edit the “Resume name” field in the editor's top bar.",
         "step2": "Each resume can be linked to a job you're applying for; use the clock icon in its row to view and restore version history.",
         "hint": "The list page covers day-to-day management needs."
       },
