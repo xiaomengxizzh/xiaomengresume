@@ -109,7 +109,8 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
     // 只在首页框应用垂直 padding，页 2 起顶部贴边（实测 y0≈2pt）；clone 使每页顶底各留边距
     boxDecorationBreak: 'clone',
     ['--rm-section-gap' as string]: `${scaled(sectionGap)}px`,
-    ['--rm-accent' as string]: layout?.themeColor ?? DEFAULT_THEME_COLOR,
+    // R4（2026-08-23）：主题色补全三层覆盖链——layout > 模板覆盖层（原漏接，模板设置屏换色对渲染无效）> 默认
+    ['--rm-accent' as string]: layout?.themeColor ?? templateOverride?.themeColor ?? DEFAULT_THEME_COLOR,
     // 2026-08-10：预览简历纸显式使用 system 字体栈（DengXian 优先，与 PDF 端 system→Deng 对齐），
     // 不再继承 body 的 UI 字体（微软雅黑）——消除两端默认字体不一致（P0-1）
     fontFamily: fontFor('basics') ?? "'DengXian', 'Microsoft YaHei', 'SimHei', 'PingFang SC', 'Noto Sans CJK SC', sans-serif"

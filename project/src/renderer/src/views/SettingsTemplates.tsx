@@ -4,19 +4,19 @@
  * 左右箭头循环切换；卡片零按钮，点击任意卡进入该模板的独立编辑视图（复用 A4 编辑能力），编辑视图独立返回按钮回图书。
  * 保留：A1 入口 + A6 默认模板可设（即时生效）+ A2 预览语义（编辑草稿不实时联动，点「保存」后 store 更新 → 预览重渲染）。
  * 示例数据 = shared/sample-resume.json（王晨，内嵌不进简历目录，与「打开示例」同源）。
+ * 2026-08-23 R1+R2：编辑视图预览改 PaperFitShell（整页 A4 适配缩放，与编辑器右栏同比例）；
+ * 预览数据改 makePreviewResume（layout 剥离为仅 templateId，滑杆实时预览生效）。
  */
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useResumeStore } from '../store/useResumeStore'
 import { templateRegistry, getTemplate, type TemplateId } from '../templates/registry'
 import { TemplateSettingsEditor } from '../components/settings/TemplateSettingsEditor'
 import { TemplateBook } from '../components/template-book'
-import { migrate } from '@shared/schema/resume'
-import sample from '@shared/sample-resume.json'
+import { PaperFitShell } from '../preview/PaperFitShell'
+import { makePreviewResume } from '../preview/make-preview-resume'
 
 const TEMPLATE_IDS: TemplateId[] = ['classic', 'modern', 'compact']
-// 示例数据（共享单一事实源；migrate 即 parse 兜底 schema 演进）
-const PREVIEW_RESUME = migrate(sample)
 
 export function SettingsTemplates(): React.JSX.Element {
   const { t } = useTranslation()
@@ -27,12 +27,15 @@ export function SettingsTemplates(): React.JSX.Element {
   )
   // null = 图书选择；非空 = 该模板独立编辑视图
   const [editing, setEditing] = useState<TemplateId | null>(null)
+  // R2：layout 剥离为仅 templateId——ResumeBody 覆盖链回落 模板覆盖层草稿 > 出厂 preset（滑杆实时生效）；
+  // 按编辑目标缓存深拷贝（滑杆重渲不再重复 clone 示例）
+  const previewResume = useMemo(() => (editing === null ? null : makePreviewResume(editing)), [editing])
 
   const backBtn =
     'flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-foreground/70 transition-colors hover:bg-border/40 hover:text-foreground'
 
   // 编辑视图：独立全屏（返回回图书 + 模板名 + 左编辑面板 / 右真实渲染预览）
-  if (editing !== null) {
+  if (editing !== null && previewResume !== null) {
     const Preview = getTemplate(editing).component
     return (
       <div className="home-view">
@@ -49,8 +52,12 @@ export function SettingsTemplates(): React.JSX.Element {
               <TemplateSettingsEditor templateId={editing} />
             </div>
           </div>
-          <div className="min-w-0 flex-1 overflow-auto rounded-lg border border-border bg-surface p-4" style={{ maxHeight: '70vh' }}>
-            <Preview resume={PREVIEW_RESUME} />
+          {/* R1：整页 A4 适配缩放壳——容器必须 flex 列 + 确定高度（.preview-pane 依赖 flex:1
+              撑高算 scale，非 flex 触发 ResizeObserver 缩放死循环）；与编辑器右栏同比例 */}
+          <div className="flex h-[70vh] min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border">
+            <PaperFitShell>
+              <Preview resume={previewResume} />
+            </PaperFitShell>
           </div>
         </div>
       </div>

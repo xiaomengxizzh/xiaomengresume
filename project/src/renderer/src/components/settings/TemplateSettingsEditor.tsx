@@ -9,7 +9,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useResumeStore } from '../../store/useResumeStore'
-import { TEMPLATE_PRESETS } from '@shared/templates/layout'
+import { TEMPLATE_PRESETS, type PresetKey, type TemplatePreset } from '@shared/templates/layout'
 import { FONT_OPTIONS } from '@shared/constants/fonts'
 import type { TemplateOverride } from '@shared/schema/settings'
 import { Button } from '../ui'
@@ -31,24 +31,57 @@ const NUM_FIELDS: Array<{ key: keyof TemplateOverride; min: number; max: number;
 
 const TITLE_STYLES = ['underline', 'accent-bar', 'compact'] as const
 
+/**
+ * R3（2026-08-23）：编辑草稿初值 = 已保存覆盖层 ⊕ 出厂预设。
+ * 数值 6 字段读 override（原 bug：只取出厂 preset，重进后滑杆谎报出厂值，
+ * 点保存还会把出厂值当覆盖写回、冲掉用户已调参数）；非数值字段维持原回落逻辑。
+ */
+export function draftFromOverride(preset: TemplatePreset, override: TemplateOverride | undefined): TemplateOverride {
+  return {
+    baseFontSize: override?.baseFontSize ?? preset.baseFontSize,
+    lineHeight: override?.lineHeight ?? preset.lineHeight,
+    pagePadding: override?.pagePadding ?? preset.pagePadding,
+    paragraphSpacing: override?.paragraphSpacing ?? preset.paragraphSpacing,
+    sectionSpacing: override?.sectionSpacing ?? preset.sectionSpacing,
+    headerSize: override?.headerSize ?? preset.headerSize,
+    resumeFont: override?.resumeFont ?? 'system',
+    themeColor: override?.themeColor ?? DEFAULT_THEME_COLOR,
+    titleStyle: override?.titleStyle
+  }
+}
+
+/**
+ * R3（2026-08-23）：保存防固化——「等于出厂默认即不写入覆盖层」（与 isDirty 防固化哲学统一）：
+ * 数值字段 === TEMPLATE_PRESETS 出厂值、resumeFont==='system'、themeColor===DEFAULT_THEME_COLOR、
+ * titleStyle 为空 → 均不落键；防止出厂值被固化成显式覆盖层。
+ */
+export function stripFactoryDefaults(draft: TemplateOverride, preset: TemplatePreset): TemplateOverride {
+  const out: TemplateOverride = {}
+  // 数值 6 键同为 number|undefined，PresetKey 索引写入类型安全
+  const numIfNotFactory = (key: PresetKey): void => {
+    const v = draft[key]
+    if (typeof v === 'number' && v !== preset[key]) out[key] = v
+  }
+  numIfNotFactory('baseFontSize')
+  numIfNotFactory('lineHeight')
+  numIfNotFactory('pagePadding')
+  numIfNotFactory('paragraphSpacing')
+  numIfNotFactory('sectionSpacing')
+  numIfNotFactory('headerSize')
+  if (draft.resumeFont && draft.resumeFont !== 'system') out.resumeFont = draft.resumeFont
+  if (draft.themeColor && draft.themeColor !== DEFAULT_THEME_COLOR) out.themeColor = draft.themeColor
+  if (draft.titleStyle) out.titleStyle = draft.titleStyle
+  return out
+}
+
 export function TemplateSettingsEditor({ templateId }: Props): React.JSX.Element {
   const { t } = useTranslation()
   const settings = useResumeStore((s) => s.settings)
   const setSettings = useResumeStore((s) => s.setSettings)
   const preset = TEMPLATE_PRESETS[templateId] ?? TEMPLATE_PRESETS.classic
 
-  /** 草稿：出厂值 ⊕ 当前覆盖（未保存前编辑不生效——A2「保存后才更新预览」） */
-  const [draft, setDraft] = useState<TemplateOverride>(() => ({
-    baseFontSize: preset.baseFontSize,
-    lineHeight: preset.lineHeight,
-    pagePadding: preset.pagePadding,
-    paragraphSpacing: preset.paragraphSpacing,
-    sectionSpacing: preset.sectionSpacing,
-    headerSize: preset.headerSize,
-    resumeFont: settings.templates?.[templateId]?.resumeFont ?? 'system',
-    themeColor: settings.templates?.[templateId]?.themeColor ?? DEFAULT_THEME_COLOR,
-    titleStyle: settings.templates?.[templateId]?.titleStyle
-  }))
+  /** 草稿：出厂值 ⊕ 当前覆盖（R3：初值经 draftFromOverride 读已保存覆盖层，未保存前编辑不生效） */
+  const [draft, setDraft] = useState<TemplateOverride>(() => draftFromOverride(preset, settings.templates?.[templateId]))
   const hasOverride = useMemo(() => Boolean(settings.templates?.[templateId]), [settings.templates, templateId])
 
   // ── P1-13 模板实时预览（2026-08-21 用户拍板推翻 A2「保存后更新」语义）──
@@ -80,7 +113,11 @@ export function TemplateSettingsEditor({ templateId }: Props): React.JSX.Element
   }, [])
 
   const save = (): void => {
-    const nextTemplates = { ...(settings.templates ?? {}), [templateId]: stripUndef(draft) }
+    // R3 防固化：出厂默认值不落覆盖层；全等于出厂 → 删除该模板键（等价还原，hasOverride 归零）
+    const cleaned = stripFactoryDefaults(stripUndef(draft), preset)
+    const nextTemplates = { ...(settings.templates ?? {}) }
+    if (Object.keys(cleaned).length > 0) nextTemplates[templateId] = cleaned
+    else delete nextTemplates[templateId]
     setSettings({ templates: nextTemplates })
     snapshotRef.current = nextTemplates
     initialDraftRef.current = draft
