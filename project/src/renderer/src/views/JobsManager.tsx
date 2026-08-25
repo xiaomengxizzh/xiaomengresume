@@ -56,16 +56,17 @@ export function JobsManager(): React.JSX.Element {
     return next
   }
 
-  /** 更新一批简历的绑定岗位集合（boundJobIds 增/减该岗位） */
+  /** 更新一批简历的绑定岗位集合（boundJobIds 增/减该岗位）。
+   *  走 bindJob/unbindJob 专用通道（主进程单把 per-id 写锁内读改写，批② G1）——
+   *  原 open+save 组合绕过锁，若未来在编辑器挂载状态下触发会重开与自动保存的竞态窗口。 */
   const syncBindings = async (jobId: string, targetIds: string[]): Promise<void> => {
     for (const r of resumes) {
       const wasBound = (r.boundJobIds ?? []).includes(jobId)
       const shouldBind = targetIds.includes(r.id)
       if (wasBound === shouldBind) continue
-      const resume = await window.electronAPI.resumes.open(r.id)
-      const list = resume.boundJobIds ?? []
-      const next = shouldBind ? [...new Set([...list, jobId])] : list.filter((id) => id !== jobId)
-      await window.electronAPI.resumes.save(r.id, { ...resume, boundJobIds: next })
+      await (shouldBind
+        ? window.electronAPI.resumes.bindJob(r.id, jobId)
+        : window.electronAPI.resumes.unbindJob(r.id, jobId))
     }
   }
 
