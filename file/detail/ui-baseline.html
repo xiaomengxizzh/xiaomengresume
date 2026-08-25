@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XM简历 · 前端 UI 设计基线（Baseline）</title>
+<style>
+/* ============================================================
+   XM简历 前端 UI 设计基线
+   令牌 100% 取自 project/src/renderer/src/styles.css 与 ui-config.generated.css（2026-08-25 快照）
+   用途：后续 UI 美化的迭代画布——在此文件上改，再把定稿映射回项目令牌/组件
+   ============================================================ */
+
+/* ── 主题令牌（四主题，与应用一致） ── */
+:root, [data-theme="light"] {
+  --background:#f5f5f5; --card:#ffffff; --sidebar:#ffffff; --foreground:#424242;
+  --border:#e5e5e7; --selected:#e5e5e7; --brand:#5b6abf; --brand-soft:#e8eaf6;
+  --brand-grad:linear-gradient(135deg,#5b6abf,#7c6dd8);
+  --danger:#a32d2d; --danger-bg:#fcebeb; --warning:#7a5c00; --warning-bg:#fff3cd;
+  --success:#3b6d11; --success-bg:#eaf3de;
+  --shadow:0 6px 24px rgba(0,0,0,.05);
+  --shadow-hover:0 12px 32px rgba(0,0,0,.08);
+  --shadow-press:0 2px 8px rgba(0,0,0,.04);
+  --shadow-paper:0 12px 40px rgba(0,0,0,.14);
+}
+[data-theme="dark"] {
+  --background:#121212; --card:#202124; --sidebar:#202124; --foreground:#e0e0e0;
+  --border:#3c4043; --selected:#3c4043; --brand:#8b93d8; --brand-soft:#2a2f4a;
+  --danger:#f2b8b5; --danger-bg:#3d2323;
+  --shadow:0 6px 24px rgba(0,0,0,.4); --shadow-hover:0 12px 32px rgba(0,0,0,.5); --shadow-press:0 2px 8px rgba(0,0,0,.3);
+  --shadow-paper:0 12px 40px rgba(0,0,0,.5);
+}
+[data-theme="beige"] {
+  --background:#fff3e0; --card:#fff9ee; --sidebar:#fff9ee; --foreground:#424242;
+  --border:#f0e3cb; --selected:#f0e3cb; --brand:#5b6abf; --brand-soft:#e8eaf6;
+  --danger:#a32d2d; --danger-bg:#fcebeb;
+  --shadow:0 6px 24px rgba(0,0,0,.05); --shadow-hover:0 12px 32px rgba(0,0,0,.08); --shadow-press:0 2px 8px rgba(0,0,0,.04);
+}
+[data-theme="green"] {
+  --background:#aed59c; --card:#f1f8e9; --sidebar:#f1f8e9; --foreground:#424242;
+  --border:#dce8ce; --selected:#dce8ce; --brand:#5b6abf; --brand-soft:#e8eaf6;
+  --danger:#a32d2d; --danger-bg:#fcebeb;
+  --shadow:0 6px 24px rgba(0,0,0,.05); --shadow-hover:0 12px 32px rgba(0,0,0,.08); --shadow-press:0 2px 8px rgba(0,0,0,.04);
+}
+:root {
+  /* 尺度令牌 */
+  --radius:10px; --radius-control:8px; --radius-paper:4px;
+  --text-xs:12px; --text-sm:13px; --text-base:15px; --text-lg:17px; --text-xl:22px;
+  /* ui-config 布局值（generated 快照） */
+  --ui-list-max-width:860px; --ui-list-padding-x:40px; --ui-home-padding-top:96px;
+  --ui-home-padding-bottom:40px; --ui-home-gap:14px; --ui-list-gap:10px;
+  --ui-card-padding-x:20px; --ui-card-padding-y:14px; --ui-module-grid-gap:14px;
+  --ui-font:system-ui,-apple-system,'Segoe UI','Microsoft YaHei','PingFang SC',sans-serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:var(--ui-font); background:var(--background); color:var(--foreground); font-size:var(--text-base); transition:background .2s; }
+
+/* ── 基线画布自身框架（非应用 UI） ── */
+.canvas-head { position:sticky; top:0; z-index:50; background:var(--card); border-bottom:1px solid var(--border); padding:14px 28px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.canvas-head h1 { font-size:16px; font-weight:600; }
+.canvas-head .note { font-size:12px; opacity:.55; }
+.theme-switch { margin-left:auto; display:flex; gap:6px; }
+.theme-switch button { border:1px solid var(--border); background:var(--card); color:var(--foreground); border-radius:999px; padding:4px 14px; font-size:12px; cursor:pointer; font-family:inherit; }
+.theme-switch button.on { background:var(--brand); color:#fff; border-color:var(--brand); }
+.screen { max-width:1180px; margin:28px auto; }
+.screen-tag { display:inline-flex; align-items:center; gap:8px; font-size:12px; letter-spacing:.12em; opacity:.55; margin:0 0 10px 4px; }
+.screen-tag::before { content:''; width:22px; height:1px; background:var(--foreground); opacity:.5; }
+.frame { background:var(--background); border:1px solid var(--border); border-radius:16px; overflow:hidden; box-shadow:var(--shadow); }
+.design-lang { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; padding:20px; }
+.swatch-row { display:flex; gap:8px; flex-wrap:wrap; padding-bottom:24px; }
+.sw { width:44px; height:44px; border-radius:8px; border:1px solid var(--border); position:relative; }
+.sw span { position:absolute; top:46px; left:0; font-size:10px; opacity:.6; white-space:nowrap; }
+.tok-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; font-size:12px; }
+.tok-card b { display:block; font-size:12px; margin-bottom:8px; opacity:.7; }
+
+/* ═══ 应用 UI 复刻（度量取自 styles.css 实测） ═══ */
+/* 导航悬浮卡（168px，左圆角 16 右直 + 右投影） */
+.app-shell { display:flex; min-height:560px; background:var(--background); }
+.navbar { width:168px; flex-shrink:0; background:var(--sidebar); border-radius:16px 0 0 16px; box-shadow:4px 0 20px rgba(0,0,0,.05); display:flex; flex-direction:column; padding:24px 14px 10px; }
+.nav-brand { font-size:16px; font-weight:600; text-align:center; padding:12px 0 36px; display:flex; align-items:center; justify-content:center; gap:8px; letter-spacing:.5px; }
+.nav-brand .logo { width:20px; height:20px; border-radius:4px; background:var(--brand-grad); }
+.nav-main { display:flex; align-items:center; border-radius:var(--radius-control); position:relative; margin-bottom:2px; }
+.nav-main:hover { background:color-mix(in srgb,var(--selected) 40%,var(--card)); }
+.nav-main.active { background:linear-gradient(90deg,color-mix(in srgb,var(--brand) 14%,transparent),transparent 75%); }
+.nav-main.active::before { content:''; position:absolute; left:0; top:6px; bottom:6px; width:3px; border-radius:0 2px 2px 0; background:var(--brand); }
+.nav-main .txt { flex:1; display:flex; align-items:center; gap:16px; padding:10px 16px; font-size:var(--text-lg); font-weight:500; cursor:pointer; }
+.nav-main.active .txt { font-weight:600; }
+.nav-main .arrow { padding:10px 8px; font-size:10px; opacity:.5; }
+.nav-sub { padding:7px 8px; border-radius:6px; font-size:15px; margin-left:38px; margin-bottom:4px; cursor:pointer; opacity:.92; }
+.nav-sub.on { background:var(--selected); font-weight:500; }
+.nav-wizard { margin-top:auto; display:flex; align-items:center; gap:10px; padding:8px 8px 8px 16px; font-size:var(--text-sm); color:color-mix(in srgb,var(--foreground) 60%,var(--card)); cursor:pointer; border-top:1px solid var(--border); margin-left:4px; margin-right:4px; padding-top:12px; }
+.nav-wizard .q { width:18px; height:18px; border:1.5px solid currentColor; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11px; }
+.app-main { flex:1; min-width:0; }
+
+/* 欢迎页 */
+.welcome { height:100%; display:flex; align-items:center; justify-content:center; padding:40px; }
+.welcome-card { width:100%; max-width:520px; border-radius:var(--radius); border:1px solid var(--border); padding:40px; text-align:center; background:linear-gradient(135deg,var(--brand-soft),var(--card) 62%); box-shadow:var(--shadow-hover); }
+.welcome-card .logo { width:80px; height:80px; border-radius:16px; background:var(--brand-grad); margin:0 auto 20px; }
+.welcome-card h2 { font-size:var(--text-xl); font-weight:700; }
+.welcome-card .btns { margin-top:28px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+
+/* 通用按钮（应用 Button 组件观感） */
+.btn { border:none; border-radius:var(--radius-control); padding:8px 18px; font-size:var(--text-sm); font-family:inherit; cursor:pointer; transition:transform .2s, box-shadow .2s; }
+.btn.default { background:var(--foreground); color:var(--background); }
+.btn.outline { background:var(--card); border:1px solid var(--border); color:var(--foreground); }
+.btn.ghost { background:none; color:var(--foreground); opacity:.75; }
+.btn:hover { transform:translateY(-1px); }
+
+/* home-view（860/96/40/40/14） */
+.home-view { max-width:var(--ui-list-max-width); margin:0 auto; padding:48px var(--ui-list-padding-x) var(--ui-home-padding-bottom); display:flex; flex-direction:column; gap:var(--ui-home-gap); }
+.home-title { font-size:var(--text-xl); font-weight:500; margin-bottom:4px; }
+.home-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+.home-card { display:flex; flex-direction:column; justify-content:center; min-height:88px; padding:22px 24px; background:var(--card); border-radius:var(--radius); font-size:17px; font-weight:500; box-shadow:var(--shadow); cursor:pointer; transition:transform .2s, box-shadow .2s; }
+.home-card:hover { transform:translateY(-3px); box-shadow:var(--shadow-hover); }
+.home-card .desc { font-size:var(--text-sm); font-weight:400; opacity:.6; margin-top:2px; }
+
+/* 简历列表 */
+.list-toolbar { display:flex; gap:10px; align-items:center; }
+.search { flex:1; border:1px solid var(--border); background:var(--card); border-radius:var(--radius-control); padding:8px 14px; font-size:var(--text-sm); color:var(--foreground); opacity:.9; font-family:inherit; }
+.resume-list { display:flex; flex-direction:column; gap:var(--ui-list-gap); }
+.resume-item { display:flex; align-items:center; justify-content:space-between; padding:var(--ui-card-padding-y) var(--ui-card-padding-x); background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); cursor:pointer; font-size:var(--text-base); transition:transform .2s; }
+.resume-item:hover { transform:translateY(-2px); }
+.resume-item .name { font-weight:500; }
+.resume-item .meta { font-size:var(--text-xs); opacity:.6; margin-top:2px; }
+.resume-item .ops { display:flex; gap:6px; align-items:center; }
+.icon-btn { width:28px; height:28px; border:1px solid var(--border); background:var(--card); border-radius:6px; cursor:pointer; color:var(--foreground); font-size:12px; display:inline-flex; align-items:center; justify-content:center; }
+
+/* 编辑器双栏 */
+.topbar { display:flex; align-items:center; gap:12px; padding:10px 20px; background:var(--card); border-bottom:1px solid var(--border); font-size:var(--text-sm); }
+.topbar .name-input { border:none; background:none; font-size:var(--text-base); color:var(--foreground); width:220px; font-family:inherit; }
+.topbar .grp { display:flex; align-items:center; gap:8px; }
+.topbar .sep { width:1px; height:20px; background:var(--border); margin:0 4px; }
+.topbar .dot { width:18px; height:18px; border-radius:50%; background:#475569; border:2px solid var(--card); box-shadow:0 0 0 1px var(--border); }
+.topbar select { border:1px solid var(--border); background:var(--card); color:var(--foreground); border-radius:6px; padding:4px 8px; font-family:inherit; font-size:var(--text-sm); }
+.topbar .spacer { flex:1; }
+.workspace { display:flex; min-height:520px; }
+.editor-pane { width:50%; min-width:400px; display:flex; flex-direction:column; }
+.layout-bar { display:flex; align-items:center; flex-wrap:wrap; gap:14px; background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:10px 18px; margin:16px 20px 0; font-size:var(--text-sm); }
+.editor-scroll { flex:1; padding:16px 20px 48px; display:flex; flex-direction:column; gap:14px; overflow:hidden; }
+.form-card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 18px; }
+.form-card h4 { font-size:var(--text-sm); font-weight:500; margin-bottom:10px; }
+.field { margin-bottom:10px; }
+.field label { display:block; font-size:var(--text-xs); opacity:.6; margin-bottom:4px; }
+.field input { width:100%; border:1px solid var(--border); background:var(--background); border-radius:6px; padding:7px 10px; font-size:var(--text-sm); color:var(--foreground); font-family:inherit; }
+.tag-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.tag-cell { border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--background); }
+.tag-cell .t-label { font-size:var(--text-xs); opacity:.6; display:flex; justify-content:space-between; }
+.preview-pane { flex:1; display:flex; flex-direction:column; padding:28px 32px; background:var(--background); overflow:hidden; }
+
+/* A4 纸张（794×1123 @ scale .52 展示） */
+.paper-wrap { margin:auto; overflow:hidden; width:413px; height:584px; }
+.paper { width:794px; height:1123px; background:#fff; color:#333; border-radius:var(--radius-paper); box-shadow:var(--shadow-paper); transform:scale(.52); transform-origin:top left; padding:32px 56px; font-size:16px; line-height:1.8; }
+.paper h1 { font-size:22px; font-weight:700; color:#333; }
+.paper .sub { font-size:13px; color:#555; }
+.paper h3 { font-size:18px; font-weight:700; border-bottom:2px solid #475569; padding-bottom:4px; margin:22px 0 10px; color:#333; }
+.paper .head { display:flex; gap:20px; align-items:flex-start; }
+.paper .photo { width:110px; height:110px; background:#EEF1F4; border-radius:6px; flex-shrink:0; display:flex; align-items:flex-end; justify-content:center; overflow:hidden; }
+.paper .photo::after { content:''; width:64px; height:64px; background:#C3CCD5; border-radius:50% 50% 0 0; margin-bottom:-8px; }
+.paper .id { flex:1; }
+.paper .tags { width:200px; font-size:12px; color:#555; display:grid; grid-template-columns:1fr 1fr; gap:4px 10px; }
+.paper .entry { display:flex; justify-content:space-between; font-weight:700; font-size:15px; }
+.paper .entry .date { font-weight:400; font-size:12px; color:#666; }
+.paper p { font-size:13px; margin:4px 0; color:#444; }
+.paper .sec { margin-bottom:6px; }
+
+/* AI 屏（680 壳） */
+.ai-shell { max-width:680px; margin:0 auto; padding:24px; display:flex; flex-direction:column; gap:12px; }
+.ai-head { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
+.ai-head .ic { width:28px; height:28px; border-radius:8px; background:color-mix(in srgb,var(--selected) 60%,var(--card)); display:flex; align-items:center; justify-content:center; font-size:14px; }
+.ai-head .title { font-size:var(--text-sm); font-weight:600; }
+.ai-head select { margin-left:auto; border:1px solid var(--border); background:var(--card); color:var(--foreground); border-radius:6px; padding:3px 8px; font-size:var(--text-xs); font-family:inherit; }
+.score-card { display:flex; align-items:center; gap:16px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; box-shadow:var(--shadow-press); }
+.score-card .num { font-size:34px; font-weight:700; }
+.dim-card, .sug-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; font-size:var(--text-sm); box-shadow:var(--shadow-press); }
+.dim-card .row { display:flex; justify-content:space-between; margin-bottom:4px; }
+.dim-card .bar { height:4px; border-radius:2px; background:var(--selected); overflow:hidden; }
+.dim-card .bar i { display:block; height:100%; background:var(--brand); }
+.sug-card { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.sec-label { font-size:var(--text-sm); font-weight:500; margin:6px 0 2px; }
+
+/* 模板设置（图书式） */
+.tpl-default { display:flex; gap:8px; align-items:center; font-size:var(--text-sm); }
+.tpl-default button { border:1px solid var(--border); background:var(--card); color:var(--foreground); border-radius:6px; padding:4px 12px; font-size:var(--text-xs); cursor:pointer; font-family:inherit; }
+.tpl-default button.on { border-color:var(--foreground); background:color-mix(in srgb,var(--selected) 40%,var(--card)); font-weight:600; }
+.book { display:flex; align-items:center; justify-content:center; gap:12px; padding:24px 0; }
+.book .arrow { width:36px; height:36px; border-radius:50%; border:1px solid var(--border); background:var(--card); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; }
+.book .slot { border-radius:6px; overflow:hidden; border:1px solid var(--border); cursor:pointer; transition:transform .2s; background:#fff; }
+.book .slot:hover { transform:translateY(-4px); }
+.book .slot .mini { transform-origin:top left; }
+.mini-paper { width:794px; height:1123px; background:#fff; padding:40px 56px; color:#333; }
+.mini-paper .mh { height:14px; width:120px; background:#d8dce6; border-radius:3px; margin-bottom:14px; }
+.mini-paper .ml { height:8px; background:#eef0f4; border-radius:3px; margin-bottom:8px; }
+.foot-note { text-align:center; font-size:var(--text-xs); opacity:.5; padding:8px 0 28px; }
+</style>
+</head>
+<body>
+
+<div class="canvas-head">
+  <h1>XM简历 · 前端 UI 设计基线</h1>
+  <span class="note">快照 2026-08-25 · 令牌取自 styles.css / ui-config.generated.css · 美化迭代画布：在此改 → 定稿映射回项目</span>
+  <div class="theme-switch">
+    <button class="on" onclick="setTheme('light',this)">浅色</button>
+    <button onclick="setTheme('dark',this)">深色</button>
+    <button onclick="setTheme('beige',this)">暖色</button>
+    <button onclick="setTheme('green',this)">环保</button>
+  </div>
+</div>
+
+<!-- ── 设计语言 ── -->
+<section class="screen">
+  <p class="screen-tag">设计语言 DESIGN TOKENS</p>
+  <div class="frame">
+    <div class="design-lang">
+      <div class="tok-card"><b>色彩（4 权威 + 派生）</b>
+        <div class="swatch-row">
+          <div class="sw" style="background:var(--background)"><span>background</span></div>
+          <div class="sw" style="background:var(--card)"><span>card</span></div>
+          <div class="sw" style="background:var(--selected)"><span>selected</span></div>
+          <div class="sw" style="background:var(--border)"><span>border</span></div>
+          <div class="sw" style="background:var(--foreground)"><span>foreground</span></div>
+          <div class="sw" style="background:var(--brand)"><span>brand 紫灰</span></div>
+          <div class="sw" style="background:var(--brand-soft)"><span>brand-soft</span></div>
+          <div class="sw" style="background:var(--danger)"><span>danger</span></div>
+        </div>
+      </div>
+      <div class="tok-card"><b>字体阶（system-ui 栈）</b>
+        <div style="font-size:22px;font-weight:500">xl 22 · 标题</div>
+        <div style="font-size:17px">lg 17 · 导航/卡片</div>
+        <div style="font-size:15px">base 15 · 正文</div>
+        <div style="font-size:13px">sm 13 · 辅助</div>
+        <div style="font-size:12px;opacity:.6">xs 12 · 元信息</div>
+      </div>
+      <div class="tok-card"><b>圆角 / 阴影（柔顺卡片风）</b>
+        <div style="display:flex;gap:10px;align-items:flex-end">
+          <div style="width:56px;height:40px;border-radius:8px;background:var(--selected);display:flex;align-items:center;justify-content:center;font-size:10px">control 8</div>
+          <div style="width:56px;height:40px;border-radius:10px;background:var(--selected);display:flex;align-items:center;justify-content:center;font-size:10px">card 10</div>
+          <div style="width:56px;height:40px;border-radius:16px;background:var(--selected);display:flex;align-items:center;justify-content:center;font-size:10px">nav 16</div>
+        </div>
+        <div style="margin-top:12px;padding:10px;border-radius:10px;background:var(--card);box-shadow:var(--shadow);font-size:11px">shadow 0 6px 24px 5%</div>
+        <div style="margin-top:8px;padding:10px;border-radius:10px;background:var(--card);box-shadow:var(--shadow-hover);font-size:11px">hover 0 12px 32px 8%</div>
+      </div>
+      <div class="tok-card"><b>布局度量（ui-config）</b>
+        <div style="line-height:2">
+          内容列 max <b>860</b> / 边距 x <b>40</b><br>
+          首屏顶距 <b>96</b> · 间隙 <b>14</b><br>
+          卡片内距 <b>20×14</b> · 列表隙 <b>10</b><br>
+          导航宽 <b>168</b> · A4 <b>794×1123</b>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 屏 1：欢迎页 ── -->
+<section class="screen">
+  <p class="screen-tag">屏 1 · 欢迎页（默认初始页）</p>
+  <div class="frame"><div class="app-shell" style="min-height:420px">
+    <div class="navbar">
+      <div class="nav-brand"><span class="logo"></span>XM简历</div>
+      <div class="nav-main active"><span class="txt">简历</span><span class="arrow">▾</span></div>
+      <div class="nav-main"><span class="txt">AI</span><span class="arrow">▸</span></div>
+      <div class="nav-main"><span class="txt">设置</span><span class="arrow">▸</span></div>
+      <div class="nav-wizard"><span class="q">?</span>使用向导</div>
+    </div>
+    <div class="app-main"><div class="welcome">
+      <div class="welcome-card">
+        <div class="logo"></div>
+        <h2>XM简历</h2>
+        <div class="btns">
+          <button class="btn default">新建简历</button>
+          <button class="btn outline">打开简历</button>
+          <button class="btn ghost">使用向导</button>
+        </div>
+      </div>
+    </div></div>
+  </div></div>
+</section>
+
+<!-- ── 屏 2：简历管理 ── -->
+<section class="screen">
+  <p class="screen-tag">屏 2 · 简历管理（列表 + 搜索 + 批量）</p>
+  <div class="frame"><div class="app-shell">
+    <div class="navbar">
+      <div class="nav-brand"><span class="logo"></span>XM简历</div>
+      <div class="nav-main active"><span class="txt">简历</span><span class="arrow">▴</span></div>
+      <div class="nav-sub">新建简历</div>
+      <div class="nav-sub">打开简历</div>
+      <div class="nav-sub on">简历管理</div>
+      <div class="nav-sub">岗位管理</div>
+      <div class="nav-main"><span class="txt">AI</span><span class="arrow">▸</span></div>
+      <div class="nav-main"><span class="txt">设置</span><span class="arrow">▸</span></div>
+      <div class="nav-wizard"><span class="q">?</span>使用向导</div>
+    </div>
+    <div class="app-main"><div class="home-view">
+      <div class="home-title">简历管理</div>
+      <div class="list-toolbar">
+        <input class="search" placeholder="搜索简历…">
+        <button class="btn outline">批量删除</button>
+      </div>
+      <div class="resume-list">
+        <div class="resume-item">
+          <div><div class="name">王晨-大客户销售</div><div class="meta">经典单栏 · 2026-08-25 · 1 页</div></div>
+          <div class="ops"><span class="icon-btn">🕘</span><span class="icon-btn">✕</span></div>
+        </div>
+        <div class="resume-item">
+          <div><div class="name">宋哈娜-前端工程师</div><div class="meta">经典单栏 · 2026-08-23 · 2 页</div></div>
+          <div class="ops"><span class="icon-btn">🕘</span><span class="icon-btn">✕</span></div>
+        </div>
+        <div class="resume-item">
+          <div><div class="name">未命名简历</div><div class="meta">现代竖线 · 2026-08-21 · 1 页</div></div>
+          <div class="ops"><span class="icon-btn">🕘</span><span class="icon-btn">✕</span></div>
+        </div>
+      </div>
+      <div class="foot-note">空态 = EmptyState 居中（min-h 55vh）+ 主操作引导</div>
+    </div></div>
+  </div></div>
+</section>
+
+<!-- ── 屏 3：编辑器（双栏 + A4 预览） ── -->
+<section class="screen">
+  <p class="screen-tag">屏 3 · 编辑器（TopBar + 排版条 + 表单卡 + A4 预览 0.52×）</p>
+  <div class="frame">
+    <div class="topbar">
+      <span style="opacity:.6">简历名称</span><input class="name-input" value="王晨-大客户销售">
+      <span class="spacer"></span>
+      <span class="grp">模板 <select><option>经典单栏</option></select></span>
+      <span class="sep"></span>
+      <span class="grp">主题色 <span class="dot"></span></span>
+      <span class="grp">字体 <select><option>系统默认</option></select></span>
+      <span class="sep"></span>
+      <span class="grp"><button class="btn ghost">👁</button><button class="btn default">导出</button></span>
+    </div>
+    <div class="workspace">
+      <div class="editor-pane">
+        <div class="layout-bar">▸ 排版 <span style="opacity:.4;font-size:12px">基础字号 16 · 行高 1.8 · 紧凑排版 · 自动一页纸 · 项目符号</span></div>
+        <div class="editor-scroll">
+          <div class="form-card">
+            <h4>姓名与职业</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="field"><label>姓名</label><input value="王晨"></div>
+              <div class="field"><label>职业</label><input placeholder="职位标语"></div>
+            </div>
+          </div>
+          <div class="form-card">
+            <h4>标签信息 <span style="float:right;opacity:.5;font-size:12px">5/8</span></h4>
+            <div class="tag-grid">
+              <div class="tag-cell"><div class="t-label"><span>1 ↓ 电话</span><span>✕</span></div><div class="field" style="margin:4px 0 0"><input value="13800001111"></div></div>
+              <div class="tag-cell"><div class="t-label"><span>2 ↑↓ 邮箱</span><span>✕</span></div><div class="field" style="margin:4px 0 0"><input value="wangchen@example.com"></div></div>
+            </div>
+          </div>
+          <div class="form-card"><h4>工作经历</h4>
+            <div class="field"><label>职位 · 公司 · 起止</label><input value="销售经理 · 字节跳动 · 2021/07 - 2024/12"></div>
+          </div>
+        </div>
+      </div>
+      <div class="preview-pane"><div class="paper-wrap"><div class="paper">
+        <div class="head">
+          <div class="photo"></div>
+          <div class="id"><h1>王晨</h1><div class="sub">销售经理（大客户方向）</div></div>
+          <div class="tags"><span>📱 138****1111</span><span>✉ wangchen@…</span><span>📍 上海</span><span>💼 离职</span></div>
+        </div>
+        <h3>自我评价</h3>
+        <p>求职意向明确，期望在大客户销售与管理岗位上持续深耕，以长期主义经营客户关系与团队成长。</p>
+        <h3>教育经历</h3>
+        <div class="sec"><div class="entry"><span>上海大学</span><span class="date">2010/09 - 2014/06</span></div><p>本科 · 市场营销</p><p>主修市场营销、消费者行为学、商务谈判</p></div>
+        <h3>工作经验</h3>
+        <div class="sec"><div class="entry"><span>销售经理</span><span class="date">2021/07 - 2024/12</span></div><p style="opacity:.75">字节跳动</p><p>负责抖音创作者平台的商业化拓展，主导多个核心行业解决方案设计</p></div>
+      </div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 屏 4：AI 匹配打分 ── -->
+<section class="screen">
+  <p class="screen-tag">屏 4 · AI 匹配打分（680 壳 + 卡片化）</p>
+  <div class="frame"><div class="app-shell">
+    <div class="navbar">
+      <div class="nav-brand"><span class="logo"></span>XM简历</div>
+      <div class="nav-main"><span class="txt">简历</span><span class="arrow">▸</span></div>
+      <div class="nav-main active"><span class="txt">AI</span><span class="arrow">▴</span></div>
+      <div class="nav-sub">语法纠正</div>
+      <div class="nav-sub">自我介绍</div>
+      <div class="nav-sub">简历润色</div>
+      <div class="nav-sub on">匹配打分</div>
+      <div class="nav-main"><span class="txt">设置</span><span class="arrow">▸</span></div>
+      <div class="nav-wizard"><span class="q">?</span>使用向导</div>
+    </div>
+    <div class="app-main"><div class="ai-shell">
+      <div class="ai-head"><span class="ic">◎</span><span class="title">匹配打分</span><select><option>王晨-大客户销售</option></select><select><option>高级销售经理</option></select><button class="btn default">开始打分</button></div>
+      <div class="score-card"><span class="num">82</span><div><div style="font-size:var(--text-sm);font-weight:500">综合匹配度</div><div style="font-size:var(--text-xs);opacity:.5">/100</div></div></div>
+      <div class="sec-label">维度得分</div>
+      <div class="dim-card"><div class="row"><span>核心技能覆盖</span><b>85</b></div><div class="bar"><i style="width:85%"></i></div></div>
+      <div class="dim-card"><div class="row"><span>经验深度</span><b>78</b></div><div class="bar"><i style="width:78%"></i></div></div>
+      <div class="sec-label">改进建议</div>
+      <div class="sug-card"><span>建议在自我评价中突出项目量化成果</span><button class="btn outline">去润色 →</button></div>
+      <div class="sug-card"><span>工作经历可补充团队规模与管理幅度</span><button class="btn outline">去润色 →</button></div>
+    </div></div>
+  </div></div>
+</section>
+
+<!-- ── 屏 5：设置 · 模板（图书式） ── -->
+<section class="screen">
+  <p class="screen-tag">屏 5 · 设置 · 模板（图书式选择 + 默认模板）</p>
+  <div class="frame"><div class="app-shell">
+    <div class="navbar">
+      <div class="nav-brand"><span class="logo"></span>XM简历</div>
+      <div class="nav-main"><span class="txt">简历</span><span class="arrow">▸</span></div>
+      <div class="nav-main"><span class="txt">AI</span><span class="arrow">▸</span></div>
+      <div class="nav-main active"><span class="txt">设置</span><span class="arrow">▴</span></div>
+      <div class="nav-sub">外观</div>
+      <div class="nav-sub on">模板设置</div>
+      <div class="nav-sub">AI 设置</div>
+      <div class="nav-sub">存储位置</div>
+      <div class="nav-wizard"><span class="q">?</span>使用向导</div>
+    </div>
+    <div class="app-main"><div class="home-view">
+      <div class="home-title">模板设置</div>
+      <div class="tpl-default">新建简历默认模板 <button class="on">经典单栏</button><button>现代竖线</button><button>紧凑双栏</button><span style="opacity:.45;font-size:12px;margin-left:8px">此处选「新建时预选哪个」；点下方图书卡进入编辑</span></div>
+      <div class="book">
+        <div class="arrow">←</div>
+        <div class="slot" style="width:143px;height:202px"><div class="mini" style="transform:scale(.18)"><div class="mini-paper"><div class="mh"></div><div class="ml" style="width:80%"></div><div class="ml" style="width:92%"></div><div class="ml" style="width:60%"></div><div class="mh" style="width:70px;margin-top:24px"></div><div class="ml"></div><div class="ml" style="width:85%"></div></div></div></div>
+        <div class="slot" style="width:258px;height:364px"><div class="mini" style="transform:scale(.325)"><div class="mini-paper"><div class="mh"></div><div class="ml" style="width:80%"></div><div class="ml" style="width:92%"></div><div class="ml" style="width:60%"></div><div class="mh" style="width:70px;margin-top:24px"></div><div class="ml"></div><div class="ml" style="width:85%"></div><div class="ml" style="width:74%"></div><div class="mh" style="width:90px;margin-top:24px"></div><div class="ml"></div><div class="ml" style="width:88%"></div></div></div></div>
+        <div class="slot" style="width:143px;height:202px"><div class="mini" style="transform:scale(.18)"><div class="mini-paper"><div class="mh"></div><div class="ml" style="width:70%"></div><div class="ml" style="width:88%"></div><div class="mh" style="width:70px;margin-top:24px"></div><div class="ml" style="width:95%"></div><div class="ml" style="width:66%"></div></div></div></div>
+        <div class="arrow">→</div>
+      </div>
+      <div class="foot-note">点任意卡进入该模板独立编辑视图（左参数面板 + 右真实渲染预览）</div>
+    </div></div>
+  </div></div>
+</section>
+
+<script>
+function setTheme(t, btn) {
+  document.documentElement.setAttribute('data-theme', t)
+  document.querySelectorAll('.theme-switch button').forEach((b) => b.classList.remove('on'))
+  btn.classList.add('on')
+}
+</script>
+</body>
+</html>
