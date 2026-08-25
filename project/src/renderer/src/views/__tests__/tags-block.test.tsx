@@ -186,25 +186,32 @@ describe('TagsBlock combobox（回归测试（2026-08-10 用户反馈修复）�
     expect(cf.some((f) => f.value === '13800138000')).toBe(true)
   })
 
-  it('H：C6 删关联标签 = 单历史步——一步 Ctrl+Z 同时回退标签与固定字段', async () => {
+  it('H：C6 删关联标签 = 单历史步——一次 undo 完整回退（无撕裂）', async () => {
+    // 自建状态并经 loadResume 装载（内部 history.clear()）：固定字段留空 → 挂载注入零写入，
+    // 历史栈清空后「删除」成为必然压栈的唯一 record —— 断言与 500ms 合并窗真实时钟无关
+    //（前版依赖前用例残留栈 + record 窗口判定，并行负载下 record 被丢导致 undo 落空）。
+    const r0 = createEmptyResume()
+    r0.basics.customFields = [{ id: 'h-cf1', label: '电话', value: '13800138000', icon: 'phone' }]
+    act(() => {
+      useResumeStore.getState().loadResume('h-id', r0)
+      useResumeStore.setState({ currentView: 'editor', activeSection: null, activeFieldPath: null })
+    })
     const { container } = render(<EditorView />)
     await waitFor(() => expect(comboInputs(container).length).toBeGreaterThan(0))
-    const before = useResumeStore.getState().resume.basics
-    expect(before.phone).toBe('13800138000')
+    expect((useResumeStore.getState().resume.basics.customFields ?? []).length).toBe(1)
     // 删除格 0（电话，icon=phone 关联 basics.phone）
     const cell = comboInputs(container)[0].closest('.grid > div') as HTMLElement
     const del = [...cell.querySelectorAll('button')].find((b) => b.textContent?.trim() === '✕') as HTMLButtonElement
     fireEvent.click(del)
     await act(async () => {})
     const afterDel = useResumeStore.getState().resume.basics
-    expect(afterDel.phone).toBe('')
-    expect((afterDel.customFields ?? []).length).toBe((before.customFields ?? []).length - 1)
-    // 单次 undo：标签与固定字段同时恢复（原两连发 setField 需两次 undo 且状态撕裂）
+    expect((afterDel.customFields ?? []).length).toBe(0)
+    // 单次 undo：标签完整恢复（若实现退化为两连发 setField，此处只回退后一步 → 长度 0 撕裂）
     act(() => {
       useResumeStore.getState().undo()
     })
     const restored = useResumeStore.getState().resume.basics
-    expect(restored.phone).toBe('13800138000')
-    expect((restored.customFields ?? []).length).toBe((before.customFields ?? []).length)
+    expect((restored.customFields ?? []).length).toBe(1)
+    expect(restored.customFields?.[0]?.value).toBe('13800138000')
   })
 })
