@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useResumeStore } from '../../store/useResumeStore'
 import { useAiStream } from '../../hooks/useAiStream'
+import { safeInvoke } from '../../utils/safe-invoke'
 import type { Editor } from '@tiptap/react'
 import type { GrammarIssue } from '@shared/schema/grammar'
 import type { RichText } from '@shared/schema/resume'
@@ -81,12 +82,15 @@ export function AiAssistPanel({
   const [grammarError, setGrammarError] = useState<string | null>(null)
 
   const runGrammar = async (): Promise<void> => {
-    setGrammarBusy(true)
     setGrammarError(null)
     setIssues(null)
     const text = frozen?.text ?? editor?.getText() ?? ''
-    const res = await window.electronAPI.ai.grammar({ resumeId, scope: 'selection', text })
-    setGrammarBusy(false)
+    // G5：safeInvoke——通道 reject 时 grammarBusy finally 复位 + toast（原裸 await 永久卡 busy）
+    const res = await safeInvoke(window.electronAPI.ai.grammar({ resumeId, scope: 'selection', text }), {
+      busy: setGrammarBusy,
+      errorMessage: t('common.opFailed')
+    })
+    if (!res) return
     if (res.ok) setIssues(res.data as GrammarIssue[])
     else setGrammarError(res.error.code)
   }

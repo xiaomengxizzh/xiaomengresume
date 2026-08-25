@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next'
 import { useResumeStore } from '../store/useResumeStore'
 import { AiScreenLayout } from '../components/ai/AiScreenLayout'
 import { Button, EmptyState } from '../components/ui'
+import { safeInvoke } from '../utils/safe-invoke'
 import type { AiError } from '@shared/ipc-channels'
 import type { GrammarIssue } from '@shared/schema/grammar'
 
@@ -29,11 +30,14 @@ export function AiGrammar(): React.JSX.Element {
 
   const run = async (): Promise<void> => {
     if (!resumeId) return
-    setBusy(true)
     setError(null)
     setIssues(null)
-    const res = await window.electronAPI.ai.grammar({ resumeId, scope: 'full' })
-    setBusy(false)
+    // G5：safeInvoke——通道 reject 时 busy finally 复位 + toast；业务错误仍走既有 error 展示
+    const res = await safeInvoke(window.electronAPI.ai.grammar({ resumeId, scope: 'full' }), {
+      busy: setBusy,
+      errorMessage: t('common.opFailed')
+    })
+    if (!res) return
     if (res.ok) setIssues(res.data as IssueWithField[])
     else setError(res.error)
   }

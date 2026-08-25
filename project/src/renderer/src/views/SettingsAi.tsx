@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next'
 import { useResumeStore } from '../store/useResumeStore'
 import { AiPromptCard } from '../components/ai/AiPromptCard'
 import { Button } from '../components/ui'
+import { safeInvoke } from '../utils/safe-invoke'
 import { DEFAULT_AI_PROMPTS } from '@shared/schema/ai-prompts'
 import type { AiConfigView, ProviderConfigView } from '@shared/ipc-channels'
 import type { AiPrompts } from '@shared/schema/settings'
@@ -168,12 +169,20 @@ export function SettingsAi(): React.JSX.Element {
       return
     }
     setTestState('testing')
-    const res = await window.electronAPI.ai.config.test({
-      providerId: tab,
-      apiKey: key,
-      modelId: model,
-      baseURL: activeProvider?.kind === 'custom' ? providerBaseURL.trim() : providerBaseURL.trim() || undefined
-    })
+    // G5：safeInvoke——通道 reject 时 testing 态复位为 noResponse + toast（原裸 await 永久卡「检测中」）
+    const res = await safeInvoke(
+      window.electronAPI.ai.config.test({
+        providerId: tab,
+        apiKey: key,
+        modelId: model,
+        baseURL: activeProvider?.kind === 'custom' ? providerBaseURL.trim() : providerBaseURL.trim() || undefined
+      }),
+      { errorMessage: t('common.opFailed') }
+    )
+    if (!res) {
+      setTestState('noResponse')
+      return
+    }
     if (res.ok) {
       setTestState('ok')
     } else {

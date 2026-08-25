@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next'
 import { useResumeStore } from '../store/useResumeStore'
 import { Button, Dialog, EmptyState } from '../components/ui'
 import { reportIpcError } from '../components/ui/toast'
+import { safeInvoke } from '../utils/safe-invoke'
 import type { JobSummary, ResumeSummary } from '@shared/ipc-channels'
 import type { Job } from '@shared/schema/job'
 
@@ -69,7 +70,9 @@ export function JobsManager(): React.JSX.Element {
   }
 
   const openEdit = async (job: JobSummary): Promise<void> => {
-    const full = await window.electronAPI.jobs.get(job.id)
+    // G5：safeInvoke——jobs.get reject 时 toast 反馈且不进编辑态（原裸 await 静默失败）
+    const full = await safeInvoke(window.electronAPI.jobs.get(job.id), { errorMessage: t('common.loadFailed') })
+    if (!full) return
     setEditing(full)
     setBoundIds(new Set(resumes.filter((r) => (r.boundJobIds ?? []).includes(job.id)).map((r) => r.id)))
   }

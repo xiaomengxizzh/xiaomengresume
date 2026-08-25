@@ -16,6 +16,19 @@ import type { Language } from '@shared/schema/settings'
 
 let pdfWindow: BrowserWindow | null = null
 
+/**
+ * G3（2026-08-25 修复批②）：打印任务模块级串行化。
+ * 隐藏窗口是单例，printHtmlToPdf / printAppToPdf 两通道并发时互相 loadFile/loadURL
+ * 冲掉对方页面 → 排队逐个执行。前序失败不污染队列（错误由调用方拿到）。
+ */
+let printQueue: Promise<unknown> = Promise.resolve()
+
+export function withQueue<T>(fn: () => Promise<T>): Promise<T> {
+  const next = printQueue.then(fn, fn)
+  printQueue = next.catch(() => {})
+  return next
+}
+
 /** 创建（或复用）隐藏打印窗口，避免每次打印重建 */
 export function createPdfWindow(): BrowserWindow {
   if (pdfWindow && !pdfWindow.isDestroyed()) return pdfWindow
@@ -43,8 +56,12 @@ export interface PdfResult {
   mimeType: string
 }
 
-/** 渲染 HTML → PDF（矢量）。HTML 先落临时文件再 loadFile（data: URL 在部分环境受限） */
+/** 渲染 HTML → PDF（矢量）。HTML 先落临时文件再 loadFile（data: URL 在部分环境受限）。经 withQueue 串行 */
 export async function printHtmlToPdf(html: string): Promise<PdfResult> {
+  return withQueue(() => printHtmlToPdfInner(html))
+}
+
+async function printHtmlToPdfInner(html: string): Promise<PdfResult> {
   const win = createPdfWindow()
 
   const tmpDir = join(tmpdir(), 'xiaomengresume-print')
@@ -52,9 +69,17 @@ export async function printHtmlToPdf(html: string): Promise<PdfResult> {
   const tmpFile = join(tmpDir, `print-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.html`)
   writeFileSync(tmpFile, html, 'utf8')
 
+  // G3：did-finish-load 监听与 loadFile 同生共死——原 once 监听在 loadFile reject 时
+  // 残留（单例窗口上跨任务累积，下一次加载的完成事件还会去 resolve 死 promise）
+  let resolveLoad!: () => void
+  const loadDone = new Promise<void>((resolve) => {
+    resolveLoad = resolve
+  })
+  const onLoad = (): void => resolveLoad()
+  win.webContents.once('did-finish-load', onLoad)
+
   try {
     // 等页面真正加载完成（隐藏窗口在部分环境加载较慢）
-    const loadDone = new Promise<void>((resolve) => win.webContents.once('did-finish-load', () => resolve()))
     await win.loadFile(tmpFile)
     await loadDone
 
@@ -71,6 +96,8 @@ export async function printHtmlToPdf(html: string): Promise<PdfResult> {
 
     return { data, mimeType: 'application/pdf' }
   } finally {
+    // G3：监听随任务收尾移除（once 触发后 removeListener 为 no-op，reject 时防残留泄漏）
+    win.webContents.removeListener('did-finish-load', onLoad)
     try {
       unlinkSync(tmpFile)
     } catch {
@@ -111,9 +138,13 @@ async function waitForExportReady(win: BrowserWindow, timeoutMs: number): Promis
 /**
  * B 档（2026-08-10）：textPdf 导出主管线——
  * 隐藏窗口加载同源应用 export 模式（App.tsx D10 分支：真实模板 + data-redact）→ printToPDF。
- * 与预览同一 bundle/同一模板（"模板=打印"由构造保证，双引擎漂移作废）。
+ * 与预览同一 bundle/同一模板（"模板=打印"由构造保证，双引擎漂移作废）。经 withQueue 串行。
  */
 export async function printAppToPdf(resumeId: string, opts: PrintAppOptions): Promise<PrintAppResult> {
+  return withQueue(() => printAppToPdfInner(resumeId, opts))
+}
+
+async function printAppToPdfInner(resumeId: string, opts: PrintAppOptions): Promise<PrintAppResult> {
   const win = createPdfWindow()
   try {
     if (process.env['ELECTRON_RENDERER_URL']) {

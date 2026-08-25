@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next'
 import { useResumeStore } from '../store/useResumeStore'
 import { AiScreenLayout } from '../components/ai/AiScreenLayout'
 import { Button, EmptyState } from '../components/ui'
+import { safeInvoke } from '../utils/safe-invoke'
 import type { AiError } from '@shared/ipc-channels'
 import type { MatchScore } from '@shared/schema/match'
 
@@ -26,11 +27,14 @@ export function AiMatch(): React.JSX.Element {
 
   const run = async (): Promise<void> => {
     if (!resumeId || !jobId) return
-    setBusy(true)
     setError(null)
     setScore(null)
-    const res = await window.electronAPI.ai.match({ resumeId, jobId })
-    setBusy(false)
+    // G5：safeInvoke——通道 reject 时 busy finally 复位 + toast；业务错误仍走既有 error 展示
+    const res = await safeInvoke(window.electronAPI.ai.match({ resumeId, jobId }), {
+      busy: setBusy,
+      errorMessage: t('common.opFailed')
+    })
+    if (!res) return
     if (res.ok) setScore(res.data)
     else setError(res.error)
   }

@@ -190,31 +190,37 @@ async function rotateBackup(id: string): Promise<void> {
  * 任一步失败 → .tmp 残留 = 下次启动崩溃恢复信号（try/finally 保证窗口最短）
  * 2026-08-07 二次评估采纳：per-id 串行化（withWriteLock）+ EPERM/EBUSY 退避重试（withRetry）。
  */
+/**
+ * 原子写核心（无锁）：调用方必须已持有 per-id 写锁（atomicWrite 或外层读改写锁内）。
+ * G1（2026-08-25 修复批②）：拆出无锁变体——rename/bind/unbind 的「读-改-写」需在
+ * 同一把写锁内完成，禁止二次进锁（两锁间隙会被并发 save 用旧对象覆盖）。
+ */
+async function doAtomicWrite(id: string, data: Resume, opts: { backup?: boolean } = {}): Promise<void> {
+  await ensureStorageDir()
+  const file = resumeFilePath(id)
+  const tmp = `${file}.tmp`
+  const json = JSON.stringify(data, null, 2)
+  try {
+    await withRetry(() => fs.writeFile(tmp, json, 'utf-8'))
+    if (opts.backup !== false) await withRetry(() => rotateBackup(id))
+    await withRetry(() => fs.rename(tmp, file))
+  } finally {
+    // 成功后清理 .tmp；失败时保留（崩溃恢复信号）
+    await fs.unlink(tmp).catch(() => {})
+  }
+}
+
 async function atomicWrite(id: string, data: Resume, opts: { backup?: boolean } = {}): Promise<void> {
-  return await withWriteLock(id, async () => {
-    await ensureStorageDir()
-    const file = resumeFilePath(id)
-    const tmp = `${file}.tmp`
-    const json = JSON.stringify(data, null, 2)
-    try {
-      await withRetry(() => fs.writeFile(tmp, json, 'utf-8'))
-      if (opts.backup !== false) await withRetry(() => rotateBackup(id))
-      await withRetry(() => fs.rename(tmp, file))
-    } finally {
-      // 成功后清理 .tmp；失败时保留（崩溃恢复信号）
-      await fs.unlink(tmp).catch(() => {})
-    }
-  })
+  return withWriteLock(id, () => doAtomicWrite(id, data, opts))
 }
 
 /* ── 生命周期 ──────────────────────────────────────────────────────────── */
 
 /**
- * 保存：Zod 校验 → 刷新 meta.updatedAt/补 createdAt → 完整三件套。
- * id 由调用方显式传入（渲染进程 newResume 时生成；ResumeSchema 顶层无 id，id = 文件名）。
+ * 保存核心（无锁）：Zod 校验 → 刷新 meta.updatedAt/补 createdAt → 完整三件套。
+ * G1（2026-08-25）：拆出供 bindJob/unbindJob 锁内复用（与 saveResume 同一写入链）。
  */
-export async function saveResume(id: string, resume: Resume): Promise<Resume> {
-  assertUuid(id)
+async function saveResumeUnlocked(id: string, resume: Resume): Promise<Resume> {
   const validated = ResumeSchema.parse(resume)
   const meta = {
     ...validated.meta,
@@ -233,13 +239,25 @@ export async function saveResume(id: string, resume: Resume): Promise<Resume> {
       /* 转存失败保留 dataURL 内嵌（照片不丢；可下次保存重试） */
     }
   }
-  await atomicWrite(id, withMeta, { backup: true })
+  await doAtomicWrite(id, withMeta, { backup: true })
   return withMeta
 }
 
-/** 打开：读文件 → migrate → 校验 → 刷新 lastOpenedAt（轻量写，不触发 .bak；写失败降级不影响读取） */
-export async function openResume(id: string): Promise<Resume> {
+/**
+ * 保存：id 由调用方显式传入（渲染进程 newResume 时生成；ResumeSchema 顶层无 id，id = 文件名）。
+ * 整体持 per-id 写锁。
+ */
+export async function saveResume(id: string, resume: Resume): Promise<Resume> {
   assertUuid(id)
+  return withWriteLock(id, () => saveResumeUnlocked(id, resume))
+}
+
+/**
+ * 打开核心（无锁）：读 → migrate → 校验 → photo 迁移 → 刷新 lastOpenedAt 轻量写（不触发 .bak）。
+ * G1（2026-08-25）：拆出供锁内使用——openResume / renameResume / bindJob / unbindJob
+ * 的读改写统一在各自的一次 per-id 写锁内调用本函数，杜绝跨锁旧读覆盖。
+ */
+async function openResumeUnlocked(id: string): Promise<Resume> {
   const file = resumeFilePath(id)
   const raw = JSON.parse(await fs.readFile(file, 'utf-8')) as unknown
   const resume = migrate(raw)
@@ -256,7 +274,7 @@ export async function openResume(id: string): Promise<Resume> {
   const meta = { ...resume.meta, lastOpenedAt: nowIso(), createdAt: resume.meta?.createdAt ?? nowIso() }
   const updated = { ...resume, meta }
   try {
-    await atomicWrite(id, updated, { backup: false })
+    await doAtomicWrite(id, updated, { backup: false })
     return updated
   } catch (err) {
     // 2026-08-07 鲁棒性修复（二次评估采纳）：lastOpenedAt 刷新失败不阻塞读取，
@@ -267,12 +285,25 @@ export async function openResume(id: string): Promise<Resume> {
   }
 }
 
-/** 重命名（T3）：仅改简历文件标题 resume.title，文件不变（原子写回，走三件套）；basics.name（姓名）不受影响 */
+/** 打开：读文件 → migrate → 校验 → 刷新 lastOpenedAt（轻量写，不触发 .bak；写失败降级不影响读取）。整体持 per-id 写锁 */
+export async function openResume(id: string): Promise<Resume> {
+  assertUuid(id)
+  return withWriteLock(id, () => openResumeUnlocked(id))
+}
+
+/**
+ * 重命名（T3）：仅改简历文件标题 resume.title，文件不变（原子写回，走三件套）；basics.name（姓名）不受影响。
+ * G1（2026-08-25）：读-改-写收进单把写锁——原「openResume 独立锁 + 二次进锁写」间隙内
+ * 并发 saveResume 落盘的新内容会被本次旧读对象覆盖（用户编辑被回滚）。
+ */
 export async function renameResume(id: string, name: string): Promise<Resume> {
-  const resume = await openResume(id)
-  const updated = { ...resume, title: name }
-  await atomicWrite(id, updated, { backup: true })
-  return updated
+  assertUuid(id)
+  return withWriteLock(id, async () => {
+    const resume = await openResumeUnlocked(id)
+    const updated = { ...resume, title: name }
+    await doAtomicWrite(id, updated, { backup: true })
+    return updated
+  })
 }
 
 /** 复制：深拷贝赋新 uuid + 重置 meta → 写 <newId>.json，返回新 id + 简历 */
@@ -323,22 +354,30 @@ export async function deleteResume(id: string): Promise<boolean> {
 
 /* ── F19 岗位绑定（R 批 WP-R1 · 数据层 M1 冻结契约，M3 实现）───────────── */
 
-/** 绑定岗位：boundJobIds 追加去重（复用 saveResume 三件套写入链） */
+/**
+ * 绑定岗位：boundJobIds 追加去重（复用 saveResume 三件套写入链）。
+ * G1（2026-08-25）：读-改-写收进单把写锁（原 openResume + saveResume 两次独立进锁，
+ * 间隙内并发自动保存会被旧读对象回滚）。
+ */
 export async function bindJob(resumeId: string, jobId: string): Promise<Resume> {
   assertUuid(resumeId)
   assertUuid(jobId)
-  const resume = await openResume(resumeId)
-  if (resume.boundJobIds.includes(jobId)) return resume
-  return saveResume(resumeId, { ...resume, boundJobIds: [...resume.boundJobIds, jobId] })
+  return withWriteLock(resumeId, async () => {
+    const resume = await openResumeUnlocked(resumeId)
+    if (resume.boundJobIds.includes(jobId)) return resume
+    return saveResumeUnlocked(resumeId, { ...resume, boundJobIds: [...resume.boundJobIds, jobId] })
+  })
 }
 
-/** 解绑岗位：从 boundJobIds 移除（软引用，不级联删岗位） */
+/** 解绑岗位：从 boundJobIds 移除（软引用，不级联删岗位）。G1 同 bindJob 单锁化 */
 export async function unbindJob(resumeId: string, jobId: string): Promise<Resume> {
   assertUuid(resumeId)
   assertUuid(jobId)
-  const resume = await openResume(resumeId)
-  if (!resume.boundJobIds.includes(jobId)) return resume
-  return saveResume(resumeId, { ...resume, boundJobIds: resume.boundJobIds.filter((j) => j !== jobId) })
+  return withWriteLock(resumeId, async () => {
+    const resume = await openResumeUnlocked(resumeId)
+    if (!resume.boundJobIds.includes(jobId)) return resume
+    return saveResumeUnlocked(resumeId, { ...resume, boundJobIds: resume.boundJobIds.filter((j) => j !== jobId) })
+  })
 }
 
 /* ── 聚合：list / recent（WP-T1）───────────────────────────────────────── */

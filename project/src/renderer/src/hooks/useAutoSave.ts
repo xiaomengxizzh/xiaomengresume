@@ -24,11 +24,18 @@ export function useAutoSave(): { state: SaveState; flush: () => Promise<boolean>
   const latestRef = useRef({ resumeId, resume })
   latestRef.current = { resumeId, resume }
   const inFlightRef = useRef(false)
+  // G2：飞行中被丢的保存请求标记——finally 补存一次，卸载 flush 撞上飞行保存不再丢最后一次编辑
+  const pendingRef = useRef(false)
   const retryCountRef = useRef(0)
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const doSave = useCallback(async (): Promise<boolean> => {
-    if (inFlightRef.current) return false
+    // G2（2026-08-25 修复批②）：飞行中不丢请求——登记 pendingRef，当前保存完成后补存一次
+    // 最新内容（防抖调度照常接管后续编辑；补存仅由真实被丢请求触发，无无限循环）。
+    if (inFlightRef.current) {
+      pendingRef.current = true
+      return false
+    }
     const current = latestRef.current
     if (!current.resumeId) return true
     inFlightRef.current = true
@@ -43,6 +50,10 @@ export function useAutoSave(): { state: SaveState; flush: () => Promise<boolean>
       return false
     } finally {
       inFlightRef.current = false
+      if (pendingRef.current) {
+        pendingRef.current = false
+        void doSave()
+      }
     }
   }, [])
 

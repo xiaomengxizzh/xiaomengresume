@@ -26,6 +26,14 @@ import { contactFontSize, titleStyleLogic, TYPE_SCALE, LIST_MARK_LOGIC, CONTACT_
 
 const CLASSIC_PHOTO = { width: 110, height: 110 }
 
+/* ── 自动一页纸（2026-08-13 需求④；G4 重算 2026-08-25 修复批②）────────────── */
+const FIT_PAGE_H = 1123
+const FIT_SCALE_MIN = 0.6
+/** 自然高变化超此阈值才重算（吸收缩放取整误差，防振荡滞后带） */
+const FIT_REMEASURE_DELTA_PX = 8
+/** 重测防抖：编辑中连续输入不逐字重排 */
+const FIT_REMEASURE_DEBOUNCE_MS = 150
+
 /**
  * 2026-08-10：节标题样式收敛自 shared titleStyleLogic（逻辑值 → CSSProperties 适配；
  * accent 色经 CSS 变量 --rm-accent 由 rootStyle 注入，与 PDF 端 accent 直值同源）。
@@ -69,32 +77,45 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
 
   // 2026-08-13 需求④：自动一页纸（等比重排）——fitToPage 开启且内容自然高 > 1123（A4）时，
   // scale = 1123/contentH 应用到字号/间距；下限 0.6，低于则不压缩（退回多页由调用方提示）。
-  // 实现：外层容器 ResizeObserver 量「未缩放内容高」（scale=1 首帧）→ setState 触发二次渲染应用 scale。
-  const FIT_PAGE_H = 1123
-  const FIT_SCALE_MIN = 0.6
+  // G4（2026-08-25 修复批②）：内容变化时重算——ResizeObserver 持续观察，按「未缩放自然高」
+  // （scrollHeight / 当前应用 scale 还原）变化超阈值才防抖重算：直接用 scrollHeight 判定会因
+  // 「scale 应用 → 高度变化 → 再重算」形成缩放振荡回路。
   const fitToPage = layout?.fitToPage === true
   const bodyRef = useRef<HTMLDivElement>(null)
   const [fitScale, setFitScale] = useState<number | null>(null) // null = 未测量（首帧 scale=1）
-  const measuredRef = useRef(false)
+  const naturalHRef = useRef<number | null>(null) // 上次未缩放自然高（振荡滞后带判定基准）
+  const appliedScaleRef = useRef(1) // 当前已应用 scale（回环测量还原自然高）
   useEffect(() => {
     if (!fitToPage || !bodyRef.current) return
     const el = bodyRef.current
-    const ro = new ResizeObserver(() => {
-      if (measuredRef.current) return
-      const h = el.scrollHeight
-      if (h <= 0) return
-      measuredRef.current = true
-      const scale = Math.min(1, FIT_PAGE_H / h)
+    let timer: ReturnType<typeof setTimeout> | null = null
+    let latestNatural = 0
+    const evaluate = (): void => {
+      timer = null
+      const scale = Math.min(1, FIT_PAGE_H / latestNatural)
       setFitScale(scale >= FIT_SCALE_MIN ? scale : 1) // 低于下限不压缩（等比重排下限保护）
+    }
+    const ro = new ResizeObserver(() => {
+      const raw = el.scrollHeight
+      if (raw <= 0) return
+      const applied = appliedScaleRef.current
+      latestNatural = applied === 1 ? raw : Math.round(raw / applied)
+      const prev = naturalHRef.current
+      if (prev !== null && Math.abs(latestNatural - prev) <= FIT_REMEASURE_DELTA_PX) return
+      naturalHRef.current = latestNatural
+      if (timer === null) timer = setTimeout(evaluate, FIT_REMEASURE_DEBOUNCE_MS)
     })
     ro.observe(el)
     return () => {
       ro.disconnect()
-      measuredRef.current = false
+      if (timer !== null) clearTimeout(timer)
+      naturalHRef.current = null
+      appliedScaleRef.current = 1
       setFitScale(null)
     }
   }, [fitToPage])
   const applyScale = fitToPage && fitScale !== null ? fitScale : 1
+  appliedScaleRef.current = applyScale
   const scaled = (v: number): number => (applyScale === 1 ? v : Math.round(v * applyScale * 10) / 10)
 
   // 2026-08-13 需求③：条目列表项目符号（layout.listMark；none/dot/square/dash，用于强调分类）
