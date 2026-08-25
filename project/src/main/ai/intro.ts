@@ -5,7 +5,6 @@
  * mode=translate 输入 = summary.content 纯文本（空则 CONFIG_INVALID），输出英文草稿。
  * 硬约束：翻译铁律在 translate 模式附加（不另起 prompt key）。
  */
-import { streamText } from 'ai'
 import type { AiIntroArgs } from '../../shared/ipc-channels'
 import { AiServiceError, getAiPrompt } from './config'
 import { createActiveModel } from './client'
@@ -40,6 +39,8 @@ export async function runIntro(
 
   const prompt = mode === 'translate' ? `${base}${TRANSLATE_RULE}` : base
   const { model, temperature, maxTokens } = await createActiveModel()
+  // X2（2026-08-25）：`ai` 核心包函数内动态 import（模块缓存，后续调用无额外开销）
+  const { streamText } = await import('ai')
   const result = await streamText({
     model,
     prompt: `${prompt}\n\n${label}：\n${input}`,

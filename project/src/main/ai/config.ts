@@ -43,12 +43,18 @@ export const BUILTIN_INFO: Record<ProviderId, { name: string; defaultModelId: st
 
 const KEYS_FILE = path.join(app.getPath('userData'), 'ai-keys.json')
 let keysCache: Record<string, string> | null = null
+/** H1（2026-08-25 修复批③A）：loadKeys 非 ENOENT 失败（截断/损坏/权限）时置位——
+ *  内存空表可用，但 persist 前必须先把原损坏文件改名 .corrupt.<ts> 保留，
+ *  防崩溃截断后用户 Key 被空表静默覆盖清零。 */
+let keysReadFailed = false
 
 async function loadKeys(): Promise<Record<string, string>> {
   if (keysCache) return keysCache
   try {
     keysCache = JSON.parse(await fs.readFile(KEYS_FILE, 'utf-8')) as Record<string, string>
-  } catch {
+  } catch (err) {
+    // ENOENT = 首次启动无文件，正常路径；其余读失败置标志（语义见 keysReadFailed）
+    if ((err as NodeJS.ErrnoException)?.code !== 'ENOENT') keysReadFailed = true
     keysCache = {}
   }
   return keysCache
@@ -57,7 +63,15 @@ async function loadKeys(): Promise<Record<string, string>> {
 async function persistKeys(keys: Record<string, string>): Promise<void> {
   keysCache = keys
   await fs.mkdir(path.dirname(KEYS_FILE), { recursive: true })
-  await fs.writeFile(KEYS_FILE, JSON.stringify(keys, null, 2), 'utf-8')
+  // H1：首次 persist 前若曾读失败，先保留损坏原文（供手工抢救），再原子写新表
+  if (keysReadFailed) {
+    await fs.rename(KEYS_FILE, `${KEYS_FILE}.corrupt.${Date.now()}`).catch(() => {})
+    keysReadFailed = false
+  }
+  // H1：.tmp + rename 原子写——崩溃不会留下半截 ai-keys.json（旧直接 writeFile 会截断）
+  const tmp = `${KEYS_FILE}.tmp`
+  await fs.writeFile(tmp, JSON.stringify(keys, null, 2), 'utf-8')
+  await fs.rename(tmp, KEYS_FILE)
 }
 
 /** 存 key（'' 或空 = 清除）；safeStorage 不可用时退弱加密（规范 §4.6，仅 Windows 无 DPAPI 等场景） */

@@ -94,6 +94,11 @@ interface CentralEntry {
   localOffset: number
 }
 
+/** H5（2026-08-25 修复批③A，zip 炸弹防护）：条目数 / 单条解压上限。
+ *  备份场景（简历 JSON + 照片）量级远低于此；超限拒绝而非解到内存爆掉。 */
+const MAX_ENTRIES = 500
+const MAX_ENTRY_BYTES = 64 * 1024 * 1024
+
 /** 解析 zip 中央目录（返回条目元数据） */
 function readCentralDirectory(buf: Buffer): CentralEntry[] {
   // EOCD 签名 0x06054b50 在尾部 22+ 字节内搜索
@@ -107,11 +112,15 @@ function readCentralDirectory(buf: Buffer): CentralEntry[] {
   }
   if (eocdPos < 0) throw new Error('not a zip: EOCD not found')
   const centralCount = buf.readUInt16LE(eocdPos + 10)
+  // H5：条目数上限防循环炸弹（伪造超大 centralCount 让解析循环空转）
+  if (centralCount > MAX_ENTRIES) throw new Error(`bad zip: too many entries (${centralCount} > ${MAX_ENTRIES})`)
   const centralOffset = buf.readUInt32LE(eocdPos + 16)
 
   const entries: CentralEntry[] = []
   let pos = centralOffset
   for (let i = 0; i < centralCount; i++) {
+    // H5：中央目录 offset 越界先拒绝（明确 Error），否则 readUInt32LE 抛 RangeError
+    if (pos + 46 > buf.length) throw new Error('bad zip: central directory out of range')
     if (buf.readUInt32LE(pos) !== 0x02014b50) throw new Error('bad central directory')
     const nameLen = buf.readUInt16LE(pos + 28)
     const extraLen = buf.readUInt16LE(pos + 30)
@@ -119,6 +128,10 @@ function readCentralDirectory(buf: Buffer): CentralEntry[] {
     const compSize = buf.readUInt32LE(pos + 20)
     const uncompSize = buf.readUInt32LE(pos + 24)
     const localOffset = buf.readUInt32LE(pos + 42)
+    // H5：单条解压上限——声明值即拒绝，防超大条目整包解入内存
+    if (uncompSize > MAX_ENTRY_BYTES) {
+      throw new Error(`bad zip: entry too large (${uncompSize} bytes > ${MAX_ENTRY_BYTES})`)
+    }
     const name = buf.subarray(pos + 46, pos + 46 + nameLen).toString('utf-8')
     entries.push({ name, compSize, uncompSize, localOffset })
     pos += 46 + nameLen + extraLen + commentLen
@@ -130,6 +143,8 @@ function readCentralDirectory(buf: Buffer): CentralEntry[] {
 export function extractZip(buf: Buffer): ZipEntry[] {
   const entries = readCentralDirectory(buf)
   return entries.map((e) => {
+    // H5：local header 偏移越界先拒绝（明确 Error），否则 subarray 空读抛 RangeError
+    if (e.localOffset + 30 > buf.length) throw new Error('bad zip: local header out of range')
     const lfh = buf.subarray(e.localOffset)
     if (lfh.readUInt32LE(0) !== 0x04034b50) throw new Error('bad local header')
     const nameLen = lfh.readUInt16LE(26)

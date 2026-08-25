@@ -16,7 +16,9 @@ const STORAGE_DIR = `${TEST_DIR}/xiaomengresume`
 const h = vi.hoisted(() => ({
   events: [] as string[],
   gateRead: null as null | ((real: () => Promise<string>) => Promise<string>),
-  realFs: null as null | typeof import('node:fs').promises
+  realFs: null as null | typeof import('node:fs').promises,
+  /** H2：置 true 时 mock rename 抛不可重试错误（EACCES 不进退避），模拟 rename 失败路径 */
+  failRename: false
 }))
 
 vi.mock('electron', () => ({
@@ -71,6 +73,7 @@ vi.mock('node:fs', async (importOriginal) => {
       },
       rename: async (...args: Parameters<typeof mod.promises.rename>): Promise<void> => {
         h.events.push(tag(args[0], 'rename'))
+        if (h.failRename) throw Object.assign(new Error('rename blocked'), { code: 'EACCES' })
         return mod.promises.rename(...args)
       }
     }
@@ -78,7 +81,8 @@ vi.mock('node:fs', async (importOriginal) => {
 })
 
 // ── 被测模块 ──────────────────────────────────────────────────────────────
-import { renameResume, saveResume, bindJob, unbindJob } from '../resume-store'
+import { renameResume, saveResume, bindJob, unbindJob, duplicateResume } from '../resume-store'
+import { savePhotoFile, readPhotoFile } from '../photo-store'
 import { createEmptyResume, type Resume } from '../../../shared/schema/resume'
 
 const ID = '3f5e7b10-2f4a-4a5d-8c1e-0a1b2c3d4e5f'
@@ -98,6 +102,7 @@ async function waitForEvent(prefix: string): Promise<void> {
 beforeEach(async () => {
   h.events.length = 0
   h.gateRead = null
+  h.failRename = false
   await h.realFs!.rm(STORAGE_DIR, { recursive: true, force: true })
 })
 
@@ -187,5 +192,69 @@ describe('基础行为回归（重构防劣化）', () => {
     expect(twice.boundJobIds.filter((j) => j === JOB_ID)).toHaveLength(1)
     const off = await unbindJob(ID, JOB_ID)
     expect(off.boundJobIds).not.toContain(JOB_ID)
+  })
+})
+
+describe('H2 rename 失败保留 .tmp（崩溃恢复信号不被删）', () => {
+  it('mock rename 恒失败 → saveResume reject，.tmp 仍存在且内容为待写数据，正式文件保持旧版', async () => {
+    await h.realFs!.mkdir(STORAGE_DIR, { recursive: true })
+    await h.realFs!.writeFile(path.join(STORAGE_DIR, `${ID}.json`), JSON.stringify(resumeV1()), 'utf-8')
+
+    h.failRename = true
+    const v2 = structuredClone(resumeV1())
+    v2.basics.name = 'v2-pending'
+    await expect(saveResume(ID, v2)).rejects.toThrow()
+    h.failRename = false
+
+    // .tmp 未被 finally 无条件删除：内含最新待写数据（recoverPending 可救回）
+    const tmpRaw = await h.realFs!.readFile(path.join(STORAGE_DIR, `${ID}.json.tmp`), 'utf-8')
+    expect((JSON.parse(tmpRaw) as Resume).basics.name).toBe('v2-pending')
+    // 正式文件未被半写破坏
+    const curRaw = await h.realFs!.readFile(path.join(STORAGE_DIR, `${ID}.json`), 'utf-8')
+    expect((JSON.parse(curRaw) as Resume).basics.name).toBe('v1')
+  })
+})
+
+describe('H4 duplicateResume 先拷照片后写 JSON（杜绝悬空 photos/ 引用）', () => {
+  const PHOTO_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg=='
+
+  async function seedWithPhotoRef(): Promise<void> {
+    await h.realFs!.mkdir(STORAGE_DIR, { recursive: true })
+    // 种照片文件（photo-store 纯函数，直写 STORAGE_DIR/photos）
+    await savePhotoFile(STORAGE_DIR, ID, PHOTO_PNG)
+    // 种简历 JSON：photo 为文件引用形式
+    const r = resumeV1()
+    r.basics.photo = `photos/${ID}.png`
+    await h.realFs!.writeFile(path.join(STORAGE_DIR, `${ID}.json`), JSON.stringify(r), 'utf-8')
+  }
+
+  it('照片文件存在：副本 photo 指向新 id 且照片已复制（正向不回归）', async () => {
+    await seedWithPhotoRef()
+    const { id: newId, resume: copy } = await duplicateResume(ID)
+    expect(copy.basics.photo).toBe(`photos/${newId}.png`)
+    expect(await readPhotoFile(STORAGE_DIR, `photos/${newId}.png`)).toBe(PHOTO_PNG)
+  })
+
+  it('照片文件缺失：副本 photo 回退为空/dataURL，绝不为悬空 photos/ 引用', async () => {
+    await h.realFs!.mkdir(STORAGE_DIR, { recursive: true })
+    const r = resumeV1()
+    r.basics.photo = `photos/${ID}.png` // 引用存在，photos/<ID>.png 文件缺失
+    await h.realFs!.writeFile(path.join(STORAGE_DIR, `${ID}.json`), JSON.stringify(r), 'utf-8')
+
+    const { resume: copy } = await duplicateResume(ID)
+    const p = copy.basics.photo ?? ''
+    expect(p.startsWith('photos/')).toBe(false)
+    // 读不到原文件 → 置空；读得到 → dataURL 内嵌。二者皆非悬空引用
+    expect(p === '' || p.startsWith('data:image/')).toBe(true)
+  })
+
+  it('原 photo 为空：副本保持空（无引用迁移）', async () => {
+    await h.realFs!.mkdir(STORAGE_DIR, { recursive: true })
+    const r = resumeV1()
+    r.basics.photo = ''
+    await h.realFs!.writeFile(path.join(STORAGE_DIR, `${ID}.json`), JSON.stringify(r), 'utf-8')
+
+    const { resume: copy } = await duplicateResume(ID)
+    expect(copy.basics.photo ?? '').toBe('')
   })
 })

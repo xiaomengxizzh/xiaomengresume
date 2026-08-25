@@ -6,7 +6,6 @@
  * 假设（方案 A1）：火山方舟兼容端点 baseURL = https://ark.cn-beijing.volces.com/api/v3（常量可改）。
  * temperature/maxTokens 随 handle 返回，由调用方传入 generateObject/streamText（v7 provider 工厂仅收模型名）。
  */
-import { generateText } from 'ai'
 import type { LanguageModel } from 'ai'
 import Store from 'electron-store'
 import { PROVIDER_IDS, type Settings } from '../../shared/schema/settings'
@@ -77,6 +76,8 @@ export async function createModel(providerId: string): Promise<AiModelHandle> {
 
 /** 2026-08-09 T3/R3：检测模型（临时 apiKey/modelId/baseURL 发最小请求验证，不入库） */
 export async function testProvider(providerId: string, apiKey: string, modelId: string, baseURL?: string): Promise<boolean> {
+  // X2（2026-08-25）：`ai` 核心包函数内动态 import（与 @ai-sdk/* adapter 同模式，不随 main 启动全载）
+  const { generateText } = await import('ai')
   const ping = async (model: LanguageModel): Promise<boolean> => {
     await generateText({ model, prompt: 'ping', maxOutputTokens: 5 })
     return true

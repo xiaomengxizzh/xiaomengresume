@@ -4,7 +4,6 @@
  * scope=selection 用渲染层传入 text；scope=full 主进程按 resumeId 读简历逐字段收集、
  * 每字段独立调用（偏移各自归零）；返回 GrammarIssue[]（0-based、to exclusive）。
  */
-import { generateObject } from 'ai'
 import { z } from 'zod'
 import { GrammarIssueSchema, type GrammarIssue } from '../../shared/schema/grammar'
 import type { AiGrammarArgs } from '../../shared/ipc-channels'
@@ -38,6 +37,8 @@ export function collectResumeSegments(resume: Resume): Array<{ field: string; te
 
 /** 单段语法检查（generateObject 一次调用） */
 async function checkSegment(text: string): Promise<GrammarIssue[]> {
+  // X2（2026-08-25）：`ai` 核心包函数内动态 import（模块缓存，后续调用无额外开销）
+  const { generateObject } = await import('ai')
   const { model, temperature, maxTokens } = await createActiveModel()
   const prompt = getAiPrompt('grammar')
   const { object } = await generateObject({

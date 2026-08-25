@@ -87,22 +87,32 @@ export async function deletePhotoFiles(storageDir: string, id: string): Promise<
   }
 }
 
-/** 复制照片文件（duplicateResume 联动；photos/<fromId>.<ext> → <toId>.<ext>，basename 白名单，失败静默） */
-export async function copyPhotoFiles(storageDir: string, fromId: string, toId: string): Promise<void> {
-  if (!UUID_RE.test(fromId) || !UUID_RE.test(toId)) return
+/** 复制照片文件（duplicateResume 联动；photos/<fromId>.<ext> → <toId>.<ext>，basename 白名单）。
+ *  H4（2026-08-25 修复批③A）：返回【成功复制的扩展名列表】而非全吞错误——调用方据其判断
+ *  目标引用是否有效，失败条目回退 dataURL/置空，杜绝副本 JSON 悬空 photos/ 引用。 */
+export async function copyPhotoFiles(storageDir: string, fromId: string, toId: string): Promise<string[]> {
+  if (!UUID_RE.test(fromId) || !UUID_RE.test(toId)) return []
+  const dir = photosDir(storageDir)
+  let files: string[]
   try {
-    const dir = photosDir(storageDir)
-    const files = await fs.readdir(dir)
-    for (const f of files) {
-      if (f !== path.basename(f) || !f.startsWith(`${fromId}.`)) continue
-      const src = path.resolve(dir, f)
-      if (!src.startsWith(dir + path.sep)) continue
-      const dst = path.resolve(dir, `${toId}${f.slice(fromId.length)}`)
-      if (!dst.startsWith(dir + path.sep)) continue
-      const buf = await fs.readFile(src).catch(() => null)
-      if (buf) await fs.writeFile(dst, buf)
-    }
+    files = await fs.readdir(dir)
   } catch {
-    /* 复制失败不阻断 duplicate（照片可重传） */
+    /* photos 目录不存在/不可读：无可复制（原简历无照片属正常路径） */
+    return []
   }
+  const copied: string[] = []
+  for (const f of files) {
+    if (f !== path.basename(f) || !f.startsWith(`${fromId}.`)) continue
+    const src = path.resolve(dir, f)
+    if (!src.startsWith(dir + path.sep)) continue
+    const dst = path.resolve(dir, `${toId}${f.slice(fromId.length)}`)
+    if (!dst.startsWith(dir + path.sep)) continue
+    try {
+      await fs.copyFile(src, dst)
+      copied.push(path.extname(f).slice(1))
+    } catch {
+      /* 单文件读/写失败不上抛：不入 copied → 调用方回退（H4） */
+    }
+  }
+  return copied
 }

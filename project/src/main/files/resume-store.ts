@@ -17,7 +17,7 @@ import {
 } from '../../shared/schema/resume'
 import { createZip, extractZip, type ZipEntry } from './zip'
 import { extractPendingIds } from './recovery'
-import { deletePhotoFiles, copyPhotoFiles, savePhotoFile } from './photo-store'
+import { deletePhotoFiles, copyPhotoFiles, savePhotoFile, readPhotoFile } from './photo-store'
 import { JobSchema } from '../../shared/schema/job'
 import type { Settings } from '../../shared/schema/settings'
 import type { RecentResume, ResumeSummary } from '../../shared/ipc-channels'
@@ -80,10 +80,14 @@ function withWriteLock<T>(id: string, fn: () => Promise<T>): Promise<T> {
       // 队列尾吞错：错误已由调用方拿到，不污染队列链
     })
   )
-  // 2026-08-08 低危加固：写完成即释放队列条目，防 Map 随 id 无限增长
-  void next.finally(() => {
-    if (writeQueues.get(id) === next) writeQueues.delete(id)
-  })
+  // 2026-08-08 低危加固：写完成即释放队列条目，防 Map 随 id 无限增长。
+  // H2（2026-08-25 修复批③A）：finally 派生 promise 在写失败时透传 reject，必须自吞——
+  // 否则每次写失败（如 rename 重试耗尽）都会产生 unhandledRejection（H2 新测试暴露）。
+  next
+    .finally(() => {
+      if (writeQueues.get(id) === next) writeQueues.delete(id)
+    })
+    .catch(() => {})
   return next
 }
 
@@ -187,27 +191,25 @@ async function rotateBackup(id: string): Promise<void> {
  * 1. 写 <id>.json.tmp（锁，写入中标记）
  * 2. （可选）备份当前正式文件 → .bak 轮转
  * 3. rename .tmp → 正式文件（原子替换）
- * 任一步失败 → .tmp 残留 = 下次启动崩溃恢复信号（try/finally 保证窗口最短）
+ * 任一步失败 → .tmp 残留 = 下次启动崩溃恢复信号。
  * 2026-08-07 二次评估采纳：per-id 串行化（withWriteLock）+ EPERM/EBUSY 退避重试（withRetry）。
  */
 /**
  * 原子写核心（无锁）：调用方必须已持有 per-id 写锁（atomicWrite 或外层读改写锁内）。
  * G1（2026-08-25 修复批②）：拆出无锁变体——rename/bind/unbind 的「读-改-写」需在
  * 同一把写锁内完成，禁止二次进锁（两锁间隙会被并发 save 用旧对象覆盖）。
+ * H2（2026-08-25 修复批③A）：不再 try/finally 无条件 unlink——rename 成功即 .tmp 自然消失；
+ * 失败路径保留 .tmp（内含最新待写数据，recoverPending 可救回）。旧 finally 把含最新内容的
+ * 临时文件一并删除（正式文件仍是旧版 → 数据彻底丢失），与本函数 docstring「失败时保留」矛盾。
  */
 async function doAtomicWrite(id: string, data: Resume, opts: { backup?: boolean } = {}): Promise<void> {
   await ensureStorageDir()
   const file = resumeFilePath(id)
   const tmp = `${file}.tmp`
   const json = JSON.stringify(data, null, 2)
-  try {
-    await withRetry(() => fs.writeFile(tmp, json, 'utf-8'))
-    if (opts.backup !== false) await withRetry(() => rotateBackup(id))
-    await withRetry(() => fs.rename(tmp, file))
-  } finally {
-    // 成功后清理 .tmp；失败时保留（崩溃恢复信号）
-    await fs.unlink(tmp).catch(() => {})
-  }
+  await withRetry(() => fs.writeFile(tmp, json, 'utf-8'))
+  if (opts.backup !== false) await withRetry(() => rotateBackup(id))
+  await withRetry(() => fs.rename(tmp, file))
 }
 
 async function atomicWrite(id: string, data: Resume, opts: { backup?: boolean } = {}): Promise<void> {
@@ -309,6 +311,7 @@ export async function renameResume(id: string, name: string): Promise<Resume> {
 /** 复制：深拷贝赋新 uuid + 重置 meta → 写 <newId>.json，返回新 id + 简历 */
 export async function duplicateResume(id: string): Promise<{ id: string; resume: Resume }> {
   assertUuid(id)
+  const storageDir = getStorageDir()
   const resume = await openResume(id)
   const newId = crypto.randomUUID()
   const now = nowIso()
@@ -318,14 +321,31 @@ export async function duplicateResume(id: string): Promise<{ id: string; resume:
       meta: { createdAt: now, updatedAt: now, lastOpenedAt: now }
     })
   )
-  // B3：photo 引用随新 id 更新（copyPhotoFiles 已复制照片文件，引用必须指向新文件）
-  const p = copy.basics.photo
-  if (typeof p === 'string' && p.startsWith('photos/')) {
-    copy.basics.photo = `photos/${newId}${p.slice(p.lastIndexOf('.'))}`
+  // B3：photo 引用随新 id 更新（copyPhotoFiles 复制照片文件，引用必须指向新文件）
+  // H4（2026-08-25 修复批③A）：先拷照片文件、后写副本 JSON——原「先写 JSON 后拷照片 +
+  // copyPhotoFiles 全吞错误」在拷贝失败时留下悬空 photos/ 引用（副本裂图且永不自愈）。
+  // 拷贝有失败 → 副本 photo 回退为原文件 dataURL 内嵌（下次保存重试转存）；
+  // 连原文件都读不到 → 置空并告警。对外签名/IPC 契约不变（告警仅 console）。
+  const origPhoto = typeof copy.basics.photo === 'string' ? copy.basics.photo : ''
+  const wasRef = origPhoto.startsWith('photos/')
+  let photoExt = ''
+  if (wasRef) {
+    photoExt = origPhoto.slice(origPhoto.lastIndexOf('.') + 1)
+    copy.basics.photo = `photos/${newId}.${photoExt}`
+  }
+  const copiedExts = await copyPhotoFiles(storageDir, id, newId)
+  if (wasRef && !copiedExts.includes(photoExt)) {
+    const embedded = await readPhotoFile(storageDir, origPhoto)
+    if (embedded) {
+      copy.basics.photo = embedded
+    } else {
+      copy.basics.photo = ''
+      console.warn(
+        `[resume-store] duplicateResume: photo copy failed and source unreadable, fallback to empty. ${id} -> ${newId}`
+      )
+    }
   }
   await atomicWrite(newId, copy, { backup: false })
-  // B1：复制照片文件（photos/<id>.* → <newId>.*；失败静默，不阻断复制）
-  await copyPhotoFiles(getStorageDir(), id, newId)
   return { id: newId, resume: copy }
 }
 
@@ -626,11 +646,19 @@ export async function importBackup(win: BrowserWindow): Promise<number> {
         skipped++
         continue
       }
-      const file = path.join(getStorageDir(), path.basename(rel))
-      const bak = `${file}.bak.${Date.now()}` // 导入前备份防误操作
-      await fs.writeFile(bak, await fs.readFile(file).catch(() => Buffer.alloc(0)))
-      await fs.writeFile(file, JSON.stringify(resume, null, 2))
-      count++
+      // H3（2026-08-25 修复批③A）：写盘段并入逐条 try/catch——磁盘满等写失败计入 skipped，
+      // 不再裸奔 reject 整批半导入；写回走 doAtomicWrite（.tmp+rename 原子写）；
+      // 原文件不存在时不打 .bak（修 P1-10：原实现写 0 字节幽灵备份污染版本时间线）。
+      // 导入前备份防误操作语义保留。
+      try {
+        const file = path.join(getStorageDir(), path.basename(rel))
+        const prev = await fs.readFile(file).catch(() => null)
+        if (prev !== null) await fs.writeFile(`${file}.bak.${Date.now()}`, prev)
+        await doAtomicWrite(rel.slice(0, -5), resume, { backup: false })
+        count++
+      } catch {
+        skipped++
+      }
     }
   }
   if (skipped > 0) {

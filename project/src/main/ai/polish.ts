@@ -4,7 +4,6 @@
  * 流式输出润色文本；jobId 存在时经 job-store 取 requirements 注入 instructions（仅风格对齐，
  * 禁编造）；text 由渲染层传入（含选区快照语义，range 失效由渲染层拦截）。
  */
-import { streamText } from 'ai'
 import type { AiPolishArgs } from '../../shared/ipc-channels'
 import { AiServiceError, getAiPrompt } from './config'
 import { createActiveModel } from './client'
@@ -26,6 +25,8 @@ export async function runPolish(
     }
   }
   const { model, temperature, maxTokens } = await createActiveModel()
+  // X2（2026-08-25）：`ai` 核心包函数内动态 import（模块缓存，后续调用无额外开销）
+  const { streamText } = await import('ai')
   const result = await streamText({
     model,
     prompt: `${prompt}\n\n待润色文本：\n${text}`,
