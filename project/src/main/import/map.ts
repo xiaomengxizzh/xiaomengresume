@@ -9,7 +9,7 @@
  * - prompt 显式"常见键→固定字段"映射表 + 「任意标签对必进 customFields、label 必须原文」——消除"只认固定字段"
  * - ZodError 校验失败重试一次（带错误信息重发，防字段丢失/结构跑偏）
  */
-import { generateObject } from 'ai'
+import type { generateObject } from 'ai'
 import { ImportMapSchema, importMapToResume } from '../../shared/schema/import-map'
 import type { ImportDraft } from '../../shared/ipc-channels'
 import { createActiveModel } from '../ai/client'
@@ -34,6 +34,8 @@ async function tryGenerate(
   temperature: number,
   maxTokens: number
 ): Promise<unknown> {
+  // X2（2026-08-25）：`ai` 核心包函数内动态 import（模块缓存，后续调用无额外开销）
+  const { generateObject } = await import('ai')
   const { object } = await generateObject({
     model,
     schema: ImportMapSchema,

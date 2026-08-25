@@ -28,6 +28,42 @@ describe('zip 零依赖工具（F11 备份）', () => {
   })
 })
 
+describe('zip 解包边界/尺寸校验（H5 防炸弹，TDD）', () => {
+  /** 造一个单条目合法 zip 并返回 {buf, eocdPos, cdPos}（eocdPos=尾部 22 字节处） */
+  function oneEntryZip(): { buf: Buffer; eocdPos: number; cdPos: number } {
+    const buf = createZip([{ name: 'resumes/a.json', data: Buffer.from('{}') }])
+    const eocdPos = buf.length - 22
+    const cdPos = buf.readUInt32LE(eocdPos + 16)
+    return { buf, eocdPos, cdPos }
+  }
+
+  it('中央目录 offset 越界 → 明确错误而非 RangeError', () => {
+    const { buf, eocdPos } = oneEntryZip()
+    buf.writeUInt32LE(buf.length + 4096, eocdPos + 16)
+    expect(() => extractZip(buf)).toThrow(/central directory/)
+  })
+
+  it('条目 localOffset 越界 → 明确错误而非 RangeError', () => {
+    const { buf, cdPos } = oneEntryZip()
+    buf.writeUInt32LE(0xfffffff0, cdPos + 42)
+    expect(() => extractZip(buf)).toThrow(/local header/)
+  })
+
+  it('单条 uncompSize 超上限(64MB) → 拒绝', () => {
+    const { buf, cdPos } = oneEntryZip()
+    buf.writeUInt32LE(64 * 1024 * 1024 + 1, cdPos + 24)
+    expect(() => extractZip(buf)).toThrow(/too large/)
+  })
+
+  it('条目数超上限(500) → 拒绝（防循环炸弹）', () => {
+    const many = Array.from({ length: 501 }, (_, i) => ({
+      name: `resumes/f${i}.json`,
+      data: Buffer.from('"x"')
+    }))
+    expect(() => extractZip(createZip(many))).toThrow(/too many entries/)
+  })
+})
+
 describe('崩溃恢复协议 extractPendingIds（P0-1 回归）', () => {
   const UUID = '3b1f2c6a-8e4d-4f2a-9b0c-1a2b3c4d5e6f'
 

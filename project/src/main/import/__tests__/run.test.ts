@@ -18,7 +18,9 @@ const m = vi.hoisted(() => ({
   extractDocxText: vi.fn(),
   mapTextToDraft: vi.fn(),
   // R8：批量导入直接落盘
-  saveResume: vi.fn()
+  saveResume: vi.fn(),
+  // X1（2026-08-25）：pdf 分支单次读盘认证
+  readFile: vi.fn()
 }))
 
 vi.mock('electron', () => ({
@@ -39,6 +41,7 @@ vi.mock('../pdf', () => ({
 vi.mock('../docx', () => ({ extractDocxText: (...a: unknown[]) => m.extractDocxText(...a) }))
 vi.mock('../map', () => ({ mapTextToDraft: (...a: unknown[]) => m.mapTextToDraft(...a) }))
 vi.mock('../../files/resume-store', () => ({ saveResume: (...a: unknown[]) => m.saveResume(...a) }))
+vi.mock('node:fs', () => ({ promises: { readFile: (...a: unknown[]) => m.readFile(...a) } }))
 
 import { IPC, type ImportRunArgs } from '../../../shared/ipc-channels'
 import { registerImportIpc, withTimeout, toImportAiError, IMPORT_TIMEOUT_MS } from '../run'
@@ -61,6 +64,7 @@ beforeEach(() => {
   m.extractDocxText.mockResolvedValue({ text: 't', warnings: [] })
   m.extractPdfPhoto.mockResolvedValue({ dataUrl: 'data:image/png;base64,AAA', width: 90, height: 120 })
   m.saveResume.mockResolvedValue({})
+  m.readFile.mockResolvedValue(Buffer.from('%PDF-fake'))
 })
 
 function getHandler(): (e: unknown, args: ImportRunArgs) => Promise<{
@@ -114,6 +118,18 @@ describe('registerImportIpc（入口分发）', () => {
     expect(r.data?.resume?.basics?.photo).toBe('data:image/png;base64,AAA')
     expect(r.data?.resume?.basics?.photoWidth).toBe(90)
     expect(r.data?.resume?.basics?.photoHeight).toBe(120)
+  })
+
+  it('X1：pdf 导入单次读盘，lines/photo 共用同一 buffer', async () => {
+    const shared = Buffer.from('%PDF-shared')
+    m.readFile.mockResolvedValue(shared)
+    m.dialog.showOpenDialog.mockResolvedValue({ canceled: false, filePaths: ['/tmp/a.pdf'] })
+    const h = getHandler()
+    const r = await h({ sender }, { format: 'pdf' } as ImportRunArgs)
+    expect(r.ok).toBe(true)
+    expect(m.readFile).toHaveBeenCalledTimes(1)
+    expect(m.extractPdfLines).toHaveBeenCalledWith(shared)
+    expect(m.extractPdfPhoto).toHaveBeenCalledWith(shared)
   })
 
   it('pdf 无图 → photo 保持空（不阻断）', async () => {

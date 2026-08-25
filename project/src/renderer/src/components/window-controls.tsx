@@ -60,7 +60,7 @@ export function WindowControls(): React.JSX.Element {
       >
         <MaximizeIcon restore={maximized} />
       </button>
-      <button type="button" className={`${btn} hover:bg-red-500/80 hover:text-white`} title={t('window.controls.close')} aria-label={t('window.controls.close')} onClick={() => window.electronAPI.window.close()}>
+      <button type="button" className={`${btn} hover:bg-danger/80 hover:text-white`} title={t('window.controls.close')} aria-label={t('window.controls.close')} onClick={() => window.electronAPI.window.close()}>
         <CloseIcon />
       </button>
     </div>

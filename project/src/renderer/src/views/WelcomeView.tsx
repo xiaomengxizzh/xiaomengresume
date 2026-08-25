@@ -12,7 +12,8 @@ import { WizardDialog } from '../components/wizard/WizardDialog'
 
 /** 品牌标志：material/图标_圆角.png（圆角版，与 public/icon.png 同源；品牌唯一标识） */
 function BrandLogo(): React.JSX.Element {
-  return <img src="./icon.png" alt="XM简历" className="h-20 w-20 object-contain" draggable={false} />
+  const { t } = useTranslation()
+  return <img src="./icon.png" alt={t('welcome.brandAlt')} className="h-20 w-20 object-contain" draggable={false} />
 }
 
 export function WelcomeView(): React.JSX.Element {

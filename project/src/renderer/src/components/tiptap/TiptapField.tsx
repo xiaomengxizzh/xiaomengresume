@@ -15,8 +15,10 @@ interface TiptapFieldProps {
   value: RichText | undefined
   onChange: (v: RichText) => void
   className?: string
-  /** M3 F7/F8：编辑器实例上抛（选区读取/语法 Mark/替换需要；可选，向后兼容） */
-  onEditorReady?: (editor: Editor) => void
+  /** M3 F7/F8：编辑器实例上抛（选区读取/语法 Mark/替换需要；可选，向后兼容）。
+   *  C5（2026-08-25）：传 null = 注销——卸载/实例更换时由 cleanup 回调，
+   *  防 destroyed editor 残留 EditorPane 的 fieldEditorRegistry、删除条目后索引键错位。 */
+  onEditorReady?: (editor: Editor | null) => void
 }
 
 function ToolBtn({
@@ -72,9 +74,13 @@ export function TiptapField({ value, onChange, onEditorReady }: TiptapFieldProps
     }
   })
 
-  // M3 F7/F8：编辑器实例上抛（父组件读选区/语法 Mark/替换；幂等，StrictMode 安全）
+  // M3 F7/F8：编辑器实例上抛（父组件读选区/语法 Mark/替换；幂等，StrictMode 安全）。
+  // C5（2026-08-25）：cleanup 以 null 注销注册——onEditorReady 闭包携带键名，
+  // 实例更换/条目删除移位时旧键注销+新键注册，Map 不残留 destroyed editor。
   useEffect(() => {
-    if (editor && onEditorReady) onEditorReady(editor)
+    if (!editor || !onEditorReady) return
+    onEditorReady(editor)
+    return () => onEditorReady(null)
   }, [editor, onEditorReady])
 
   // P1-6：初载/外部同步后刷新字数

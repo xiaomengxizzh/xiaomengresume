@@ -10,7 +10,8 @@
     "newBlank": "New blank resume",
     "openResume": "Open resume",
     "newResume": "New Resume",
-    "wizard": "Usage guide"
+    "wizard": "Usage guide",
+    "brandAlt": "XM Resume"
   },
   "verify": {
     "title": "M0 Skeleton Verification",
@@ -34,6 +35,7 @@
     "resumeName": "Resume name",
     "undo": "Undo",
     "redo": "Redo",
+    "photoTooLarge": "Image still exceeds 150KB after compression; please choose a smaller one",
     "template": {
       "classic": "Classic",
       "modern": "Modern",
@@ -762,6 +764,8 @@
     "batchDone": "Batch import done: {{count}} succeeded",
     "batchFailed": "{{count}} failed",
     "batchFail": "Batch import failed: {{code}}",
+    "contentSummary": "{{name}} · {{work}} work entries · {{education}} education entries",
+    "noAiNeeded": "(JSON import needs no AI — ready to use)",
     "warning.garbled": "Garbled lines were removed",
     "warning.scanned": "Too little text; possibly a scanned document",
     "warning.vision": "Image/scan import needs vision support (M4b)",
@@ -789,7 +793,6 @@
     "noBackups": "No backups yet"
   },
   "resumesJobs": {
-    "rename": "Rename",
     "delete": "Delete",
     "bulkDelete": "Delete selected",
     "selected": "{{count}} selected",

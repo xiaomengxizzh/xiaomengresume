@@ -134,7 +134,9 @@ export function ResumesList({
           </button>
         )}
         {embedded ? null : (
-          <h2 className="home-title">{mode === 'recent' ? t('navSub.openResume') : t('homeCard.manage')}</h2>
+          // C9（2026-08-25）：all 模式标题原误用 homeCard.manage（「管理多份」是首页卡片文案），
+          // 改 navSub.manage（「简历管理」，与 recent 分支的 navSub.openResume 同族导航标题）
+          <h2 className="home-title">{mode === 'recent' ? t('navSub.openResume') : t('navSub.manage')}</h2>
         )}
         {items && items.length > 0 ? (
           <input

@@ -359,7 +359,11 @@ export function ImportWizard({
             <span className="rounded bg-foreground/5 px-2 py-1">
               {isEmpty(resume)
                 ? t('import.noContent')
-                : `${resume.basics.name || '—'} · ${resume.work.length} 段工作 · ${resume.education.length} 段教育`}
+                : t('import.contentSummary', {
+                    name: resume.basics.name || '—',
+                    work: resume.work.length,
+                    education: resume.education.length
+                  })}
             </span>
           </div>
           {isEmpty(resume) ? (

@@ -185,4 +185,26 @@ describe('TagsBlock combobox（回归测试（2026-08-10 用户反馈修复）�
     const cf = st.customFields ?? []
     expect(cf.some((f) => f.value === '13800138000')).toBe(true)
   })
+
+  it('H：C6 删关联标签 = 单历史步——一步 Ctrl+Z 同时回退标签与固定字段', async () => {
+    const { container } = render(<EditorView />)
+    await waitFor(() => expect(comboInputs(container).length).toBeGreaterThan(0))
+    const before = useResumeStore.getState().resume.basics
+    expect(before.phone).toBe('13800138000')
+    // 删除格 0（电话，icon=phone 关联 basics.phone）
+    const cell = comboInputs(container)[0].closest('.grid > div') as HTMLElement
+    const del = [...cell.querySelectorAll('button')].find((b) => b.textContent?.trim() === '✕') as HTMLButtonElement
+    fireEvent.click(del)
+    await act(async () => {})
+    const afterDel = useResumeStore.getState().resume.basics
+    expect(afterDel.phone).toBe('')
+    expect((afterDel.customFields ?? []).length).toBe((before.customFields ?? []).length - 1)
+    // 单次 undo：标签与固定字段同时恢复（原两连发 setField 需两次 undo 且状态撕裂）
+    act(() => {
+      useResumeStore.getState().undo()
+    })
+    const restored = useResumeStore.getState().resume.basics
+    expect(restored.phone).toBe('13800138000')
+    expect((restored.customFields ?? []).length).toBe((before.customFields ?? []).length)
+  })
 })

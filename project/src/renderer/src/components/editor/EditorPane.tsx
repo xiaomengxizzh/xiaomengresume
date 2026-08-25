@@ -12,6 +12,7 @@ import { getByPath, parsePath } from '@shared/paths'
 import { SKILL_LEVELS, LANGUAGE_PROFICIENCIES } from '@shared/schema/resume'
 import { FONT_OPTIONS } from '@shared/constants/fonts'
 import { Button, Dialog, EmptyState, Input, Select } from '../ui'
+import { showToast } from '../ui/toast'
 import { TextField, DateField, SelectField } from '../fields'
 import { TiptapField } from '../tiptap/TiptapField'
 import { LayoutBar } from './LayoutBar'
@@ -36,6 +37,18 @@ const POLISH_FIELDS: Record<string, string> = {
   education: 'education[0].description',
   work: 'work[0].summary',
   projects: 'projects[0].description'
+}
+
+/** 标签图标 → basics 固定字段映射（removeTag 删标签同步清固定字段；2026-08-13 需求② user=性别 star=年龄） */
+const TAG_ICON_TO_FIELD: Record<string, string> = {
+  phone: 'phone',
+  mail: 'email',
+  pin: 'location',
+  globe: 'website',
+  calendar: 'birthDate',
+  briefcase: 'employmentStatus',
+  user: 'gender',
+  star: 'age'
 }
 
 /** 由主组件注入的 AI 辅助面板打开函数（Form 内 SectionCard 按钮回调） */
@@ -297,7 +310,11 @@ function PhotoBlock(): React.JSX.Element {
           quality -= 0.1
           dataUrl = canvas.toDataURL('image/jpeg', quality)
         }
-        if (dataUrl.length > LIMIT) return // 降质到下限仍超限 → 放弃（提示用户换小图）
+        if (dataUrl.length > LIMIT) {
+          // C7（2026-08-25）：降质到下限仍超限 → toast 明示用户换小图（原静默 return）
+          showToast(t('editor.photoTooLarge'), 'error')
+          return
+        }
         setField('basics.photo', dataUrl)
         setField('basics.photoWidth', width)
         setField('basics.photoHeight', height)
@@ -509,12 +526,15 @@ function IconCombo({
       (f, i, arr) => arr.findIndex((x) => x.value === f.value) === i // 同值去重（infoItems 优先）
     )
     if (merged.length > 0) {
-      setField(
-        'basics.customFields',
-        merged.map((f) => ({ id: crypto.randomUUID(), label: f.label, value: f.value, icon: f.icon }))
-      )
+      // C6（2026-08-25）：customFields 写入 + infoItems 清空合并为单次 setField('basics',…)——
+      // 原两连发各记一条历史（Ctrl+Z 只回退一步，标签/infoItems 撕裂）；单次对象写入 = 一步完整回退。
+      const nextBasics: typeof b = {
+        ...b,
+        customFields: merged.map((f) => ({ id: crypto.randomUUID(), label: f.label, value: f.value, icon: f.icon }))
+      }
       // 迁移后清空 infoItems（防渲染兜底/再次显示旧标签）
-      if ((b.infoItems ?? []).length > 0) setField('basics.infoItems', [])
+      if ((b.infoItems ?? []).length > 0) nextBasics.infoItems = []
+      setField('basics', nextBasics)
     }
     // 仅随 resume 加载/变化触发一次（injectedRef 标记，删除/编辑后不再注入）
   }, [resume, resumeId])
@@ -535,22 +555,17 @@ function IconCombo({
     const cur = fields[i]
     // 2026-08-10 修复：删除标签格同步清除对应 basics 固定字段——防预览/导出 fallback
     //（contactItems 仅 infoItems 空时拼接 basics 字段）仍显示已删标签（用户"删除标签简历仍显示"）
-    if (cur) {
-      const iconToField: Record<string, string> = {
-        phone: 'phone',
-        mail: 'email',
-        pin: 'location',
-        globe: 'website',
-        calendar: 'birthDate',
-        briefcase: 'employmentStatus',
-        user: 'gender', // 2026-08-13 需求②：user 图标 = 性别
-        star: 'age' // 2026-08-13 需求②：star 图标 = 年龄
-      }
-      const field = iconToField[cur.icon ?? '']
-      if (field) setField(`basics.${field}`, '')
-    }
+    // C6（2026-08-25）：删标签 + 清关联固定字段合并为单次对象写入 = 一步 Ctrl+Z 完整回退
+    //（原两连发 setField 拆成两条历史，撤销后标签回来但固定字段仍空）。
     const next = fields.filter((_, idx) => idx !== i)
-    setField('basics.customFields', next)
+    const linkedField = cur ? TAG_ICON_TO_FIELD[cur.icon ?? ''] : undefined
+    if (!linkedField) {
+      setField('basics', { ...resume.basics, customFields: next })
+      return
+    }
+    const nextBasics: typeof resume.basics = { ...resume.basics, customFields: next }
+    ;(nextBasics as unknown as Record<string, unknown>)[linkedField] = ''
+    setField('basics', nextBasics)
   }
 
   return (

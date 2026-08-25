@@ -157,18 +157,18 @@ export function AiAssistPanel({
         </div>
       </div>
 
-      {localErr ? <p className="mb-1 text-xs text-red-500">{localErr}</p> : null}
+      {localErr ? <p className="mb-1 text-xs text-danger">{localErr}</p> : null}
 
       {kind === 'polish' ? (
         polish.error ? (
-          <p className="text-sm text-red-500">{t('ai.error.' + polish.error.code)}</p>
+          <p className="text-sm text-danger">{t('ai.error.' + polish.error.code)}</p>
         ) : (
           <div className="max-h-56 overflow-y-auto whitespace-pre-wrap rounded border border-border/70 bg-surface px-3 py-2 text-sm text-foreground">
             {polish.result || (polish.busy ? t('ai.polish.running') : '')}
           </div>
         )
       ) : grammarError ? (
-        <p className="text-sm text-red-500">{t('ai.error.' + grammarError)}</p>
+        <p className="text-sm text-danger">{t('ai.error.' + grammarError)}</p>
       ) : issues === null ? (
         <p className="text-xs text-foreground/50">{grammarBusy ? t('ai.grammar.running') : '…'}</p>
       ) : issues.length === 0 ? (

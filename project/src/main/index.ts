@@ -251,9 +251,15 @@ app.whenReady().then(() => {
   }
 
   app.on('activate', () => {
-    // 以「可见窗口」判断重建：隐藏的 PDF 打印窗口不应阻止主窗口重建（macOS 惯例）
-    const hasVisible = BrowserWindow.getAllWindows().some((w) => w.isVisible())
-    if (!hasVisible) void createMainWindow()
+    // C4（2026-08-25）：activate 先复用既有主窗口（托盘隐藏场景 show+focus，不新建第二窗口、
+    // 不产生旧 tray 泄漏）；仅当主窗口已销毁（closed 置空）才重建。
+    // 原判据「getAllWindows 无可见窗口」在托盘隐藏时会误建新窗口，且隐藏的 PDF 打印窗口不再影响本分支。
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.show()
+      mainWindow.focus()
+      return
+    }
+    void createMainWindow()
   })
 })
 

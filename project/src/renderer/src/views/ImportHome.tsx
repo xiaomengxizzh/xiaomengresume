@@ -142,7 +142,7 @@ export function ImportHome(): React.JSX.Element {
         <div className="mb-4 rounded-lg border border-danger/40 bg-danger/10 p-3 text-[13px] text-danger">
           {t(`import.error.${error.code}`)}
           {error.code === 'NO_PROVIDER' ? (
-            <span className="block text-xs opacity-80">（JSON 导入无需 AI，可直接使用）</span>
+            <span className="block text-xs opacity-80">{t('import.noAiNeeded')}</span>
           ) : null}
           {error.code === 'UNKNOWN' && error.message ? (
             <span className="mt-1 block break-all text-xs opacity-70">{error.message}</span>

@@ -10,7 +10,8 @@
     "newBlank": "新建空白简历",
     "openResume": "打开简历",
     "newResume": "新建简历",
-    "wizard": "使用向导"
+    "wizard": "使用向导",
+    "brandAlt": "XM简历"
   },
   "verify": {
     "title": "M0 骨架验证",
@@ -34,6 +35,7 @@
     "resumeName": "简历名称",
     "undo": "撤销",
     "redo": "重做",
+    "photoTooLarge": "图片压缩后仍超过 150KB，请更换更小的图片",
     "template": {
       "classic": "经典单栏",
       "modern": "现代单栏",
@@ -762,6 +764,8 @@
     "batchDone": "批量导入完成：成功 {{count}} 份",
     "batchFailed": "失败 {{count}} 份",
     "batchFail": "批量导入失败：{{code}}",
+    "contentSummary": "{{name}} · {{work}} 段工作 · {{education}} 段教育",
+    "noAiNeeded": "（JSON 导入无需 AI，可直接使用）",
     "warning.garbled": "疑似乱码行已剔除",
     "warning.scanned": "文本过少，疑似扫描件",
     "warning.vision": "图片/扫描件导入需视觉识别（M4b）",
@@ -789,7 +793,6 @@
     "noBackups": "暂无历史版本"
   },
   "resumesJobs": {
-    "rename": "重命名",
     "delete": "删除",
     "bulkDelete": "批量删除",
     "selected": "已选 {{count}} 项",

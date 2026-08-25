@@ -20,6 +20,21 @@ async function loadUnpdf(): Promise<typeof import('unpdf')> {
   return await import('unpdf')
 }
 
+/**
+ * X1（2026-08-25）：PDF 来源统一装载——路径时读盘，bytes 时直通。
+ * run.ts 对同一文件只读盘一次，extractPdfLines 与 extractPdfPhoto 共用同一 buffer，
+ * 消除大 PDF「双次 readFile + 双次完整解析」的耗时/内存开销；各自 new Uint8Array 拷贝
+ * 保证 pdf.js transfer 不互相影响。
+ */
+async function loadPdfSource(source: string | Uint8Array): Promise<Uint8Array> {
+  if (typeof source !== 'string') return source
+  try {
+    return await fs.readFile(source)
+  } catch {
+    throw new ImportError('PARSE_FAILED', 'unreadable pdf file')
+  }
+}
+
 /** 文本型阈值（#3 拍板：100 字符落码；M4 实测调参集中此常量） */
 export const PDF_TEXT_MIN_CHARS = 100
 /** 乱码行阈值：� 替换字符占行长度比例超过此值 → 整行剔除 */
@@ -144,13 +159,8 @@ const PAIR_GAP_THRESHOLD = 18
  * 文本 = extractText（阅读顺序，与 extractPdfText 一致——rules 的"姓名首行/第 2 行职业"假设依赖阅读序）；
  * pairs = extractTextItems 坐标两列候选（左短右长，作 B 档 customFields 兜底，低置信交三步核对）。
  */
-export async function extractPdfLines(filePath: string): Promise<PdfLinesResult> {
-  let buffer: Buffer
-  try {
-    buffer = await fs.readFile(filePath)
-  } catch {
-    throw new ImportError('PARSE_FAILED', 'unreadable pdf file')
-  }
+export async function extractPdfLines(source: string | Uint8Array): Promise<PdfLinesResult> {
+  const buffer = await loadPdfSource(source)
   let rawText: string
   let pageItems: Array<Array<{ str: string; x: number; y: number; width: number; height: number }>>
   try {
@@ -326,12 +336,12 @@ export interface PdfPhotoResult {
  * 启发式：取**第一页面积最大**的嵌入图片（简历头像通常是最大图）；
  * 超大图跳过（PDF_PHOTO_MAX_PIXELS 防撑爆）；无图/失败返回 null（不阻断导入）。
  */
-export async function extractPdfPhoto(filePath: string): Promise<PdfPhotoResult | null> {
-  let buffer: Buffer
+export async function extractPdfPhoto(source: string | Uint8Array): Promise<PdfPhotoResult | null> {
+  let buffer: Uint8Array
   try {
-    buffer = await fs.readFile(filePath)
+    buffer = await loadPdfSource(source)
   } catch {
-    return null
+    return null // 读盘失败不阻断导入（与原路径入参行为一致）
   }
   try {
     const { getDocumentProxy, extractImages } = await loadUnpdf()

@@ -86,8 +86,11 @@ export function registerIpc(): void {
     const entries: ZipEntry[] = []
     for (const f of logs) {
       let content = await fs.readFile(path.join(logsDir, f), 'utf-8')
-      // 二次扫描剔除 Key 痕迹（sk- 前缀等疑似凭据）
-      content = content.replace(/sk-[A-Za-z0-9_-]{8,}/g, '<redacted>')
+      // 二次扫描剔除 Key 痕迹（C3：OpenAI/DeepSeek sk- + Google AIza + GitHub ghp_/gho_ 等常见凭据形态）
+      content = content
+        .replace(/sk-[A-Za-z0-9_-]{8,}/g, '<redacted>')
+        .replace(/AIza[0-9A-Za-z_-]{10,}/g, '<redacted>')
+        .replace(/gh[posr]_[A-Za-z0-9]{20,}/g, '<redacted>')
       entries.push({ name: f, data: Buffer.from(content, 'utf-8') })
     }
     const date = new Date().toISOString().slice(0, 10).replace(/-/g, '')

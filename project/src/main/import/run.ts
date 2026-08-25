@@ -6,6 +6,7 @@
  * 对话框 label 用英文（主进程无 i18n，CH4 豁免，与 backup import 一致）。
  */
 import { BrowserWindow, dialog, ipcMain } from 'electron'
+import { promises as fsPromises } from 'node:fs'
 import * as path from 'node:path'
 import {
   IPC,
@@ -138,7 +139,14 @@ export async function runImport(
   let pairs: Array<{ label: string; value: string }> = []
   if (format === 'pdf') {
     emitProgress(sender, 'parse', 0.3)
-    const r = await extractPdfLines(filePath)
+    // X1（2026-08-25）：单次读盘，lines/photo 共用 buffer（原两函数各 readFile+完整解析一次）
+    let pdfBytes: Buffer
+    try {
+      pdfBytes = await fsPromises.readFile(filePath)
+    } catch {
+      throw new ImportError('PARSE_FAILED', 'unreadable pdf file')
+    }
+    const r = await extractPdfLines(pdfBytes)
     if (r.needsVision) {
       emitProgress(sender, 'done', 1)
       return visionPlaceholderDraft('pdf', fileName, r.text, r.warnings)
@@ -147,7 +155,7 @@ export async function runImport(
     warnings = r.warnings
     pairs = r.pairs
     // 2026-08-09：提取 PDF 头像（文本型 PDF；扫描件走 M4b vision 不在此处理）
-    pdfPhoto = await extractPdfPhoto(filePath)
+    pdfPhoto = await extractPdfPhoto(pdfBytes)
   } else {
     emitProgress(sender, 'parse', 0.3)
     const r = await extractDocxText(filePath)
