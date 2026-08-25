@@ -27,6 +27,7 @@
 - **契约冻结**：`src/shared/`（Zod schema + IPC 通道）变更须经集成者批准；API 文档禁手写（`project/scripts/gen_api_docs.mjs` 生成，变更后必重跑）。
 - **文案**：禁硬编码中文，走 F13 i18n（zh/en 对称，新 key 双端同步）。
 - **依赖**：新依赖过 G.2 三问（原生编译？额外二进制？超 2 年未发版？）。
+- **PII 铁律（2026-08-25，F1 处置）**：真实个人简历/证件/手机号/邮箱**永不入库**（本地样本只放 `material/private/`，已 ignore）；测试 fixture 与示例数据一律合成；三道防线=pre-commit（.githooks，`git config core.hooksPath .githooks` 启用）+ CI pii-scan + `node scripts/check_pii.mjs` 手动全量。
 - **git**：收口后 AI 自行 commit（规范 message，禁 --no-verify）；**开源仓库**（github.com/xiaomengxizzh/xiaomengresume）push 前先 `git fetch` 检查远端外部改动；`project/used_keys.txt` 类疑似敏感文件**永不提交**。
 - **凭据与隐私（2026-08-11）**：凭据只从环境变量/密钥服务读取，源码/示例/测试禁写可用凭据字面量（占位符 sk-... 可）；**禁写本机绝对路径**（文档/代码，泄露用户名与目录结构，需提路径用 `<用户目录>` 等通用描述）；CI 跑 gitleaks（security.yml），GitHub Secret scanning 已建议启用（SECURITY.md）。
 - **性能与结构铁律（2026-08-11，规范五章 8-13）**：主进程重依赖（unpdf/mammoth/@ai-sdk/pdf-lib）一律函数内动态 import；渲染低频视图一律 lazy 拆 chunk（编辑区 TipTap 保持同步）；大对象（base64 图 >100KB）出 JSON 转文件+引用；隐藏窗口用完即毁 + backgroundThrottling:false；新增功能过渲染/内存自检 5 问（编辑器实例数/全量拷贝/列表扫描/监听清理/快照就绪）；性能改动先量化基线再优化。

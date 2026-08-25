@@ -245,8 +245,10 @@ describe('rulesToImportMap（组装 ImportMap → importMapToResume 收口）', 
   })
 
   it('2026-08-13 简历2 回归：校园经历 → projects 段（不进 education）+ 相关技能 → skills 段', () => {
+    // F1 隐私处置（2026-08-25）：原 fixture 为真实简历文本（姓名/邮箱/电话），已合成化——
+    // 解析规则测试不依赖真实个人数据；结构（锚点/同行多字段/无后缀城市）与原文本保持一致。
     const text = cleanText(
-      '李明\n状态: 可实习6个月以上 邮箱: liming@example.com\n电话: 13800138000 地址: 合肥\n性别: 男 年龄: 23岁\n' +
+      '测试者\n状态: 可实习6个月以上 邮箱: test@example.com\n电话: 13912345678 地址: 合肥\n性别: 男 年龄: 23岁\n' +
         '教育经历\n山东大学 市场营销 · 硕士在读 2024/09 - 至今\n' +
         '校园经历\n齐鲁粮油公共品牌调研项目 项目调研 2025/09 - 2026/01\n调研准备与问卷设计：设计问卷并回收样本\n' +
         '相关技能\n市场研究工具：SPSS（信效度分析）\n内容制作：PPT（商业报告制作）'
@@ -260,9 +262,9 @@ describe('rulesToImportMap（组装 ImportMap → importMapToResume 收口）', 
     // 相关技能归 skills
     expect(map.skills).toHaveLength(2)
     // basics：电话/邮箱/姓名/位置 + 状态→employmentStatus（2026-08-13 修复：状态 label 直取全值，不进 customFields）
-    expect(map.basics?.phone).toBe('13800138000')
-    expect(map.basics?.email).toBe('liming@example.com')
-    expect(map.basics?.name).toBe('李明')
+    expect(map.basics?.phone).toBe('13912345678')
+    expect(map.basics?.email).toBe('test@example.com')
+    expect(map.basics?.name).toBe('测试者')
     expect(map.basics?.location).toBe('合肥')
     expect(map.basics?.employmentStatus).toBe('可实习6个月以上')
     // 2026-08-13 需求②：性别/年龄 → 正式字段（"性别: 男 年龄: 23岁" 拆两条）

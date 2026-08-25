@@ -20,3 +20,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # 命中即失败（默认）；如需人工复核可改 GITLEAKS_NOTIFY_USER_LIST
+
+  pii-scan:
+    name: PII/本机路径扫描（F1 处置配套：gitleaks 不认中文 PII）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # scripts/check_pii.mjs：手机号（白名单假号除外）/身份证/本机绝对路径，命中即非零退出
+      - run: node scripts/check_pii.mjs

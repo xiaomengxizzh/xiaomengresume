@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import io
 
-P = r"E:/ai/aiwork/newproject/xiaomengresume/gen_nav_proto.py"
+P = r"<工作区>/aiwork/newproject/xiaomengresume/gen_nav_proto.py"
 s = io.open(P, encoding="utf-8").read()
 o = s
 rep = []

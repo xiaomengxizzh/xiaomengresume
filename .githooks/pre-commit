@@ -1,0 +1,5 @@
+#!/bin/sh
+# pre-commit：PII/本机路径入库拦截（F1 处置配套，2026-08-25）
+# 启用方式：git config core.hooksPath .githooks（克隆后执行一次）
+# 规则与白名单同 scripts/check_pii.mjs；命中即拒绝提交（项目规范禁 --no-verify，误报应调整白名单）。
+node scripts/check_pii.mjs --staged

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import re, io
 
-SRC = r"E:/ai/aiwork/newproject/xiaomengresume/file/原型线框图.html"
+SRC = r"<工作区>/aiwork/newproject/xiaomengresume/file/原型线框图.html"
 html = io.open(SRC, encoding="utf-8").read()
 orig = html
 report = []
