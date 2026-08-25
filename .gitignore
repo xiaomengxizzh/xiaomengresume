@@ -34,6 +34,9 @@ __pycache__/
 # UI 截图产物（AI 评估临时生成，不入库）
 ui_screenshots_full/
 project/temp-ui-audit/
+.playwright-mcp/
+project/temp-wizard-audit/
+project/scripts/temp_*
 
 # 本地临时工具产物（不入库）
 .freebuff/
