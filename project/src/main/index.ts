@@ -157,9 +157,16 @@ async function createMainWindow(): Promise<BrowserWindow> {
     tray = null
   })
 
-  // 外部链接一律走系统浏览器，不在应用内开窗
+  // 外部链接一律走系统浏览器，不在应用内开窗。
+  // P1 安全加固（修复批 F5，2026-08-23）：仅 http/https 放行 openExternal——
+  // file:/javascript:/自定义协议等一律拒绝，防恶意页面借 openExternal 打开本地程序/文件。
   win.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
+    try {
+      const protocol = new URL(details.url).protocol
+      if (protocol === 'http:' || protocol === 'https:') void shell.openExternal(details.url)
+    } catch {
+      /* 非法 URL：拒绝打开 */
+    }
     return { action: 'deny' }
   })
 

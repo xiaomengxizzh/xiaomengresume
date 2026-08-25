@@ -25,7 +25,15 @@ export function AiIntro(): React.JSX.Element {
   const [accepted, setAccepted] = useState(false)
 
   const stream = useAiStream({
-    start: (requestId) => window.electronAPI.ai.intro({ requestId, resumeId: resumeId ?? '', mode }),
+    // P0 修复批 F3（mode 时序）：run(m) 把本次 mode 经 runArg 显式透传给 start——
+    // setMode 后同步调 stream.run() 时闭包里的 mode 仍是旧值（React 状态更新异步），
+    // 不透传则首切「翻译」实际以 mode='generate' 发起、accept 却按翻译写 enContent。
+    start: (requestId, runMode) =>
+      window.electronAPI.ai.intro({
+        requestId,
+        resumeId: resumeId ?? '',
+        mode: runMode === 'generate' || runMode === 'translate' ? runMode : mode
+      }),
     cancel: (requestId) => window.electronAPI.ai.introCancel(requestId),
     subscribe: (cb) => window.electronAPI.ai.onIntroChunk(cb)
   })
@@ -42,7 +50,7 @@ export function AiIntro(): React.JSX.Element {
   const run = (m: 'generate' | 'translate'): void => {
     setMode(m)
     setAccepted(false)
-    void stream.run()
+    void stream.run(m)
   }
 
   return (

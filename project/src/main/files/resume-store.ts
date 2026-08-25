@@ -4,7 +4,7 @@
  * 路径 = <storageFolderPath>/<id>.json（F21 #18 方案 B，默认 Documents/xiaomengresume）。
  * 数据安全三件套（已拍板 #6，不得降级）：.tmp 锁（原子写）/ .bak 轮转（N=5）/ 崩溃恢复扫描。
  * meta 写入：save 刷新 updatedAt/补 createdAt；open 刷新 lastOpenedAt（轻量原子写不触发 .bak）。
- * backup:export/import：零依赖 zip（zip.ts），打包 resumes/（含 .bak）+ jobs/ + settings JSON。
+ * backup:export/import：零依赖 zip（zip.ts），打包 resumes/（含 .bak）+ photos/ + jobs/ + settings JSON。
  */
 import { app, dialog, BrowserWindow } from 'electron'
 import { promises as fs } from 'node:fs'
@@ -426,7 +426,7 @@ export async function recoverPending(id: string): Promise<Resume | null> {
 
 /* ── 备份导出 / 导入（三件套 c，F19 扩展含 jobs/）──────────────────────── */
 
-/** 导出全部数据为 zip（resumes/ + jobs/ + settings JSON；不含 logs / API Key） */
+/** 导出全部数据为 zip（resumes/ + photos/ + jobs/ + settings JSON；不含 logs / API Key） */
 export async function exportBackup(win: BrowserWindow): Promise<string | null> {
   const dir = getStorageDir()
   const entries: ZipEntry[] = []
@@ -441,6 +441,19 @@ export async function exportBackup(win: BrowserWindow): Promise<string | null> {
     if (f.endsWith('.tmp')) continue
     const data = await fs.readFile(path.join(dir, f)).catch(() => null)
     if (data) entries.push({ name: `resumes/${f}`, data })
+  }
+
+  // photos/（P0 修复批 F1，2026-08-23）：照片资产打包——原 fs.readFile(photos 目录) EISDIR
+  // 被 catch 吞掉，恢复出的简历 basics.photo='photos/<id>.png' 引用悬空。目录不存在优雅跳过。
+  try {
+    const dirents = await fs.readdir(path.join(dir, 'photos'), { withFileTypes: true })
+    for (const p of dirents) {
+      if (!p.isFile()) continue
+      const data = await fs.readFile(path.join(dir, 'photos', p.name)).catch(() => null)
+      if (data) entries.push({ name: `photos/${p.name}`, data })
+    }
+  } catch {
+    /* photos 目录不存在 */
   }
 
   // jobs/（F19 数据层，P2 修复：导出实现补上注释承诺的 jobs 目录——
@@ -484,6 +497,7 @@ export async function exportBackup(win: BrowserWindow): Promise<string | null> {
  *  - 跳过 storage.folderPath（导入会导致简历存储目录漂移，与已还原的 resumes/ 不一致）
  *  - 跳过 importedFonts（自定义字体列表，跨机本地路径失效）
  *  jobs/ 条目随 F19 数据层落码（M3）接入：uuid 白名单 + JobSchema 校验，损坏跳过。
+ *  photos/ 条目（P0 修复批 F1）：photo-store 同口径白名单（<uuid>.<png|jpg|webp>），非法跳过。
  */
 export async function importBackup(win: BrowserWindow): Promise<number> {
   const { canceled, filePaths } = await dialog.showOpenDialog(win, {
@@ -525,6 +539,33 @@ export async function importBackup(win: BrowserWindow): Promise<number> {
         const jobsDir = path.join(app.getPath('userData'), 'jobs')
         await fs.mkdir(jobsDir, { recursive: true })
         await fs.writeFile(path.join(jobsDir, `${job.id}.json`), JSON.stringify(job, null, 2))
+        count++
+      } catch {
+        skipped++
+      }
+      continue
+    }
+    // photos/<uuid>.<ext>（P0 修复批 F1）：照片资产恢复——与 photo-store 同口径白名单校验
+    //（basename 纯文件名 + UUID + png/jpg/webp），防恶意 zip 条目穿越写任意路径；非法/损坏跳过
+    if (e.name.startsWith('photos/')) {
+      const name = e.name.slice('photos/'.length)
+      const ext = path.extname(name).slice(1)
+      const valid =
+        name.length > 0 &&
+        name === path.basename(name) &&
+        !name.includes('..') &&
+        (ext === 'png' || ext === 'jpg' || ext === 'webp') &&
+        UUID_RE.test(name.slice(0, name.length - ext.length - 1))
+      const pdir = path.join(getStorageDir(), 'photos')
+      const target = path.resolve(pdir, name)
+      // TS18047：valid 与 target 的关联 TS 无法跨别名收窄，故先 resolve 再统一判界
+      if (!valid || !target.startsWith(pdir + path.sep)) {
+        skipped++
+        continue
+      }
+      try {
+        await fs.mkdir(pdir, { recursive: true })
+        await fs.writeFile(target, e.data)
         count++
       } catch {
         skipped++

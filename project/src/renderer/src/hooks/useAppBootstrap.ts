@@ -50,11 +50,17 @@ export function useAppBootstrap(): void {
           const r = await window.electronAPI.resumes.open(recent[0].id)
           useResumeStore.getState().loadResume(recent[0].id, r)
         }
-        // M5 设置加载（模板覆盖层/外观/字体消费；settings:get 渲染层唯一链路）
-        const settings = await window.electronAPI.settings.get()
-        useResumeStore.getState().setSettings(settings)
       } catch {
         // 存储目录不可用/首启无数据：静默保持空简历
+      }
+      // M5 设置加载（P1 修复批 F6，2026-08-23：独立段不与前段共 try——原串联写法下
+      // scanRecovery/recent 任一 reject 会跳过 settings.get → 设置静默回出厂）；
+      // 失败上报 console（渲染层可观测），保持出厂默认不中断启动
+      try {
+        const settings = await window.electronAPI.settings.get()
+        useResumeStore.getState().setSettings(settings)
+      } catch (e) {
+        console.error('[useAppBootstrap] settings:get failed', e)
       }
     }
     void init()

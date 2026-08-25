@@ -7,7 +7,9 @@ import { useCallback, useRef, useState } from 'react'
 import type { AiError, AiResult, AiStreamChunk } from '@shared/ipc-channels'
 
 interface UseAiStreamOpts {
-  start: (requestId: string) => Promise<AiResult<string>>
+  /** runArg：run(arg) 显式透传参数——修复闭包捕获过期值（P0 修复批 F3：
+   *  AiIntro setMode 后同步调 run，闭包 mode 仍是旧值，必须显式传本次 mode）。 */
+  start: (requestId: string, runArg?: string) => Promise<AiResult<string>>
   cancel: (requestId: string) => Promise<unknown>
   subscribe: (cb: (chunk: AiStreamChunk) => void) => () => void
 }
@@ -16,7 +18,7 @@ export interface UseAiStreamResult {
   busy: boolean
   error: AiError | null
   result: string
-  run: () => Promise<string | null>
+  run: (runArg?: string) => Promise<string | null>
   cancel: () => Promise<void>
   reset: () => void
 }
@@ -41,7 +43,7 @@ export function useAiStream(opts: UseAiStreamOpts): UseAiStreamResult {
     setError(null)
   }, [cancel])
 
-  const run = useCallback(async (): Promise<string | null> => {
+  const run = useCallback(async (runArg?: string): Promise<string | null> => {
     await cancel()
     const requestId = crypto.randomUUID()
     requestIdRef.current = requestId
@@ -52,7 +54,7 @@ export function useAiStream(opts: UseAiStreamOpts): UseAiStreamResult {
       if (chunk.requestId === requestId) setResult((prev) => prev + chunk.delta)
     })
     try {
-      const res = await opts.start(requestId)
+      const res = await opts.start(requestId, runArg)
       if (res.ok) return res.data
       setError(res.error)
       return null

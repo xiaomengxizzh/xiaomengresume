@@ -46,6 +46,10 @@ export function useKeyboardShortcuts(): void {
       const isUndo = key === 'z' && !e.shiftKey
       const isRedo = key === 'y' || (key === 'z' && e.shiftKey)
       if (!isUndo && !isRedo) return
+      // P1 修复批 F7（2026-08-23）：统一撤销栈仅编辑器视图生效——其余视图（AI 屏/欢迎页/
+      // 简历列表等）放行原生，防输入框里 Ctrl+Z 被吞且隐形改简历。编辑器视图内 Tiptap
+      // 已禁内部 UndoRedo（contenteditable 统一走 store 栈），故 editor 内不做可编辑元素分流。
+      if (useResumeStore.getState().currentView !== 'editor') return
       e.preventDefault()
       if (isUndo) useResumeStore.getState().undo()
       else useResumeStore.getState().redo()

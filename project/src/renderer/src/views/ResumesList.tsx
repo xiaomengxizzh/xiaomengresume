@@ -68,8 +68,14 @@ export function ResumesList({
     if (!backupFor) return
     if (!window.confirm(t('resumeList.recoverConfirm'))) return
     try {
-      await window.electronAPI.resumes.recoverBackup(backupFor.id, file)
+      const recovered = await window.electronAPI.resumes.recoverBackup(backupFor.id, file)
       showToast(t('resumeList.recovered'))
+      // P0 修复批 F4（2026-08-23）：恢复的正是当前编辑中的简历 → loadResume 重置内存与
+      // 撤销栈。否则回编辑器时 useAutoSave 挂载 effect 会把内存里的旧 resume 落盘，
+      // 覆盖刚恢复的备份（恢复结果被静默回滚）。
+      if (useResumeStore.getState().resumeId === backupFor.id) {
+        useResumeStore.getState().loadResume(backupFor.id, recovered)
+      }
       setBackupFor(null)
       setReloadTick((v) => v + 1)
     } catch (e) {

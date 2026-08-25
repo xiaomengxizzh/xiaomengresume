@@ -6,11 +6,13 @@
  */
 import { app } from 'electron'
 import { promises as fs } from 'node:fs'
-import { join, extname } from 'node:path'
+import { join, extname, resolve, sep } from 'node:path'
 import { randomUUID } from 'node:crypto'
 
 export const ALLOWED_FONT_EXT = ['.ttf', '.otf', '.woff', '.woff2'] as const
 export const FONT_MAX_SIZE = 20 * 1024 * 1024 // 20MB（定案上限）
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export function getFontsDir(): string {
   return join(app.getPath('userData'), 'fonts')
@@ -43,11 +45,19 @@ export async function saveFontFile(srcPath: string, fileName: string): Promise<I
   return { id, fileName, family: fileName.replace(extname(fileName), ''), addedAt: new Date().toISOString() }
 }
 
-/** 删除导入字体文件（清单条目需先删，文件删除失败静默——孤儿文件可被重导覆盖） */
+/** 删除导入字体文件（清单条目需先删，文件删除失败静默——孤儿文件可被重导覆盖）。
+ *  P0 安全加固（修复批 F2，2026-08-23）：与 photo-store 同口径三重防护——
+ *  id UUID 校验 + 扩展名白名单 + resolve 后边界校验，防恶意 id/fileName 拼出
+ *  fontsDir 外路径（如 ../evil → unlink 任意文件）。非法输入静默跳过（不阻断清单更新）。 */
 export async function deleteFontFile(id: string, fileName: string): Promise<void> {
+  if (!UUID_RE.test(id)) return
   const ext = extname(fileName).toLowerCase()
+  if (!(ALLOWED_FONT_EXT as readonly string[]).includes(ext)) return
+  const dir = getFontsDir()
+  const target = resolve(dir, `${id}${ext}`)
+  if (!target.startsWith(dir + sep)) return
   try {
-    await fs.unlink(join(getFontsDir(), `${id}${ext}`))
+    await fs.unlink(target)
   } catch {
     // 文件已不存在/删除失败：不阻断清单更新
   }
