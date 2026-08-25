@@ -24,7 +24,8 @@ export function useEntryBatch(section: string): {
 } {
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState<Set<number>>(new Set())
-  const count = (useResumeStore((s) => s.resume)[section as 'work'] as unknown[] | undefined)?.length ?? 0
+  // 2026-08-25 批 B3：粗粒度 s.resume[section] 收敛为数字选择器（Object.is 比较长度，仅条目数变化才重渲，输出等价）
+  const count = useResumeStore((s) => (s.resume[section as 'work'] as unknown[] | undefined)?.length ?? 0)
 
   const exit = (): void => {
     setSelectMode(false)
