@@ -11,6 +11,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.{ts,tsx}']
+    include: ['src/**/*.test.{ts,tsx}'],
+    setupFiles: ['./src/test/setup.ts'] // RTL 自动 cleanup + 时钟敏感测试规范（见 setup.ts 头注释）
   }
 })
