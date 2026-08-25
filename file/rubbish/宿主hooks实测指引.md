@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "C:/Users/zzh/.workbuddy/binaries/python/versions/3.13.12/python.exe E:/ai/aiwork/newproject/xiaomengresume/scripts/docs-tool.py state"
+            "command": "C:/Users/<用户目录>/.workbuddy/binaries/python/versions/3.13.12/python.exe <工作区>/newproject/xiaomengresume/scripts/docs-tool.py state"
           }
         ]
       }

@@ -72,9 +72,14 @@ async function persistKeys(keys: Record<string, string>): Promise<void> {
   const tmp = `${KEYS_FILE}.tmp`
   await fs.writeFile(tmp, JSON.stringify(keys, null, 2), 'utf-8')
   await fs.rename(tmp, KEYS_FILE)
+  // F3（2026-08-25 安全审计）：降级存储含明文 base64，收紧文件权限（Windows 下为 no-op 不报错）
+  await fs.chmod(KEYS_FILE, 0o600).catch(() => {})
 }
 
-/** 存 key（'' 或空 = 清除）；safeStorage 不可用时退弱加密（规范 §4.6，仅 Windows 无 DPAPI 等场景） */
+/** 存 key（'' 或空 = 清除）；safeStorage 不可用时降级为 base64 编码存储——
+ *  F3（2026-08-25 安全审计）措辞修正：这是【编码非加密】，任何能读该文件的进程即可还原 Key；
+ *  缓解 = 文件 chmod 0600（见 persistKeys）+ 启动告警。彻底方案是失败关闭（无密钥环禁用 AI），
+ *  因会牺牲 Linux 无密钥环用户的 BYOK 可用性，暂采降级+收紧权限，UI 常驻警示登记后置。 */
 export async function setApiKey(providerId: string, apiKey: string | undefined): Promise<void> {
   const keys = await loadKeys()
   if (!apiKey) {
@@ -82,7 +87,7 @@ export async function setApiKey(providerId: string, apiKey: string | undefined):
   } else if (safeStorage.isEncryptionAvailable()) {
     keys[providerId] = safeStorage.encryptString(apiKey).toString('base64')
   } else {
-    console.warn('[ai/config] safeStorage 不可用，API Key 弱加密存储（仅本机可读性降低，告警一次）')
+    console.warn('[ai/config] safeStorage 不可用，API Key 以 base64 编码明文存储（非加密；已限 0600 权限，仅本机可读性降低）')
     keys[providerId] = `plain:${Buffer.from(apiKey, 'utf-8').toString('base64')}`
   }
   await persistKeys(keys)

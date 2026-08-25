@@ -98,6 +98,9 @@ interface CentralEntry {
  *  备份场景（简历 JSON + 照片）量级远低于此；超限拒绝而非解到内存爆掉。 */
 const MAX_ENTRIES = 500
 const MAX_ENTRY_BYTES = 64 * 1024 * 1024
+/** F2（2026-08-25 安全审计）：单次解压总量预算——中央目录声明值可伪造（声明小实际膨胀大），
+ *  声明校验不足恃，解压侧再设一道真实输出上限。 */
+const MAX_TOTAL_BYTES = 128 * 1024 * 1024
 
 /** 解析 zip 中央目录（返回条目元数据） */
 function readCentralDirectory(buf: Buffer): CentralEntry[] {
@@ -139,9 +142,13 @@ function readCentralDirectory(buf: Buffer): CentralEntry[] {
   return entries
 }
 
-/** 解包 zip（deflate 条目 → {name,data}） */
+/** 解包 zip（deflate 条目 → {name,data}）。
+ *  F2（2026-08-25 安全审计）：inflateRawSync 传 maxOutputLength——中央目录声明的 uncompSize
+ *  可伪造（声明小实际膨胀大绕过 readCentralDirectory 的上限检查），解压侧必须有真实输出上限；
+ *  另设单次解压总量预算，防多小条目累计撑爆内存。 */
 export function extractZip(buf: Buffer): ZipEntry[] {
   const entries = readCentralDirectory(buf)
+  let total = 0
   return entries.map((e) => {
     // H5：local header 偏移越界先拒绝（明确 Error），否则 subarray 空读抛 RangeError
     if (e.localOffset + 30 > buf.length) throw new Error('bad zip: local header out of range')
@@ -151,7 +158,20 @@ export function extractZip(buf: Buffer): ZipEntry[] {
     const extraLen = lfh.readUInt16LE(28)
     const dataStart = e.localOffset + 30 + nameLen + extraLen
     const comp = buf.subarray(dataStart, dataStart + e.compSize)
-    const data = comp.length === e.uncompSize ? comp : inflateRawSync(comp)
+    let data: Buffer
+    if (comp.length === e.uncompSize) {
+      data = comp
+    } else {
+      try {
+        data = inflateRawSync(comp, { maxOutputLength: MAX_ENTRY_BYTES })
+      } catch (err) {
+        // RangeError = 超出 maxOutputLength（真实膨胀超限）；其余为损坏数据
+        const msg = err instanceof RangeError ? 'entry inflates beyond limit' : 'bad deflate data'
+        throw new Error(`bad zip: ${msg}`)
+      }
+    }
+    total += data.length
+    if (total > MAX_TOTAL_BYTES) throw new Error(`bad zip: total inflated size beyond ${MAX_TOTAL_BYTES} bytes`)
     return { name: e.name, data }
   })
 }
