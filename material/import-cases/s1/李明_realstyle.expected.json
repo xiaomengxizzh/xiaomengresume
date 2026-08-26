@@ -1,0 +1,19 @@
+{
+  "basics": {
+    "name": "李明",
+    "phone": "13800138000",
+    "email": "liming@example.com",
+    "address": null,
+    "location": "合肥",
+    "website": null,
+    "birthDate": null,
+    "employmentStatus": "可实习6个月以上",
+    "headline": null
+  },
+  "counts": {
+    "education": 2,
+    "work": 0,
+    "projects": 3,
+    "skills": 2
+  }
+}

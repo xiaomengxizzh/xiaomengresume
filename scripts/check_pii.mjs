@@ -22,6 +22,8 @@ const PATH_RES = [
   new RegExp('C:[/' + BS + BS + ']Users[' + BS + BS + '/][^' + BS + BS + '/\s\'"]+', 'g'),
   new RegExp('[Ee]:[' + BS + BS + '/]ai[' + BS + BS + '/]', 'g')
 ]
+// F1 泄露事件哨兵（2026-08-26）：已泄露真实姓名/手机号/邮箱字面量（中文姓名正则不可及，单列）；拼接构造防自命中
+const SENTINELS = ['张哲' + '晗', '178723153' + '28', 'ctpzzh@16' + '3.com']
 // 已知虚构号白名单（测试 fixture 常用假号）
 const PHONE_WHITELIST = new Set(['13800138000', '12345678901', '13912345678', '13800000000',
   '13800001111', '13800002222', '13800003333', '13800004444', '13800005555'])
@@ -62,6 +64,7 @@ for (const f of files) {
   for (const m of text.matchAll(PHONE_RE)) record('PHONE', m)
   for (const m of text.matchAll(ID_RE)) record('IDCARD', m)
   for (const re of PATH_RES) for (const m of text.matchAll(re)) record('PATH', m)
+  for (const s of SENTINELS) if (text.includes(s)) record('SENTINEL', { 0: s, index: text.indexOf(s) })
 }
 
 if (hits.length > 0) {

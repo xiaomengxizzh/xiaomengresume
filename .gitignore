@@ -37,8 +37,7 @@ project/temp-ui-audit/
 .playwright-mcp/
 project/temp-wizard-audit/
 project/scripts/temp_*
-# F1 隐私处置（2026-08-25）：真实简历样本仅本地保留，永不入库（已从历史清除）
-material/import-cases/s1/李明*
+# F1 隐私处置（2026-08-25/26）：真实样本仅本地保留于 material/private/，永不入库；哨兵名单见 scripts/check_pii.mjs
 # F1 铁律：真实个人简历/PII 一律放此处（永不入库）；material/ 仅合成样本
 material/private/
 
