@@ -6,7 +6,12 @@
  * 必须动态 import('./main')：静态 import 会提升到本文件语句之前，mock 挂载就晚了。
  */
 import { installWebElectronAPIMock } from './dev/web-electronapi-mock'
+import { parseFile, setNextPickedFiles } from './dev/web-import'
 
-if (!window.electronAPI) installWebElectronAPIMock()
+if (!window.electronAPI) {
+  installWebElectronAPIMock()
+  // web 端自动化调试把手（E2E 绕过系统文件选择器；桌面端与 prod 主流程不依赖）
+  ;(window as unknown as Record<string, unknown>).__xmWebDev = { parseFile, setNextPickedFiles }
+}
 
 void import('./main')

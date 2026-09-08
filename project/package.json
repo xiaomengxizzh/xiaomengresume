@@ -11,6 +11,7 @@
     "check:i18n": "node scripts/i18n_check.mjs",
     "dev": "node ../scripts/gen_ui_config.mjs && electron-vite dev",
     "dev:web": "node ../scripts/gen_ui_config.mjs && vite --config vite.web.config.ts",
+    "build:web": "node ../scripts/gen_ui_config.mjs && vite build --config vite.web.prod.config.ts",
     "build": "node ../scripts/gen_ui_config.mjs && electron-vite build",
     "preview": "electron-vite preview",
     "start": "electron-vite preview",

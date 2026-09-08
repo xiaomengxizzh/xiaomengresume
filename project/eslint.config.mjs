@@ -3,15 +3,15 @@ import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
   {
-    ignores: ['out/**', 'dist/**', 'node_modules/**', 'electron-dist/**', 'temp-ui-audit/**', 'scripts/temp_*.cjs']
+    ignores: ['out/**', 'dist/**', 'src/renderer/dist/**', 'dist-web/**', 'src/renderer/dist-web/**', 'node_modules/**', 'electron-dist/**', 'temp-ui-audit/**', 'scripts/temp_*.cjs']
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
     // 工具脚本（纯 Node 环境，无 TS 项目上下文）
-    files: ['scripts/**/*.mjs'],
+    files: ['scripts/**/*.mjs', 'web-server.mjs'],
     languageOptions: {
-      globals: { process: 'readonly', console: 'readonly' }
+      globals: { process: 'readonly', console: 'readonly', URL: 'readonly', fetch: 'readonly' }
     }
   },
   {

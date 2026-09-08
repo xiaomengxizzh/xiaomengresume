@@ -47,3 +47,4 @@ material/private/
 
 # UI 配置生成产物（构建期由 gen_ui_config.mjs 生成，勿入库）
 project/src/renderer/src/ui-config.generated.css
+dist-web/

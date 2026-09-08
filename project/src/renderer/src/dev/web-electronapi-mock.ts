@@ -17,6 +17,7 @@ import type { Job } from '@shared/schema/job'
 import type { JobSummary, RecentResume, ResumeSummary } from '@shared/ipc-channels'
 import sample from '../../../shared/sample-resume.json'
 import type { ElectronAPI } from '../../../preload/index'
+import { onImportProgress, webImportRun, webImportRunBatch } from './web-import'
 
 const PREFIX = 'xmweb.v1.'
 const RESUME_KEY = (id: string): string => `${PREFIX}resume.${id}`
@@ -288,9 +289,13 @@ export function installWebElectronAPIMock(): void {
       open: async () => {}
     },
     import: {
-      run: async () => ({ ok: false, error: { code: 'UNSUPPORTED', message: 'import requires the desktop app' } }),
-      runBatch: async () => ({ ok: false, error: { code: 'UNSUPPORTED', message: 'import requires the desktop app' } }),
-      onProgress: () => () => {}
+      // web 端真实导入管线（文件选择器 + unpdf/mammoth/JSON + B 档规则），见 dev/web-import.ts
+      run: (args) => webImportRun(args),
+      runBatch: () =>
+        webImportRunBatch((id, resume) => {
+          writeRecord(id, { resume, createdAt: nowIso(), updatedAt: nowIso() })
+        }),
+      onProgress: onImportProgress
     },
     window: {
       minimize: () => {},
