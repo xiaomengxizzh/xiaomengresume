@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <title>xiaomengresume (Web Preview)</title>
+    <link rel="icon" type="image/png" href="/icon.png" />
+    <!-- 纯浏览器开发入口（dev:web）：CSP 放开 dev 必需项（react-refresh 内联脚本 + HMR ws:），
+         桌面正式入口 index.html 的严格 CSP 不受影响 -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' ws: http://localhost:* https:"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main-web.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+/**
+ * main-web —— 纯浏览器开发入口（dev 专用，仅经 web.html 加载，不进桌面构建）
+ *
+ * 与 main.tsx 的差异只有一件事：渲染前确保 window.electronAPI 存在——
+ * 浏览器里 preload 不会执行，缺失时挂 dev/web-electronapi-mock（localStorage 实现）。
+ * 必须动态 import('./main')：静态 import 会提升到本文件语句之前，mock 挂载就晚了。
+ */
+import { installWebElectronAPIMock } from './dev/web-electronapi-mock'
+
+if (!window.electronAPI) installWebElectronAPIMock()
+
+void import('./main')
