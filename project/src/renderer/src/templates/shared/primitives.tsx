@@ -63,12 +63,13 @@ export function entryHead(left: string, right: string, style: CSSProperties, mar
         ) : null}
         <span>{left}</span>
       </span>
-      {/* 2026-09-08：副标题同行情（layout.subtitlePosition='inline'）——主标题与日期之间居中 */}
+      {/* 2026-09-08：副标题同行情（layout.subtitlePosition='inline'）——紧随主标题（用户定案：
+          "字节跳动放在工程师和日期之间"= 职位 公司名 …… 日期，非居中），marginRight:auto 吸收
+          剩余空间把日期推到行尾；超长省略号截断 */}
       {middle ? (
         <span
           style={{
-            flex: 1,
-            textAlign: 'center',
+            marginRight: 'auto',
             fontSize: '0.85em',
             fontWeight: 400,
             opacity: 0.8,

@@ -167,7 +167,7 @@
     "layoutMarkHint": "Entry list mark (emphasize categories)",
     "layoutSubPosHint": "Entry subtitle position (below the title, or on the same line between title and date)",
     "layoutSubPosBelow": "Below title",
-    "layoutSubPosInline": "Inline with date",
+    "layoutSubPosInline": "Between title and date",
     "layoutMarkNone": "None",
     "layoutMarkDot": "Dot •",
     "layoutMarkSquare": "Square ▪",
