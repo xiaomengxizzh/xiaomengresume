@@ -1,0 +1,21 @@
+# 仓库根统一换行策略（2026-09-08 Windows→Linux 迁移收尾）
+# 项目级 project/.gitattributes 已有同款策略；本文件覆盖仓库其余部分（file/ scripts/ .github/ 根文档），
+# 终结迁移产生的 CRLF 漂移：任何人任何系统检出后统一 LF，git 状态保持干净。
+* text=auto eol=lf
+
+# Windows 批处理必须保持 CRLF（GBK 编码内容不受影响，git 只管换行）
+*.bat text eol=crlf
+
+# 二进制显式声明（防 auto 误判；与 project/.gitattributes 一致）
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.icns binary
+*.pdf binary
+*.zip binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
