@@ -227,7 +227,9 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
     basics.email,
     basics.location,
     basics.website,
-    ...basics.customFields.map((c) => c.value)
+    // 2026-09-08 修复：customFields 为 schema optional 字段，缺失（旧版本/外部数据）时
+    // 原直调 .map 令经典模板预览崩溃（QA 种子实测触发错误边界）→ 补空数组守卫
+    ...(basics.customFields ?? []).map((c) => c.value)
   ]
     .filter((v): v is string => typeof v === 'string' && v.length > 0)
     // P1 修复：与 PDF 端一致——website 与 customFields 值可能重复（示例简历两处同 URL），
