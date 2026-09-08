@@ -83,6 +83,14 @@ export function LayoutBar(): React.JSX.Element {
   const listMark = layout?.listMark ?? 'none'
   const setListMark = (v: string): void => setField('layout.listMark', v)
 
+  // 2026-09-08：经历条目副标题位置（below=主标题下一行[默认] / inline=主标题与日期同行居中）
+  const SUB_POS_OPTIONS = [
+    { value: 'below', label: t('editor.layoutSubPosBelow') },
+    { value: 'inline', label: t('editor.layoutSubPosInline') }
+  ]
+  const subtitlePosition = layout?.subtitlePosition ?? 'below'
+  const setSubtitlePosition = (v: string): void => setField('layout.subtitlePosition', v)
+
   return (
     <div className="layout-bar">
       <button
@@ -122,6 +130,19 @@ export function LayoutBar(): React.JSX.Element {
             title={t('editor.layoutMarkHint')}
           >
             {LIST_MARK_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          {/* 2026-09-08：经历条目副标题位置选择（主标题下一行 / 与日期同行） */}
+          <select
+            className="rounded-md border border-border bg-surface px-2 py-1 text-xs"
+            value={subtitlePosition}
+            onChange={(e) => setSubtitlePosition(e.target.value)}
+            title={t('editor.layoutSubPosHint')}
+          >
+            {SUB_POS_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
               </option>

@@ -64,6 +64,8 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
   const preset: TemplatePreset = meta.preset
   // M5 A3：全局模板覆盖层（SettingsSchema.templates[templateId]）——覆盖链：layout > 模板覆盖 > 预设
   const templateOverride = useResumeStore((s) => s.settings.templates?.[meta.id])
+  // 2026-09-08：经历条目副标题位置（below=主标题下一行[默认] / inline=主标题与日期同行居中）
+  const subtitlePosition = layout?.subtitlePosition ?? 'below'
   const titleVariant: TitleVariant = variant === 'classic' ? 'underline' : variant === 'modern' ? 'accent-bar' : 'compact'
 
   const baseFont = lv(layout, 'baseFontSize', preset, templateOverride)
@@ -282,18 +284,23 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
         {/* 教育经历 */}
         <SectionBlock path="education" onClick={() => jump('education')} style={{ fontFamily: fontFor('education') }} hint={t('preview.locateHint')}>
           {secTitle(t('editor.section.education'), headerSize)}
-          {resume.education.filter((e) => e.visible !== false).map((e) => (
-            <div key={e.id} style={{ marginBottom: `${entrySpacingLogic('education')}px` }}>
-              {entryHead(e.school, [fmtDate(e.startDate), e.endDate ? fmtDate(e.endDate) : ''].filter(Boolean).join(DATE_RANGE_SEP), {
-                fontSize: `${TYPE_SCALE.entryHeadEm}em`,
-                fontWeight: 700
-              }, listMark)}
-              <div style={{ fontSize: `${TYPE_SCALE.entrySubEm}em`, opacity: 0.8 }}>{[e.degree, e.major].filter(Boolean).join(' · ')}</div>
-              {e.description ? (
-                <div style={{ ...pStyle, marginTop: '4px' }} dangerouslySetInnerHTML={{ __html: richTextToHtml(e.description) }} />
-              ) : null}
-            </div>
-          ))}
+          {resume.education.filter((e) => e.visible !== false).map((e) => {
+            const sub = [e.degree, e.major].filter(Boolean).join(' · ')
+            return (
+              <div key={e.id} style={{ marginBottom: `${entrySpacingLogic('education')}px` }}>
+                {entryHead(e.school, [fmtDate(e.startDate), e.endDate ? fmtDate(e.endDate) : ''].filter(Boolean).join(DATE_RANGE_SEP), {
+                  fontSize: `${TYPE_SCALE.entryHeadEm}em`,
+                  fontWeight: 700
+                }, listMark, subtitlePosition === 'inline' && sub ? sub : undefined)}
+                {subtitlePosition === 'inline' || !sub ? null : (
+                  <div style={{ fontSize: `${TYPE_SCALE.entrySubEm}em`, opacity: 0.8 }}>{sub}</div>
+                )}
+                {e.description ? (
+                  <div style={{ ...pStyle, marginTop: '4px' }} dangerouslySetInnerHTML={{ __html: richTextToHtml(e.description) }} />
+                ) : null}
+              </div>
+            )
+          })}
           {resume.education.length === 0 ? <Placeholder label={t('editor.action.placeholder')} /> : null}
         </SectionBlock>
       </>
@@ -303,19 +310,25 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
         {/* 工作经验 */}
         <SectionBlock path="work" onClick={() => jump('work')} style={{ fontFamily: fontFor('work') }} hint={t('preview.locateHint')}>
           {secTitle(t('editor.section.work'), headerSize)}
-          {resume.work.filter((w) => w.visible !== false).map((w) => (
-            <div key={w.id} style={{ marginBottom: `${entrySpacingLogic('work')}px` }}>
-              {/* 2026-08-11 材料对比批：条目头主行 = 职位（求职视角第一眼），公司移次行（对齐 material/简历示例1.pdf）；title 空时主行回落公司 */}
-              {entryHead(w.title || w.company, [fmtDate(w.startDate), w.current ? t('editor.field.current') : w.endDate ? fmtDate(w.endDate) : ''].filter(Boolean).join(DATE_RANGE_SEP), {
-                fontSize: `${TYPE_SCALE.entryHeadEm}em`,
-                fontWeight: 700
-              }, listMark)}
-              {w.title ? <div style={{ fontSize: `${TYPE_SCALE.entrySubEm}em`, opacity: 0.8 }}>{w.company}</div> : null}
-              {w.summary ? (
-                <div style={{ ...pStyle, marginTop: '4px' }} dangerouslySetInnerHTML={{ __html: richTextToHtml(w.summary) }} />
-              ) : null}
-            </div>
-          ))}
+          {resume.work.filter((w) => w.visible !== false).map((w) => {
+            // 2026-08-11 材料对比批：条目头主行 = 职位（求职视角第一眼），公司移次行（对齐 material/简历示例1.pdf）；title 空时主行回落公司
+            // 2026-09-08：subtitlePosition=inline 时公司名移至主标题与日期之间
+            const sub = w.title ? w.company : ''
+            return (
+              <div key={w.id} style={{ marginBottom: `${entrySpacingLogic('work')}px` }}>
+                {entryHead(w.title || w.company, [fmtDate(w.startDate), w.current ? t('editor.field.current') : w.endDate ? fmtDate(w.endDate) : ''].filter(Boolean).join(DATE_RANGE_SEP), {
+                  fontSize: `${TYPE_SCALE.entryHeadEm}em`,
+                  fontWeight: 700
+                }, listMark, subtitlePosition === 'inline' && sub ? sub : undefined)}
+                {subtitlePosition === 'inline' || !sub ? null : (
+                  <div style={{ fontSize: `${TYPE_SCALE.entrySubEm}em`, opacity: 0.8 }}>{sub}</div>
+                )}
+                {w.summary ? (
+                  <div style={{ ...pStyle, marginTop: '4px' }} dangerouslySetInnerHTML={{ __html: richTextToHtml(w.summary) }} />
+                ) : null}
+              </div>
+            )
+          })}
           {resume.work.length === 0 ? <Placeholder label={t('editor.action.placeholder')} /> : null}
         </SectionBlock>
       </>
@@ -325,19 +338,25 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
         {/* 项目经历 */}
         <SectionBlock path="projects" onClick={() => jump('projects')} style={{ fontFamily: fontFor('projects') }} hint={t('preview.locateHint')}>
           {secTitle(t('editor.section.projects'), headerSize)}
-          {resume.projects.filter((p) => p.visible !== false).map((p) => (
-            <div key={p.id} style={{ marginBottom: `${entrySpacingLogic('projects')}px` }}>
-              {/* 2026-08-11 材料对比批：项目条目头主行 = 角色（role），项目名+组织移次行（对齐参考 PDF「角色+日期 / 项目名」） */}
-              {entryHead(p.role || p.name, [fmtDate(p.startDate), p.endDate ? fmtDate(p.endDate) : ''].filter(Boolean).join(DATE_RANGE_SEP), {
-                fontSize: `${TYPE_SCALE.entryHeadEm}em`,
-                fontWeight: 700
-              }, listMark)}
-              {p.role ? <div style={{ fontSize: `${TYPE_SCALE.entrySubEm}em`, opacity: 0.8 }}>{[p.name, p.organization].filter(Boolean).join(' · ')}</div> : null}
-              {p.description ? (
-                <div style={{ ...pStyle, marginTop: '4px' }} dangerouslySetInnerHTML={{ __html: richTextToHtml(p.description) }} />
-              ) : null}
-            </div>
-          ))}
+          {resume.projects.filter((p) => p.visible !== false).map((p) => {
+            // 2026-08-11 材料对比批：项目条目头主行 = 角色（role），项目名+组织移次行（对齐参考 PDF「角色+日期 / 项目名」）
+            // 2026-09-08：subtitlePosition=inline 时项目名+组织移至主标题与日期之间
+            const sub = p.role ? [p.name, p.organization].filter(Boolean).join(' · ') : ''
+            return (
+              <div key={p.id} style={{ marginBottom: `${entrySpacingLogic('projects')}px` }}>
+                {entryHead(p.role || p.name, [fmtDate(p.startDate), p.endDate ? fmtDate(p.endDate) : ''].filter(Boolean).join(DATE_RANGE_SEP), {
+                  fontSize: `${TYPE_SCALE.entryHeadEm}em`,
+                  fontWeight: 700
+                }, listMark, subtitlePosition === 'inline' && sub ? sub : undefined)}
+                {subtitlePosition === 'inline' || !sub ? null : (
+                  <div style={{ fontSize: `${TYPE_SCALE.entrySubEm}em`, opacity: 0.8 }}>{sub}</div>
+                )}
+                {p.description ? (
+                  <div style={{ ...pStyle, marginTop: '4px' }} dangerouslySetInnerHTML={{ __html: richTextToHtml(p.description) }} />
+                ) : null}
+              </div>
+            )
+          })}
           {resume.projects.length === 0 ? <Placeholder label={t('editor.action.placeholder')} /> : null}
         </SectionBlock>
 

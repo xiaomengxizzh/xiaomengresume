@@ -52,7 +52,7 @@ export function Placeholder({ label }: { label: string }): React.JSX.Element {
   return <div style={{ color: '#bbb', fontSize: '13px', fontStyle: 'italic' }}>{label}</div>
 }
 
-export function entryHead(left: string, right: string, style: CSSProperties, mark?: string): React.JSX.Element {
+export function entryHead(left: string, right: string, style: CSSProperties, mark?: string, middle?: string): React.JSX.Element {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', ...style }}>
       <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: '6px' }}>
@@ -63,6 +63,23 @@ export function entryHead(left: string, right: string, style: CSSProperties, mar
         ) : null}
         <span>{left}</span>
       </span>
+      {/* 2026-09-08：副标题同行情（layout.subtitlePosition='inline'）——主标题与日期之间居中 */}
+      {middle ? (
+        <span
+          style={{
+            flex: 1,
+            textAlign: 'center',
+            fontSize: '0.85em',
+            fontWeight: 400,
+            opacity: 0.8,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          {middle}
+        </span>
+      ) : null}
       <span style={{ opacity: 0.65, fontWeight: 400, whiteSpace: 'nowrap' }}>{right}</span>
     </div>
   )

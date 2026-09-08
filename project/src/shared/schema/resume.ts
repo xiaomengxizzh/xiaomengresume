@@ -220,7 +220,10 @@ export const LayoutSchema = z.object({
   /** 2026-08-13 需求④（仅增不改）：自动一页纸——内容超高时等比重排字号/间距压缩到一页（默认关） */
   fitToPage: z.boolean().optional(),
   /** 2026-08-13 需求③（仅增不改）：条目列表项目符号样式（none=无 / dot=圆点 / square=方块 / dash=短横线） */
-  listMark: z.enum(['none', 'dot', 'square', 'dash']).optional()
+  listMark: z.enum(['none', 'dot', 'square', 'dash']).optional(),
+  /** 2026-09-08 增补（仅增不改）：经历条目副标题位置（below=主标题下一行[默认] /
+   *  inline=与主标题、日期同行居中）。作用域：教育/工作/项目条目。 */
+  subtitlePosition: z.enum(['below', 'inline']).optional()
 })
 export type Layout = z.infer<typeof LayoutSchema>
 
