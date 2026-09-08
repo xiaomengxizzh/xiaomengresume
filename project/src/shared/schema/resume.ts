@@ -221,9 +221,15 @@ export const LayoutSchema = z.object({
   fitToPage: z.boolean().optional(),
   /** 2026-08-13 需求③（仅增不改）：条目列表项目符号样式（none=无 / dot=圆点 / square=方块 / dash=短横线） */
   listMark: z.enum(['none', 'dot', 'square', 'dash']).optional(),
-  /** 2026-09-08 增补（仅增不改）：经历条目副标题位置（below=主标题下一行[默认] /
-   *  inline=与主标题、日期同行居中）。作用域：教育/工作/项目条目。 */
-  subtitlePosition: z.enum(['below', 'inline']).optional()
+  /** 2026-09-08 增补（仅增不改）：经历条目副标题位置（排版批 P1，调研对标 MagicResume 双开关四态后收敛三态）：
+   *  below=主标题下一行（缺省，原行为）/ inline-start=同行情紧随主标题（"公司名放在职位与日期之间"）/
+   *  inline-center=同行情居中于主标题与日期之间。历史值 'inline' 保留合法（读写兼容，渲染按 inline-start）。
+   *  作用域：教育/工作/项目条目。 */
+  subtitlePosition: z.enum(['below', 'inline', 'inline-start', 'inline-center']).optional(),
+  /** 2026-09-08 增补（仅增不改）：副标题独立字号（px，10-18；缺省回落 entrySubEm×baseFontSize） */
+  subheaderSize: z.number().int().min(10).max(18).optional(),
+  /** 2026-09-08 增补（仅增不改）：联系方式/标签图标显隐（缺省 true=显示；false=纯文本排版） */
+  useIconMode: z.boolean().optional()
 })
 export type Layout = z.infer<typeof LayoutSchema>
 

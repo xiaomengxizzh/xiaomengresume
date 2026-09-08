@@ -64,8 +64,17 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
   const preset: TemplatePreset = meta.preset
   // M5 A3：全局模板覆盖层（SettingsSchema.templates[templateId]）——覆盖链：layout > 模板覆盖 > 预设
   const templateOverride = useResumeStore((s) => s.settings.templates?.[meta.id])
-  // 2026-09-08：经历条目副标题位置（below=主标题下一行[默认] / inline=主标题与日期同行居中）
-  const subtitlePosition = layout?.subtitlePosition ?? 'below'
+  // 2026-09-08：经历条目副标题位置（三态；历史值 'inline' 与 'inline-start' 同渲染=紧随主标题）
+  const rawSubPos = layout?.subtitlePosition ?? 'below'
+  const subtitlePosition: 'below' | 'inline-start' | 'inline-center' =
+    rawSubPos === 'inline-center' ? 'inline-center' : rawSubPos === 'below' ? 'below' : 'inline-start'
+  // 2026-09-08：副标题独立字号（px；缺省回落 entrySubEm×baseFontSize 的 em 行为）
+  const subheaderSizePx = layout?.subheaderSize
+  const subFontStyle: CSSProperties = subheaderSizePx
+    ? { fontSize: `${subheaderSizePx}px` }
+    : { fontSize: `${TYPE_SCALE.entrySubEm}em` }
+  // 2026-09-08：联系方式/标签图标显隐（缺省显示）
+  const useIconMode = layout?.useIconMode !== false
   const titleVariant: TitleVariant = variant === 'classic' ? 'underline' : variant === 'modern' ? 'accent-bar' : 'compact'
 
   const baseFont = lv(layout, 'baseFontSize', preset, templateOverride)
@@ -286,14 +295,15 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
           {secTitle(t('editor.section.education'), headerSize)}
           {resume.education.filter((e) => e.visible !== false).map((e) => {
             const sub = [e.degree, e.major].filter(Boolean).join(' · ')
+            const middle = subtitlePosition !== 'below' && sub ? { text: sub, align: subtitlePosition === 'inline-start' ? ('start' as const) : ('center' as const) } : undefined
             return (
               <div key={e.id} style={{ marginBottom: `${entrySpacingLogic('education')}px` }}>
                 {entryHead(e.school, [fmtDate(e.startDate), e.endDate ? fmtDate(e.endDate) : ''].filter(Boolean).join(DATE_RANGE_SEP), {
                   fontSize: `${TYPE_SCALE.entryHeadEm}em`,
                   fontWeight: 700
-                }, listMark, subtitlePosition === 'inline' && sub ? sub : undefined)}
-                {subtitlePosition === 'inline' || !sub ? null : (
-                  <div style={{ fontSize: `${TYPE_SCALE.entrySubEm}em`, opacity: 0.8 }}>{sub}</div>
+                }, listMark, middle)}
+                {middle ? null : (
+                  <div style={{ ...subFontStyle, opacity: 0.8 }}>{sub}</div>
                 )}
                 {e.description ? (
                   <div style={{ ...pStyle, marginTop: '4px' }} dangerouslySetInnerHTML={{ __html: richTextToHtml(e.description) }} />
@@ -312,16 +322,17 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
           {secTitle(t('editor.section.work'), headerSize)}
           {resume.work.filter((w) => w.visible !== false).map((w) => {
             // 2026-08-11 材料对比批：条目头主行 = 职位（求职视角第一眼），公司移次行（对齐 material/简历示例1.pdf）；title 空时主行回落公司
-            // 2026-09-08：subtitlePosition=inline 时公司名移至主标题与日期之间
+            // 2026-09-08：subtitlePosition=inline-start/inline-center 时公司名移至条目头行（紧随职位 / 居中）
             const sub = w.title ? w.company : ''
+            const middle = subtitlePosition !== 'below' && sub ? { text: sub, align: subtitlePosition === 'inline-start' ? ('start' as const) : ('center' as const) } : undefined
             return (
               <div key={w.id} style={{ marginBottom: `${entrySpacingLogic('work')}px` }}>
                 {entryHead(w.title || w.company, [fmtDate(w.startDate), w.current ? t('editor.field.current') : w.endDate ? fmtDate(w.endDate) : ''].filter(Boolean).join(DATE_RANGE_SEP), {
                   fontSize: `${TYPE_SCALE.entryHeadEm}em`,
                   fontWeight: 700
-                }, listMark, subtitlePosition === 'inline' && sub ? sub : undefined)}
-                {subtitlePosition === 'inline' || !sub ? null : (
-                  <div style={{ fontSize: `${TYPE_SCALE.entrySubEm}em`, opacity: 0.8 }}>{sub}</div>
+                }, listMark, middle)}
+                {middle ? null : (
+                  <div style={{ ...subFontStyle, opacity: 0.8 }}>{sub}</div>
                 )}
                 {w.summary ? (
                   <div style={{ ...pStyle, marginTop: '4px' }} dangerouslySetInnerHTML={{ __html: richTextToHtml(w.summary) }} />
@@ -340,16 +351,17 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
           {secTitle(t('editor.section.projects'), headerSize)}
           {resume.projects.filter((p) => p.visible !== false).map((p) => {
             // 2026-08-11 材料对比批：项目条目头主行 = 角色（role），项目名+组织移次行（对齐参考 PDF「角色+日期 / 项目名」）
-            // 2026-09-08：subtitlePosition=inline 时项目名+组织移至主标题与日期之间
+            // 2026-09-08：subtitlePosition=inline-start/inline-center 时项目名+组织移至条目头行
             const sub = p.role ? [p.name, p.organization].filter(Boolean).join(' · ') : ''
+            const middle = subtitlePosition !== 'below' && sub ? { text: sub, align: subtitlePosition === 'inline-start' ? ('start' as const) : ('center' as const) } : undefined
             return (
               <div key={p.id} style={{ marginBottom: `${entrySpacingLogic('projects')}px` }}>
                 {entryHead(p.role || p.name, [fmtDate(p.startDate), p.endDate ? fmtDate(p.endDate) : ''].filter(Boolean).join(DATE_RANGE_SEP), {
                   fontSize: `${TYPE_SCALE.entryHeadEm}em`,
                   fontWeight: 700
-                }, listMark, subtitlePosition === 'inline' && sub ? sub : undefined)}
-                {subtitlePosition === 'inline' || !sub ? null : (
-                  <div style={{ fontSize: `${TYPE_SCALE.entrySubEm}em`, opacity: 0.8 }}>{sub}</div>
+                }, listMark, middle)}
+                {middle ? null : (
+                  <div style={{ ...subFontStyle, opacity: 0.8 }}>{sub}</div>
                 )}
                 {p.description ? (
                   <div style={{ ...pStyle, marginTop: '4px' }} dangerouslySetInnerHTML={{ __html: richTextToHtml(p.description) }} />
@@ -485,7 +497,8 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
                     {/* 2026-08-10 任务1：lineHeight:0 消除 svg 基线对垂直居中的影响（图1 图标-文字错位加固） */}
                     {/* 2026-08-10 需求：文字标签（无 icon）显示 label 作为标题（用户"简历标签题目显示文字"）；
                         图案标签保持图标标题；均无则纯 value */}
-                    {it.icon ? (
+                    {/* 2026-09-08：useIconMode=false（纯文本排版）时图标不渲染，值直接显示 */}
+                    {it.icon && useIconMode ? (
                       <span style={{ display: 'inline-flex', alignItems: 'center', lineHeight: 0, color: 'var(--rm-accent)', flexShrink: 0 }}>
                         <InfoIcon id={it.icon as InfoIconId} size={CONTACT_GRID_LOGIC.iconSize} />
                       </span>

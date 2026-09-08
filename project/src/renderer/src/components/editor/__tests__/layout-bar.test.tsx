@@ -42,11 +42,11 @@ describe('LayoutBar（排版条）', () => {
     expect(sliders(container)).toHaveLength(0)
   })
 
-  it('展开：6 根滑杆初值 = classic 模板预设（无 per-resume layout 时）', () => {
+  it('展开：7 根滑杆初值 = classic 模板预设（无 per-resume layout 时；末位 = 副标题字号回落 entrySubEm×baseFontSize）', () => {
     const { container } = render(<LayoutBar />)
     openBar()
     const inputs = sliders(container)
-    expect(inputs).toHaveLength(6)
+    expect(inputs).toHaveLength(7)
     const preset = TEMPLATE_PRESETS.classic
     expect(inputs.map((i) => Number(i.value))).toEqual([
       preset.baseFontSize,
@@ -54,7 +54,8 @@ describe('LayoutBar（排版条）', () => {
       preset.pagePadding,
       preset.paragraphSpacing,
       preset.sectionSpacing,
-      preset.headerSize
+      preset.headerSize,
+      Math.round(preset.baseFontSize * 0.9) // 副标题字号缺省 = entrySubEm×baseFontSize 回落
     ])
   })
 

@@ -52,7 +52,13 @@ export function Placeholder({ label }: { label: string }): React.JSX.Element {
   return <div style={{ color: '#bbb', fontSize: '13px', fontStyle: 'italic' }}>{label}</div>
 }
 
-export function entryHead(left: string, right: string, style: CSSProperties, mark?: string, middle?: string): React.JSX.Element {
+export function entryHead(
+  left: string,
+  right: string,
+  style: CSSProperties,
+  mark?: string,
+  middle?: { text: string; align: 'start' | 'center' }
+): React.JSX.Element {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', ...style }}>
       <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: '6px' }}>
@@ -63,22 +69,21 @@ export function entryHead(left: string, right: string, style: CSSProperties, mar
         ) : null}
         <span>{left}</span>
       </span>
-      {/* 2026-09-08：副标题同行情（layout.subtitlePosition='inline'）——紧随主标题（用户定案：
-          "字节跳动放在工程师和日期之间"= 职位 公司名 …… 日期，非居中），marginRight:auto 吸收
-          剩余空间把日期推到行尾；超长省略号截断 */}
+      {/* 2026-09-08：副标题同行情（layout.subtitlePosition inline-start/inline-center）——
+          start=紧随主标题（marginRight:auto 吸收剩余空间、日期靠行尾），center=行内居中；超长省略号截断 */}
       {middle ? (
         <span
           style={{
-            marginRight: 'auto',
             fontSize: '0.85em',
             fontWeight: 400,
             opacity: 0.8,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
+            whiteSpace: 'nowrap',
+            ...(middle.align === 'start' ? { marginRight: 'auto' } : { flex: 1, textAlign: 'center' })
           }}
         >
-          {middle}
+          {middle.text}
         </span>
       ) : null}
       <span style={{ opacity: 0.65, fontWeight: 400, whiteSpace: 'nowrap' }}>{right}</span>

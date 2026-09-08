@@ -83,13 +83,23 @@ export function LayoutBar(): React.JSX.Element {
   const listMark = layout?.listMark ?? 'none'
   const setListMark = (v: string): void => setField('layout.listMark', v)
 
-  // 2026-09-08：经历条目副标题位置（below=主标题下一行[默认] / inline=主标题与日期同行居中）
+  // 2026-09-08：经历条目副标题位置（三态；历史值 'inline' 渲染按 inline-start）
   const SUB_POS_OPTIONS = [
     { value: 'below', label: t('editor.layoutSubPosBelow') },
-    { value: 'inline', label: t('editor.layoutSubPosInline') }
+    { value: 'inline-start', label: t('editor.layoutSubPosInlineStart') },
+    { value: 'inline-center', label: t('editor.layoutSubPosInlineCenter') }
   ]
   const subtitlePosition = layout?.subtitlePosition ?? 'below'
   const setSubtitlePosition = (v: string): void => setField('layout.subtitlePosition', v)
+
+  // 2026-09-08：副标题独立字号（缺省回落 entrySubEm×baseFontSize）
+  const subheaderSize = layout?.subheaderSize
+  const setSubheaderSize = (v: number): void => setField('layout.subheaderSize', v)
+  const defaultSubSize = Math.round(get('baseFontSize') * 0.9)
+
+  // 2026-09-08：联系方式/标签图标显隐开关
+  const useIconMode = layout?.useIconMode !== false
+  const toggleIconMode = (): void => setField('layout.useIconMode', !useIconMode)
 
   return (
     <div className="layout-bar">
@@ -135,7 +145,7 @@ export function LayoutBar(): React.JSX.Element {
               </option>
             ))}
           </select>
-          {/* 2026-09-08：经历条目副标题位置选择（主标题下一行 / 与日期同行） */}
+          {/* 2026-09-08：经历条目副标题位置选择（三态）+ 副标题字号滑杆 */}
           <select
             className="rounded-md border border-border bg-surface px-2 py-1 text-xs"
             value={subtitlePosition}
@@ -148,6 +158,23 @@ export function LayoutBar(): React.JSX.Element {
               </option>
             ))}
           </select>
+          <Slider
+            label={t('editor.layoutSubSize')}
+            value={subheaderSize ?? defaultSubSize}
+            min={10}
+            max={18}
+            step={1}
+            onChange={setSubheaderSize}
+          />
+          {/* 2026-09-08：联系方式/标签图标显隐开关 */}
+          <Button
+            size="sm"
+            variant={useIconMode ? 'outline' : 'default'}
+            onClick={toggleIconMode}
+            title={t('editor.layoutIconModeHint')}
+          >
+            {useIconMode ? t('editor.layoutIconModeOn') : t('editor.layoutIconModeOff')}
+          </Button>
           <Button
             size="sm"
             variant="outline"
