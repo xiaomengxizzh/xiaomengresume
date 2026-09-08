@@ -8,7 +8,8 @@
  * 与主进程的差异（诚实登记，不造假）：
  * - 文件选择 = 浏览器 <input type="file">（替代主进程 dialog）
  * - 仅 B 档（无 AI 映射）——与主进程 A 档失败后的降级路径同一实现，结果一致
- * - PDF 头像提取暂缺（node:zlib PNG 编码未浏览器化）→ basics.photo 为空，模板回落剪影
+ * - PDF 头像提取：unpdf extractImages + 浏览器 canvas 编码 PNG（替代主进程 node:zlib），
+ *   启发式/像素上限/失败回落与主进程一致
  * - 扫描件/图片 → needsVision 占位草稿（与主进程 M4b 占位一致，非错误）
  * 隐私：文件全程不离开浏览器（无上传，符合数据主权承诺）。
  */
@@ -27,6 +28,129 @@ import { DATE_RANGE_SEP } from '@shared/templates/layout'
 import { ImportError } from '../../../main/import/errors'
 import { extractPdfLinesFromBytes, visionPlaceholderDraft } from '../../../main/import/parse-core'
 import { cleanText, detectDirtyLayout, rulesToImportMap, splitBySectionAnchors } from '../../../main/import/rules'
+
+/** 提取图片上限（像素数，防超大图撑爆内存；与主进程 PDF_PHOTO_MAX_PIXELS 同值） */
+const PDF_PHOTO_MAX_PIXELS = 4_000_000
+/**
+ * web 端照片编码约束：简历存 localStorage（配额约 5-10MB/站点），全分辨率 PNG
+ * 单张即可达 ~2MB。按显示尺寸（photoWidth=110pt）× 300DPI 上限缩放 + JPEG 编码，
+ * 单张 ~几十 KB；桌面端存文件系统保留原分辨率（两端策略差异，见日志）。
+ */
+const PHOTO_MAX_SIDE = 460
+const PHOTO_JPEG_QUALITY = 0.85
+
+/** 提取结果（dataURL + 原始尺寸，供 photoWidth/photoHeight 等比缩放） */
+interface ExtractedPhoto {
+  dataUrl: string
+  width: number
+  height: number
+}
+
+/**
+ * 提取 PDF 第 1 页面积最大的嵌入图 → PNG dataURL（浏览器版，与主进程 extractPdfPhoto 同启发式）。
+ * ⚠️ 不可用 unpdf 的 extractImages：浏览器 pdf.js 将图片解码为 {bitmap: ImageBitmap}
+ * （无 .data 字段），其实现只认 .data → 恒返回空（node 下为原始字节所以正常）。
+ * 此处直接遍历绘制指令，bitmap 直接 drawImage，data 按 RGBA/RGB/灰度扩转后 putImageData。
+ * objs 等待带 5s 超时防挂起；无图/失败/超大图返回 null 不阻断导入（与主进程一致）。
+ */
+async function extractLargestPhotoCanvas(bytes: Uint8Array): Promise<ExtractedPhoto | null> {
+  try {
+    const { getDocumentProxy, getResolvedPDFJS } = await import('unpdf')
+    const pdf = await getDocumentProxy(new Uint8Array(bytes))
+    const { OPS } = await getResolvedPDFJS()
+    const page = await pdf.getPage(1)
+    const opList = await page.getOperatorList()
+    let best: ExtractedPhoto | null = null
+    let bestArea = 0
+    for (let i = 0; i < opList.fnArray.length; i++) {
+      if (opList.fnArray[i] !== OPS.paintImageXObject) continue
+      const key = opList.argsArray[i][0] as string
+      const img = await new Promise<Record<string, unknown> | undefined>((resolve) => {
+        const timer = setTimeout(() => resolve(undefined), 5000)
+        const store = key.startsWith('g_') ? page.commonObjs : page.objs
+        try {
+          store.get(key, (v: Record<string, unknown>) => {
+            clearTimeout(timer)
+            resolve(v)
+          })
+        } catch {
+          clearTimeout(timer)
+          resolve(undefined)
+        }
+      })
+      if (!img) continue
+      const width = Number(img.width)
+      const height = Number(img.height)
+      if (!width || !height) continue
+      const area = width * height
+      if (area <= bestArea || area > PDF_PHOTO_MAX_PIXELS) continue
+      // 全尺寸绘制到临时位面（bitmap 直接 draw；data 按通道扩转 RGBA 后 put）
+      const full = document.createElement('canvas')
+      full.width = width
+      full.height = height
+      const fullCtx = full.getContext('2d')
+      if (!fullCtx) continue
+      const bitmap = img.bitmap as ImageBitmap | undefined
+      const data = img.data as Uint8ClampedArray | undefined
+      if (bitmap) {
+        fullCtx.drawImage(bitmap, 0, 0)
+      } else if (data && data.length === width * height * 4) {
+        fullCtx.putImageData(new ImageData(new Uint8ClampedArray(data), width, height), 0, 0)
+      } else if (data && (data.length === width * height * 3 || data.length === width * height)) {
+        // RGB/灰度 → RGBA 扩展
+        const ch = data.length / (width * height)
+        const rgba = new Uint8ClampedArray(width * height * 4)
+        for (let p = 0, q = 0; p < width * height; p++, q += 4) {
+          if (ch === 3) {
+            rgba[q] = data[p * 3]
+            rgba[q + 1] = data[p * 3 + 1]
+            rgba[q + 2] = data[p * 3 + 2]
+            rgba[q + 3] = 255
+          } else {
+            rgba[q] = data[p]
+            rgba[q + 1] = data[p]
+            rgba[q + 2] = data[p]
+            rgba[q + 3] = 255
+          }
+        }
+        fullCtx.putImageData(new ImageData(rgba, width, height), 0, 0)
+      } else {
+        continue
+      }
+      // 按 300DPI@显示尺寸 缩放 + JPEG 编码（localStorage 配额友好）
+      const scale = Math.min(1, PHOTO_MAX_SIDE / Math.max(width, height))
+      const tw = Math.max(1, Math.round(width * scale))
+      const th = Math.max(1, Math.round(height * scale))
+      const out = document.createElement('canvas')
+      out.width = tw
+      out.height = th
+      const outCtx = out.getContext('2d')
+      if (!outCtx) continue
+      outCtx.imageSmoothingQuality = 'high'
+      outCtx.drawImage(full, 0, 0, tw, th)
+      best = { dataUrl: out.toDataURL('image/jpeg', PHOTO_JPEG_QUALITY), width, height }
+      bestArea = area
+    }
+    return best
+  } catch {
+    return null
+  }
+}
+
+/** 照片注入（镜像主进程 applyPhoto：basics.photo 空 → 写入 + 等比缩放到模板基准宽 110） */
+function applyPhotoToDraft(
+  draft: ImportDraft,
+  photo: { dataUrl: string; width: number; height: number } | null
+): ImportDraft {
+  if (photo && !draft.resume.basics.photo) {
+    draft.resume.basics.photo = photo.dataUrl
+    const MAX_PHOTO_W = 110
+    const scale = photo.width > MAX_PHOTO_W ? MAX_PHOTO_W / photo.width : 1
+    draft.resume.basics.photoWidth = Math.max(40, Math.round(photo.width * scale))
+    draft.resume.basics.photoHeight = Math.max(40, Math.round(photo.height * scale))
+  }
+  return draft
+}
 
 /** 导入全流程超时兜底（与主进程 IMPORT_TIMEOUT_MS 一致） */
 const IMPORT_TIMEOUT_MS = 30_000
@@ -273,6 +397,7 @@ export async function parseFile(file: File, requested: ImportFormat | undefined)
   let text: string
   let warnings: string[]
   let pairs: Array<{ label: string; value: string }> = []
+  let pdfPhoto: { dataUrl: string; width: number; height: number } | null = null
   if (format === 'pdf') {
     emitProgress('parse', 0.3)
     const r = await extractPdfLinesFromBytes(bytes)
@@ -283,6 +408,8 @@ export async function parseFile(file: File, requested: ImportFormat | undefined)
     text = r.text
     warnings = r.warnings
     pairs = r.pairs
+    // PDF 头像（2026-09-08 web 端补齐）：第二次独立解析提取嵌入图（与主进程 X1 各持拷贝同模式）
+    pdfPhoto = await extractLargestPhotoCanvas(bytes)
   } else {
     emitProgress('parse', 0.3)
     const r = await parseDocxBytes(bytes)
@@ -293,7 +420,8 @@ export async function parseFile(file: File, requested: ImportFormat | undefined)
   // web 端固定 B 档（无 AI BYOK）——与主进程 A 档失败降级后的路径完全一致
   emitProgress('map', 0.7)
   emitProgress('done', 1)
-  return rulesDraftLocal(text, file.name, format, warnings, pairs)
+  const draft = rulesDraftLocal(text, file.name, format, warnings, pairs)
+  return format === 'pdf' ? applyPhotoToDraft(draft, pdfPhoto) : draft
 }
 
 /* ── 对外入口（mock 的 import.run / import.runBatch 委托至此）──────────────── */

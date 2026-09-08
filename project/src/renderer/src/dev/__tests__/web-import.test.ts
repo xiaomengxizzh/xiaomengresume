@@ -86,4 +86,5 @@ describe('parseFile（渲染端导入管线）', () => {
     expect(draft.needsVision).toBe(true)
     expect(draft.warnings).toContain('import.warning.scanned')
   })
+  // 头像提取（extractLargestPhotoCanvas）依赖浏览器 canvas/ImageBitmap，由局域网真机 E2E 覆盖
 })
