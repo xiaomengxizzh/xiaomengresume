@@ -229,7 +229,25 @@ export const LayoutSchema = z.object({
   /** 2026-09-08 增补（仅增不改）：副标题独立字号（px，10-18；缺省回落 entrySubEm×baseFontSize） */
   subheaderSize: z.number().int().min(10).max(18).optional(),
   /** 2026-09-08 增补（仅增不改）：联系方式/标签图标显隐（缺省 true=显示；false=纯文本排版） */
-  useIconMode: z.boolean().optional()
+  useIconMode: z.boolean().optional(),
+  /**
+   * 2026-09-08 排版批 B 增补（仅增不改）：节级 DNA——key = section id（内置六节 + 自定义模块 id）。
+   * title=节标题改名（空串视为沿用默认节名）；columns=节内容两栏排版（v1 仅列表类节
+   * skills/languages/certificates/自定义 text 生效）；keepTogether=整节不跨页
+   * （print break-inside:avoid；fitToPage 开启时不生效——自动一页纸接管分页）。
+   */
+  sectionMeta: z.record(
+    z.string(),
+    z.object({
+      title: z.string().max(24).optional(),
+      columns: z.union([z.literal(1), z.literal(2)]).optional(),
+      keepTogether: z.boolean().optional()
+    })
+  ).optional(),
+  /** 2026-09-08 排版批 B 增补（仅增不改）：页边距水平/垂直拆分（px 12-96）。设置后覆盖
+   *  pagePadding 的对应分量（水平不再附加模板额外宽度）；未设置回落 pagePadding 现行为。 */
+  pageMarginX: z.number().int().min(12).max(96).optional(),
+  pageMarginY: z.number().int().min(12).max(96).optional()
 })
 export type Layout = z.infer<typeof LayoutSchema>
 

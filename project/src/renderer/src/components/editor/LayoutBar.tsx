@@ -1,6 +1,7 @@
 /**
  * LayoutBar —— 编辑面板顶部排版条（2026-08-08 M2：L4 reset 语义修复 + L6 headerSize 滑杆）
- * 字号 / 行高 / 页面边距 / 段落间距 / 区块间距 / 节标题字号 滑杆 + 一键恢复默认。
+ * 字号 / 行高 / 页面边距(水平·垂直) / 段落间距 / 区块间距 / 节标题字号 / 副标题字号 滑杆 +
+ * 一键恢复默认 + 紧凑排版 / 自动一页纸 / 图标显隐 / 副标题位置 / 节排版（标题改名·两栏·不跨页）。
  * 写入 layout.*（per-resume，进 F3 撤销栈）；缺省值 = 当前模板预设（L4 修复，不再写死 classic）。
  * 2026-08-08 D7：删除动态 ATS 分级提示（无触发入口的过度设计，见 M2 计划 §三）。
  */
@@ -101,8 +102,39 @@ export function LayoutBar(): React.JSX.Element {
   const useIconMode = layout?.useIconMode !== false
   const toggleIconMode = (): void => setField('layout.useIconMode', !useIconMode)
 
+  // 2026-09-08 排版批 B：节排版面板（节标题改名/两栏/整节不跨页；fitToPage 开启时 keepTogether 让位）
+  const customSections = useResumeStore((s) => s.resume.customSections)
+  const [secPanelOpen, setSecPanelOpen] = useState(false)
+  const [pickedId, setPickedId] = useState<string>('skills')
+  const sectionMeta = layout?.sectionMeta ?? {}
+  const pickedMeta = sectionMeta[pickedId]
+  const pickedLabel = ((): string => {
+    const custom = customSections?.find((c) => c.id === pickedId)
+    if (custom) return custom.title
+    const key = `editor.section.${pickedId}`
+    const translated = t(key)
+    return translated === key ? pickedId : translated
+  })()
+  const updateMeta = (patch: { title?: string; columns?: 1 | 2; keepTogether?: boolean }): void => {
+    const next = { ...pickedMeta, ...patch }
+    // 空值归约：title 空串=沿用默认节名；全空对象=删除该节 meta
+    if (typeof next.title === 'string' && next.title.trim() === '') delete next.title
+    if (Object.keys(next).length === 0) {
+      const clone = { ...sectionMeta }
+      delete clone[pickedId]
+      setField('layout.sectionMeta', clone)
+      return
+    }
+    setField('layout.sectionMeta', { ...sectionMeta, [pickedId]: next })
+  }
+  const clearPickedMeta = (): void => {
+    const clone = { ...sectionMeta }
+    delete clone[pickedId]
+    setField('layout.sectionMeta', clone)
+  }
+
   return (
-    <div className="layout-bar">
+    <div className="layout-bar" style={{ position: 'relative' }}>
       <button
         type="button"
         className="text-sm font-semibold text-foreground/85 hover:text-foreground"
@@ -114,7 +146,9 @@ export function LayoutBar(): React.JSX.Element {
         <>
           <Slider label={t('editor.layoutBaseFont')} value={get('baseFontSize')} min={12} max={20} step={1} onChange={(v) => setNum('baseFontSize', v)} />
           <Slider label={t('editor.layoutLineHeight')} value={get('lineHeight')} min={1.2} max={2} step={0.05} onChange={(v) => setNum('lineHeight', v)} />
-          <Slider label={t('editor.layoutPadding')} value={get('pagePadding')} min={16} max={64} step={2} onChange={(v) => setNum('pagePadding', v)} />
+          {/* 2026-09-08 排版批 B：页边距水平/垂直拆分（未手动设置时回落 pagePadding） */}
+          <Slider label={t('editor.layoutMarginX')} value={layout?.pageMarginX ?? get('pagePadding')} min={12} max={96} step={2} onChange={(v) => setField('layout.pageMarginX', v)} />
+          <Slider label={t('editor.layoutMarginY')} value={layout?.pageMarginY ?? get('pagePadding')} min={12} max={96} step={2} onChange={(v) => setField('layout.pageMarginY', v)} />
           <Slider label={t('editor.layoutParagraph')} value={get('paragraphSpacing')} min={4} max={20} step={1} onChange={(v) => setNum('paragraphSpacing', v)} />
           <Slider label={t('editor.layoutSection')} value={get('sectionSpacing')} min={8} max={32} step={2} onChange={(v) => setNum('sectionSpacing', v)} />
           {/* L6 补：节标题字号滑杆（schema/CLASSIC_PRESET 有、原 UI 缺） */}
@@ -175,6 +209,71 @@ export function LayoutBar(): React.JSX.Element {
           >
             {useIconMode ? t('editor.layoutIconModeOn') : t('editor.layoutIconModeOff')}
           </Button>
+          {/* 2026-09-08 排版批 B：节排版面板（节标题改名/两栏/整节不跨页） */}
+          <Button
+            size="sm"
+            variant={secPanelOpen ? 'default' : 'outline'}
+            onClick={() => setSecPanelOpen((v) => !v)}
+            title={t('editor.sectionLayoutHint')}
+          >
+            {t('editor.sectionLayout')}
+          </Button>
+          {secPanelOpen ? (
+            <div
+              className="rounded-lg border border-border bg-surface p-3 text-xs shadow-md"
+              style={{ position: 'absolute', top: '100%', left: 8, zIndex: 30, width: 280, display: 'flex', flexDirection: 'column', gap: 10 }}
+            >
+              <div>
+                <div className="mb-1 font-medium text-foreground/80">{t('editor.sectionPick')}</div>
+                <select
+                  className="w-full rounded-md border border-border bg-surface px-2 py-1"
+                  value={pickedId}
+                  onChange={(e) => setPickedId(e.target.value)}
+                >
+                  {['education', 'work', 'projects', 'skills', 'certificates', 'languages'].map((id) => (
+                    <option key={id} value={id}>
+                      {t(`editor.section.${id}`)}
+                    </option>
+                  ))}
+                  {(customSections ?? []).map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <div className="mb-1 font-medium text-foreground/80">{t('editor.sectionTitleOverride')}</div>
+                <input
+                  className="w-full rounded-md border border-border bg-surface px-2 py-1"
+                  value={pickedMeta?.title ?? ''}
+                  placeholder={pickedLabel}
+                  onChange={(e) => updateMeta({ title: e.target.value })}
+                />
+              </div>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={pickedMeta?.columns === 2}
+                  onChange={(e) => updateMeta({ columns: e.target.checked ? 2 : 1 })}
+                />
+                {t('editor.sectionTwoCols')}
+              </label>
+              <label className="flex items-center gap-2" title={t('editor.sectionKeepTogetherHint')}>
+                <input
+                  type="checkbox"
+                  checked={pickedMeta?.keepTogether === true}
+                  disabled={fitToPage}
+                  onChange={(e) => updateMeta({ keepTogether: e.target.checked })}
+                />
+                {t('editor.sectionKeepTogether')}
+                {fitToPage ? <span className="text-foreground/50">（{t('editor.sectionKeepTogetherHint')}）</span> : null}
+              </label>
+              <Button size="sm" variant="outline" onClick={clearPickedMeta}>
+                {t('editor.sectionMetaReset')}
+              </Button>
+            </div>
+          ) : null}
           <Button
             size="sm"
             variant="outline"

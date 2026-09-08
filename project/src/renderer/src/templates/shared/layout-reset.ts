@@ -7,20 +7,25 @@
  */
 import type { Layout } from '@shared/schema/resume'
 
-/** 排版覆盖字段（reset 时清空的键）；与 LayoutSchema 数字排版字段对齐 */
+/** 排版覆盖字段（reset 时清空的键）；与 LayoutSchema 数字排版字段对齐。
+ *  2026-09-08 排版批 B：补 subheaderSize（批 A 漏，一致性问题）+ pageMarginX/Y（页边距拆分）。 */
 export const LAYOUT_NUMERIC_KEYS = [
   'baseFontSize',
   'lineHeight',
   'pagePadding',
+  'pageMarginX',
+  'pageMarginY',
   'paragraphSpacing',
   'sectionSpacing',
-  'headerSize'
+  'headerSize',
+  'subheaderSize'
 ] as const
 
 export type LayoutNumericKey = (typeof LAYOUT_NUMERIC_KEYS)[number]
 
-/** 用户选择类字段（reset 时保留） */
-const KEEP_KEYS = new Set(['templateId', 'themeColor', 'resumeFont', 'sectionFonts'])
+/** 用户选择类字段（reset 时保留）。
+ *  2026-09-08 排版批 B：补 sectionMeta（节标题改名属内容级决策，不随排版重置丢失）。 */
+const KEEP_KEYS = new Set(['templateId', 'themeColor', 'resumeFont', 'sectionFonts', 'sectionMeta'])
 
 /**
  * 计算 reset 后的 layout：清空排版数值字段，保留选择类字段。

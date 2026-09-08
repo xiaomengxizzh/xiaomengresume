@@ -75,6 +75,24 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
     : { fontSize: `${TYPE_SCALE.entrySubEm}em` }
   // 2026-09-08：联系方式/标签图标显隐（缺省显示）
   const useIconMode = layout?.useIconMode !== false
+  // 2026-09-08 排版批 B：节级 DNA（节标题改名/两栏/整节不跨页）+ 页边距水平垂直拆分
+  const sectionMeta = layout?.sectionMeta ?? {}
+  const metaFor = (id: string): { title?: string; columns?: 1 | 2; keepTogether?: boolean } | undefined =>
+    sectionMeta[id]
+  const secTitleFor = (id: string, fallback: string): string => {
+    const custom = sectionMeta[id]?.title?.trim()
+    return custom || fallback
+  }
+  // keepTogether：print break-inside:avoid（fitToPage 开启时让位——自动一页纸接管分页）
+  const keepStyleFor = (id: string): CSSProperties | undefined =>
+    metaFor(id)?.keepTogether === true && !fitToPage ? { breakInside: 'avoid' } : undefined
+  const colsStyleFor = (id: string): CSSProperties | undefined =>
+    metaFor(id)?.columns === 2 ? { columnCount: 2, columnGap: '28px' } : undefined
+  /** 列表类节体两栏包裹（skills/languages/certificates/自定义 text；columns 未设置则原样） */
+  function Cols({ id, children }: { id: string; children: React.ReactNode }): React.JSX.Element {
+    const cs = colsStyleFor(id)
+    return cs ? <div style={cs}>{children}</div> : <>{children}</>
+  }
   const titleVariant: TitleVariant = variant === 'classic' ? 'underline' : variant === 'modern' ? 'accent-bar' : 'compact'
 
   const baseFont = lv(layout, 'baseFontSize', preset, templateOverride)
@@ -83,6 +101,9 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
   const paragraphGap = lv(layout, 'paragraphSpacing', preset, templateOverride)
   const headerSize = lv(layout, 'headerSize', preset, templateOverride)
   const pagePad = lv(layout, 'pagePadding', preset, templateOverride)
+  // 2026-09-08 排版批 B：页边距水平/垂直拆分（未设置回落 pagePadding 现行为）
+  const pageMarginX = layout?.pageMarginX
+  const pageMarginY = layout?.pageMarginY
   // M5 A7 字体分离：本简历 layout.resumeFont > 模板默认 templateOverride.resumeFont > 系统
   const fontFor = (section: string): string | undefined => resolveFontFamily(layout, section, templateOverride?.resumeFont)
 
@@ -136,7 +157,7 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
   const rootStyle: CSSProperties = {
     fontSize: scaled(baseFont),
     lineHeight: applyScale === 1 ? lineHeight : Math.round(lineHeight * applyScale * 10) / 10,
-    padding: `${scaled(pagePad)}px ${scaled(pagePad + (variant === 'classic' ? 24 : 20))}px`,
+    padding: `${scaled(pageMarginY ?? pagePad)}px ${scaled(pageMarginX ?? pagePad + (variant === 'classic' ? 24 : 20))}px`,
     // B 档（2026-08-10）：分页时每个分页框都应用 padding——默认 box-decoration-break: slice
     // 只在首页框应用垂直 padding，页 2 起顶部贴边（实测 y0≈2pt）；clone 使每页顶底各留边距
     boxDecorationBreak: 'clone',
@@ -278,10 +299,14 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
           </div>
         )
       }
-      return cs.content ? <div style={pStyle} dangerouslySetInnerHTML={{ __html: richTextToHtml(cs.content) }} /> : null
+      return cs.content ? (
+        <Cols id={cs.id}>
+          <div style={pStyle} dangerouslySetInnerHTML={{ __html: richTextToHtml(cs.content) }} />
+        </Cols>
+      ) : null
     })()
     return (
-      <SectionBlock path={cs.id} onClick={() => jump(cs.id)} style={{ fontFamily: fontFor(cs.id) }} hint={t('preview.locateHint')}>
+      <SectionBlock path={cs.id} onClick={() => jump(cs.id)} style={{ ...keepStyleFor(cs.id), fontFamily: fontFor(cs.id) }} hint={t('preview.locateHint')}>
         {secTitle(cs.title || t('editor.section.custom'), headerSize)}
         {body}
       </SectionBlock>
@@ -291,8 +316,8 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
     education: () => (
       <>
         {/* 教育经历 */}
-        <SectionBlock path="education" onClick={() => jump('education')} style={{ fontFamily: fontFor('education') }} hint={t('preview.locateHint')}>
-          {secTitle(t('editor.section.education'), headerSize)}
+        <SectionBlock path="education" onClick={() => jump('education')} style={{ ...keepStyleFor('education'), fontFamily: fontFor('education') }} hint={t('preview.locateHint')}>
+          {secTitle(secTitleFor('education', t('editor.section.education')), headerSize)}
           {resume.education.filter((e) => e.visible !== false).map((e) => {
             const sub = [e.degree, e.major].filter(Boolean).join(' · ')
             const middle = subtitlePosition !== 'below' && sub ? { text: sub, align: subtitlePosition === 'inline-start' ? ('start' as const) : ('center' as const) } : undefined
@@ -318,8 +343,8 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
     work: () => (
       <>
         {/* 工作经验 */}
-        <SectionBlock path="work" onClick={() => jump('work')} style={{ fontFamily: fontFor('work') }} hint={t('preview.locateHint')}>
-          {secTitle(t('editor.section.work'), headerSize)}
+        <SectionBlock path="work" onClick={() => jump('work')} style={{ ...keepStyleFor('work'), fontFamily: fontFor('work') }} hint={t('preview.locateHint')}>
+          {secTitle(secTitleFor('work', t('editor.section.work')), headerSize)}
           {resume.work.filter((w) => w.visible !== false).map((w) => {
             // 2026-08-11 材料对比批：条目头主行 = 职位（求职视角第一眼），公司移次行（对齐 material/简历示例1.pdf）；title 空时主行回落公司
             // 2026-09-08：subtitlePosition=inline-start/inline-center 时公司名移至条目头行（紧随职位 / 居中）
@@ -347,8 +372,8 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
     projects: () => (
       <>
         {/* 项目经历 */}
-        <SectionBlock path="projects" onClick={() => jump('projects')} style={{ fontFamily: fontFor('projects') }} hint={t('preview.locateHint')}>
-          {secTitle(t('editor.section.projects'), headerSize)}
+        <SectionBlock path="projects" onClick={() => jump('projects')} style={{ ...keepStyleFor('projects'), fontFamily: fontFor('projects') }} hint={t('preview.locateHint')}>
+          {secTitle(secTitleFor('projects', t('editor.section.projects')), headerSize)}
           {resume.projects.filter((p) => p.visible !== false).map((p) => {
             // 2026-08-11 材料对比批：项目条目头主行 = 角色（role），项目名+组织移次行（对齐参考 PDF「角色+日期 / 项目名」）
             // 2026-09-08：subtitlePosition=inline-start/inline-center 时项目名+组织移至条目头行
@@ -377,8 +402,9 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
     skills: () => (
       <>
         {/* 专业技能 */}
-        <SectionBlock path="skills" onClick={() => jump('skills')} style={{ fontFamily: fontFor('skills') }} hint={t('preview.locateHint')}>
-          {secTitle(t('editor.section.skills'), headerSize)}
+        <SectionBlock path="skills" onClick={() => jump('skills')} style={{ ...keepStyleFor('skills'), fontFamily: fontFor('skills') }} hint={t('preview.locateHint')}>
+          {secTitle(secTitleFor('skills', t('editor.section.skills')), headerSize)}
+          <Cols id="skills">
           {resume.skills.length > 0 ? (
             <ul style={{ listStyle: 'disc', paddingLeft: `${LIST_MARK_LOGIC.indent}px`, marginTop: '2px' }}>
               {resume.skills.map((s) => (
@@ -393,6 +419,7 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
           ) : (
             <Placeholder label={t('editor.action.placeholder')} />
           )}
+          </Cols>
         </SectionBlock>
 
       </>
@@ -400,8 +427,9 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
     certificates: () => (
       <>
         {/* 证书 */}
-        <SectionBlock path="certificates" onClick={() => jump('certificates')} style={{ fontFamily: fontFor('certificates') }} hint={t('preview.locateHint')}>
-          {secTitle(t('editor.section.certificates'), headerSize)}
+        <SectionBlock path="certificates" onClick={() => jump('certificates')} style={{ ...keepStyleFor('certificates'), fontFamily: fontFor('certificates') }} hint={t('preview.locateHint')}>
+          {secTitle(secTitleFor('certificates', t('editor.section.certificates')), headerSize)}
+          <Cols id="certificates">
           {resume.certificates.map((c) => (
             <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: `${TYPE_SCALE.certEm}em`, marginBottom: '4px' }}>
               <span>{c.name}</span>
@@ -409,6 +437,7 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
             </div>
           ))}
           {resume.certificates.length === 0 ? <Placeholder label={t('editor.action.placeholder')} /> : null}
+          </Cols>
         </SectionBlock>
 
       </>
@@ -416,14 +445,16 @@ export function ResumeBody({ variant, resume: externalResume, emptyHints }: { va
     languages: () => (
       <>
         {/* 语言 */}
-        <SectionBlock path="languages" onClick={() => jump('languages')} style={{ fontFamily: fontFor('languages') }} hint={t('preview.locateHint')}>
-          {secTitle(t('editor.section.languages'), headerSize)}
+        <SectionBlock path="languages" onClick={() => jump('languages')} style={{ ...keepStyleFor('languages'), fontFamily: fontFor('languages') }} hint={t('preview.locateHint')}>
+          {secTitle(secTitleFor('languages', t('editor.section.languages')), headerSize)}
+          <Cols id="languages">
           {resume.languages.map((l) => (
             <div key={l.id} style={{ fontSize: `${TYPE_SCALE.langEm}em`, marginBottom: '2px' }}>
               {l.name}
               {l.proficiency ? `（${t(`editor.lang.${l.proficiency}`)}）` : ''}
             </div>
           ))}
+          </Cols>
           {resume.languages.length === 0 ? <Placeholder label={t('editor.action.placeholder')} /> : null}
         </SectionBlock>
       </>
