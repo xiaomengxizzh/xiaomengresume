@@ -17,6 +17,7 @@ import type { Job } from '@shared/schema/job'
 import type { JobSummary, RecentResume, ResumeSummary } from '@shared/ipc-channels'
 import sample from '../../../shared/sample-resume.json'
 import type { ElectronAPI } from '../../../preload/index'
+import { uuidV4FromGetRandomValues } from '../lib/uuid'
 import { onImportProgress, webImportRun, webImportRunBatch } from './web-import'
 
 const PREFIX = 'xmweb.v1.'
@@ -73,6 +74,15 @@ const AI_UNSUPPORTED = { code: 'NO_PROVIDER', message: 'AI requires the desktop 
 
 export function installWebElectronAPIMock(): void {
   if (window.electronAPI) return
+
+  // 安全上下文兜底（2026-09-08）：局域网 http（非安全上下文）无 crypto.randomUUID，
+  // 渲染端 16 处调用点（store/编辑器/导入等）会整体崩——在此打实例级 polyfill 覆盖全局。
+  // polyfill 值必须用纯兜底实现（uuidV4FromGetRandomValues）：若绑 safeUuid，
+  // 其"原生可用则透传"会看到自身 → 无限自调用（Maximum call stack size exceeded）。
+  // Electron 不受影响（dev localhost / prod file:// 均为安全上下文）。
+  if (typeof crypto.randomUUID !== 'function') {
+    Object.defineProperty(crypto, 'randomUUID', { value: uuidV4FromGetRandomValues, configurable: true })
+  }
 
   const electronAPI: ElectronAPI = {
     app: {

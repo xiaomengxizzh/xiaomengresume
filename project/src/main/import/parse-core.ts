@@ -123,8 +123,10 @@ export async function extractPdfLinesFromBytes(bytes: Uint8Array): Promise<PdfLi
     // ② 坐标文本项（两列候选对用）
     const { items } = await extractTextItems(pdf)
     pageItems = items as Array<Array<{ str: string; x: number; y: number; width: number; height: number }>>
-  } catch {
-    throw new ImportError('PARSE_FAILED', 'cannot parse pdf (encrypted or corrupted?)')
+  } catch (err) {
+    // 加密 / 损坏 / 无文本层解析失败 → 明确提示（R1）；透出底层消息辅助定位（如浏览器 Worker 加载失败）
+    const detail = err instanceof Error ? err.message : String(err)
+    throw new ImportError('PARSE_FAILED', `cannot parse pdf (encrypted or corrupted?): ${detail}`)
   }
 
   const lines: PdfLine[] = []
