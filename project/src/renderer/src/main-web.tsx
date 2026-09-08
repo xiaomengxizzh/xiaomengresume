@@ -5,6 +5,7 @@
  * 浏览器里 preload 不会执行，缺失时挂 dev/web-electronapi-mock（localStorage 实现）。
  * 必须动态 import('./main')：静态 import 会提升到本文件语句之前，mock 挂载就晚了。
  */
+import './lib/web-compat' // 旧引擎垫层（Math.sumPrecise 等）——必须在应用代码前
 import { installWebElectronAPIMock } from './dev/web-electronapi-mock'
 import { parseFile, setNextPickedFiles } from './dev/web-import'
 

@@ -144,7 +144,9 @@ export function ImportHome(): React.JSX.Element {
           {error.code === 'NO_PROVIDER' ? (
             <span className="block text-xs opacity-80">{t('import.noAiNeeded')}</span>
           ) : null}
-          {error.code === 'UNKNOWN' && error.message ? (
+          {/* 2026-09-08：底层细节对所有错误码透出（此前仅 UNKNOWN）——web 端用户引擎/文件
+              千差万别（旧内核/加密 PDF/结构损坏），无细节则无法自助定位与反馈 */}
+          {error.message ? (
             <span className="mt-1 block break-all text-xs opacity-70">{error.message}</span>
           ) : null}
           <Button variant="ghost" size="sm" className="mt-1" onClick={() => setError(null)}>
