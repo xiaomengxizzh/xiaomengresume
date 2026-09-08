@@ -11,7 +11,7 @@ export default tseslint.config(
     // 工具脚本（纯 Node 环境，无 TS 项目上下文）
     files: ['scripts/**/*.mjs', 'web-server.mjs'],
     languageOptions: {
-      globals: { process: 'readonly', console: 'readonly', URL: 'readonly', fetch: 'readonly' }
+      globals: { process: 'readonly', console: 'readonly', URL: 'readonly', fetch: 'readonly', Buffer: 'readonly' }
     }
   },
   {

@@ -19,6 +19,7 @@ import sample from '../../../shared/sample-resume.json'
 import type { ElectronAPI } from '../../../preload/index'
 import { uuidV4FromGetRandomValues } from '../lib/uuid'
 import { onImportProgress, webImportRun, webImportRunBatch } from './web-import'
+import { webExportRun } from './web-export'
 
 const PREFIX = 'xmweb.v1.'
 const RESUME_KEY = (id: string): string => `${PREFIX}resume.${id}`
@@ -99,25 +100,9 @@ export function installWebElectronAPIMock(): void {
       pdf: () => Promise.reject(new Error('PDF printing requires the desktop app'))
     },
     export: {
-      run: async (args) => {
-        if (args.format !== 'json') {
-          // PDF/图片导出走主进程打印管线，浏览器内不提供（不造假成功）
-          return { canceled: false, error: 'PDF/image export requires the desktop app; use JSON export in browser' }
-        }
-        const id = args.resumeId
-        if (!id) return { canceled: false, error: 'missing resumeId' }
-        const record = readRecord(id)
-        if (!record) return { canceled: false, error: 'missing resumeId' }
-        // JSON 导出 = 浏览器下载（对齐主进程「导出为版本化 JSON 文件」语义）
-        const blob = new Blob([JSON.stringify(record.resume, null, 2)], { type: 'application/json' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `${displayName(record.resume, id) || id}.json`
-        a.click()
-        URL.revokeObjectURL(url)
-        return { canceled: false }
-      },
+      // web 端导出：textPdf = 浏览器打印管线（打印窗口 + autoprint）；json = Blob 下载；
+      // image/imagePdf 返回 'coming in v1.1'（对话框映射友好提示），见 dev/web-export.ts
+      run: (args) => webExportRun(args),
       onProgress: () => () => {}
     },
     ai: {

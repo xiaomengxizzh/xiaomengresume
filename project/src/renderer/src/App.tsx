@@ -69,8 +69,18 @@ function ExportView(): React.JSX.Element | null {
       document.body.classList.add('print-first-page-only')
     }
     const finalize = (): void => {
-      // React 渲染 + 数据就绪后置位就绪标志（主进程轮询）
+      // React 渲染 + 数据就绪后置位就绪标志（主进程轮询；rAF 在后台/遮挡窗口可能不触发，
+      // 桌面端打印窗口常驻前台无碍）
       if (alive) requestAnimationFrame(() => { window.__exportReady = true })
+      // web 打印管线（2026-09-08）：?autoprint=1（仅 web 端 export.run 传入）→
+      // 字体就绪后唤起浏览器打印对话框（用户另存为 PDF）。
+      // 刻意不放进 rAF：后台标签/被遮挡窗口 rAF 可能永不触发导致打印不出现。
+      if (params.get('autoprint') === '1') {
+        void document.fonts.ready.then(() => {
+          if (!alive) return
+          setTimeout(() => window.print(), 200)
+        })
+      }
     }
     // B2（2026-08-11 photo 转存）：photo 为路径引用 → 预读为 dataURL 注入 store——
     // 模板同步渲染照片，printToPDF 同步快照不丢照片（预览场景由 ResumeBody 内部异步加载；
