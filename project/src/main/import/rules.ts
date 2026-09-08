@@ -28,6 +28,9 @@ export interface ParsedSection {
   items: string[]
   /** 2026-08-09 增补：有序行（bullet/文本原始顺序，供条目流式构建——标题行先于其要点） */
   lines: string[]
+  /** 2026-09-08 增补：段在文档行序中的起始位置（basics 候选按文档位置选择，防中部 Contact 段抢占；
+   *  可选仅为测试构造兼容，splitBySectionAnchors 产出恒有值） */
+  startIndex?: number
 }
 
 /** 中英双语 section 锚点表（定案 §3.19 A 关键词表） */
@@ -46,18 +49,64 @@ export const SECTION_ANCHORS: Record<LocalSection, { zh: string[]; en: string[] 
 const BULLET_RE = /^(?:[-•·*+]\s+|(?:\d+[.)、])\s*|([①-⑳])\s*|（\d+）\s*)(.+)$/
 
 /** 文本清洗（定案 A.1）：trim + 剔空行/纯页码行/装饰线（不去内容字符）。
- *  页码仅 1-3 位数字（页号通常 1-3 位）；11 位手机号等长数字保留（2026-08-09 M4a.1 修复：原 ^\d+$ 误剔手机号）。 */
+ *  页码仅 1-3 位数字（页号通常 1-3 位）；11 位手机号等长数字保留（2026-08-09 M4a.1 修复：原 ^\d+$ 误剔手机号）。
+ *  2026-09-08 换行机制修复：① "Page 1"/"第 1 页" 式页眉页脚行剔除（LinkedIn 等导出带此行，
+ *  污染 leading basics 段）② 段落续行合并（见 reflowParagraphs）。 */
 export function cleanText(raw: string): string {
-  return raw
+  const lines = raw
     .split('\n')
     .map((l) => l.trim())
     .filter((l) => {
       if (!l) return false
       if (/^\d{1,3}$/.test(l)) return false // 纯页码行（1-3 位）
       if (/^[-—=_]{3,}$/.test(l)) return false // 页眉页脚装饰线
+      if (/^(?:page\s*\d{1,3}|第\s*\d{1,3}\s*页)$/i.test(l)) return false // "Page 1"/"第 1 页" 式页眉
       return true
     })
-    .join('\n')
+  return reflowParagraphs(lines).join('\n')
+}
+
+/** 句末收尾判定（含收尾引号/括号）——收尾行不再吸收续行 */
+const TERMINAL_RE = /[。．!?！？；;]["」』）)]?\s*$/
+/** 新条目起始：日期跨度开头（"2020/09 -"）——条目头特征 */
+const DATE_START_RE = /^\s*\d{4}\s*[年./-]/
+/** label 开头（"主修课程：…"= 新要点起点；短 label 行收尾也不吸收续行） */
+const LABEL_START_RE = /^[\u4e00-\u9fa5A-Za-z][\u4e00-\u9fa5A-Za-z0-9]{0,10}\s*[:：]/
+
+/**
+ * 段落续行合并（2026-09-08 换行机制修复，用户实测：项目描述一个要点被行宽硬换行拆成两行）。
+ * 合并判据（保守——合并错误比不合并更难在向导纠正）：
+ *   结构前提 = 当前行不构成新起点（非 bullet / 锚点 / 日期跨度开头 / label: 开头 / 纯数字）
+ *              且上一行非句末收尾、非日期跨度结尾（条目头）、非短 label 行、长度 ≥8；
+ *   语言连续性（必需信号，防把姓名/职位等独立短块粘起来）=
+ *              当前行小写字母开头（英文硬换行续行），或前行尾字与当前行首字均为汉字（中文续行）。
+ */
+export function reflowParagraphs(lines: string[]): string[] {
+  const out: string[] = []
+  for (const raw of lines) {
+    const line = raw.trim()
+    if (!line) continue
+    const prev = out[out.length - 1]
+    const canMerge =
+      prev !== undefined &&
+      prev.length >= 8 &&
+      !TERMINAL_RE.test(prev) &&
+      !DATE_START_RE.test(prev.slice(-14)) &&
+      !(LABEL_START_RE.test(prev) && prev.length <= 24) &&
+      !BULLET_RE.test(line) &&
+      !DATE_START_RE.test(line) &&
+      !LABEL_START_RE.test(line) &&
+      !/^\d{1,3}$/.test(line) &&
+      !matchAnchorLine(line) &&
+      (/^[a-z]/.test(line) || (/[\u4e00-\u9fff]$/.test(prev) && /^[\u4e00-\u9fff]/.test(line)))
+    if (canMerge) {
+      const cjkJoin = /[\u4e00-\u9fff（“]$/.test(prev) && /^[\u4e00-\u9fff）”]/.test(line)
+      out[out.length - 1] = prev + (cjkJoin ? '' : ' ') + line
+    } else {
+      out.push(line)
+    }
+  }
+  return out
 }
 
 /**
@@ -124,32 +173,34 @@ export function splitBySectionAnchors(text: string): ParsedSection[] {
   let current: ParsedSection | null = null
   // lastId 记录当前段 id（闭包赋值不参与 TS 控制流，用标量避开 current?.id 的 never 推断）
   let lastId: LocalSection | 'unclassified' | null = null
-  const ensure = (id: LocalSection | 'unclassified'): ParsedSection => {
+  const ensure = (id: LocalSection | 'unclassified', idx: number): ParsedSection => {
     if (lastId !== id) {
-      current = { id, rawText: '', items: [], lines: [] }
+      current = { id, rawText: '', items: [], lines: [], startIndex: idx }
       sections.push(current)
       lastId = id
     }
     return current as ParsedSection
   }
 
+  let lineIdx = 0
   for (const rawLine of text.split('\n')) {
     const line = rawLine.trim()
     if (!line) continue
     const anchor = matchAnchorLine(line)
     if (anchor) {
-      ensure(anchor) // 新 section 边界
+      ensure(anchor, lineIdx) // 新 section 边界
       // 2026-08-13 修复：锚点行带内容（"语言能力：CET-6、CET-4"）——锚点词后冒号/空格的内容
       // 不能整行丢弃，剩余内容作为该段首行加入（原 continue 致 languages 段恒空）
       const rest = stripAnchorPrefix(line, anchor)
       if (rest) {
-        const sec = ensure(anchor)
+        const sec = ensure(anchor, lineIdx)
         sec.rawText += (sec.rawText ? '\n' : '') + rest
         sec.lines.push(rest)
       }
+      lineIdx++
       continue
     }
-    const sec = ensure(lastId ?? 'unclassified')
+    const sec = ensure(lastId ?? 'unclassified', lineIdx)
     const bullet = matchBullet(line)
     if (bullet !== null) {
       sec.items.push(bullet)
@@ -158,6 +209,7 @@ export function splitBySectionAnchors(text: string): ParsedSection[] {
       sec.rawText += (sec.rawText ? '\n' : '') + line
       sec.lines.push(line)
     }
+    lineIdx++
   }
   return sections
 }
@@ -247,16 +299,27 @@ export function rulesToImportMap(sections: ParsedSection[], pairs?: Array<{ labe
   const map: ImportMap = {}
   const pick = (id: LocalSection): ParsedSection | undefined => sections.find((s) => s.id === id)
 
-  // basics：显式 basics 段优先，否则首个 unclassified 段（常见简历开头无"基本信息"标题，
-  // 直接姓名+联系方式，归入未分类暂存段）；姓名首行 + 电话/邮箱/网站正则提取。
-  // 生效条件 = 命中至少一个联系方式正则（防无锚点正文整篇被误判为 basics）。
-  const basics = pick('basics') ?? sections.find((s) => s.id === 'unclassified')
+  // basics：显式 basics 段与 leading unclassified 段都可能是"基本信息"载体
+  //（常见简历开头无"基本信息"标题，直接姓名+联系方式，归入未分类暂存段）。
+  // 2026-09-08 修复：LinkedIn 式简历的 Contact/Profile 锚点段出现在文档中部，原
+  // `pick('basics') ?? first-unclassified` 会被中部段抢占，姓名被联系方式段的职位行污染
+  // → 按 startIndex 选文档中最早出现的候选；联系方式正则扫描池 = 选中候选 + 其余
+  //   basics 锚点段（email/website 常在中部 Contact 段）。生效条件不变 = 命中联系方式正则。
+  const basicsCandidates = sections.filter((s) => s.id === 'basics' || s.id === 'unclassified')
+  const basics =
+    basicsCandidates.length > 0
+      ? basicsCandidates.reduce((a, b) => ((b.startIndex ?? 0) < (a.startIndex ?? 0) ? b : a))
+      : undefined
   if (basics) {
     const lines = [...basics.rawText.split('\n'), ...basics.items].filter(Boolean)
+    const contactLines = [
+      ...lines,
+      ...basicsCandidates.filter((s) => s !== basics).flatMap((s) => [...s.rawText.split('\n'), ...s.items])
+    ].filter(Boolean)
     const b: NonNullable<ImportMap['basics']> = {}
     // 2026-08-10 修复：同行多字段拆分——电话/邮箱/网址按 token 独立匹配，地址按片段从行中提取
     // （material 示例"北京市朝阳区 https://zhangsan.dev"同行——原整行 find+行去重致地址被网址抢占丢失）
-    const tokens = lines.flatMap((l) => l.split(/\s+/).filter(Boolean))
+    const tokens = contactLines.flatMap((l) => l.split(/\s+/).filter(Boolean))
     // 2026-08-10 修复：token 内提取（容忍"电话：13800138000"等冒号前缀 token）
     const phone = tokens.map((t) => t.match(/1[3-9]\d{9}|0\d{2,3}-\d{7,8}/)?.[0]).find(Boolean)
     const email = tokens.map((t) => t.match(/[\w.-]+@[\w.-]+\.\w+/)?.[0]).find(Boolean)
@@ -286,7 +349,7 @@ export function rulesToImportMap(sections: ParsedSection[], pairs?: Array<{ labe
     // 2026-08-09 T2：职业（headline）——前缀匹配（求职意向/应聘职位等）
     const headline = lines.find((l) => /(求职意向|应聘职位|目标职位|期望职位|职位[:：]|职业[:：])/.test(l))
     // 2026-08-10 修复：裸职业行 fallback——basics 段第 2 行（第 1 行=姓名），若为干净短文本
-    // （非联系方式/地址/状态/前缀职业，≤20 字符）则作为 headline（material 示例"高级前端工程师"独立行）
+    // （非联系方式/地址/状态/前缀职业）则作为 headline（material 示例"高级前端工程师"独立行）
     let headlineRaw: string | undefined
     if (headline) headlineRaw = headline
     else if (lines.length > 1) {
@@ -294,7 +357,12 @@ export function rulesToImportMap(sections: ParsedSection[], pairs?: Array<{ labe
       const notContact = !/1[3-9]\d{9}|[\w.-]+@[\w.-]+\.\w+|https?:\/\/|www\.|(?:省|市|区|县|路|街|号|大厦|栋)|(?:在职|离职|待业|已离职|应届|退休)/.test(cand)
       // 2026-08-10 收紧：纯中文短词（无空格无数字——"实习天数 3"式标签行不误判为职业）
       const isPlainChineseWord = !/[\s\d]/.test(cand)
-      if (cand.length > 0 && cand.length <= 20 && notContact && isPlainChineseWord) headlineRaw = cand
+      // 2026-09-08：英文 headline 兜底（LinkedIn 式 "Growth Product Manager, Tech in Asia Jobs"
+      // 含空格/逗号，原 isPlainChineseWord 判拒致英文简历 headline 全缺——S3 linkedin basics
+      // 全灭的主因之一）；≤8 词 / ≤48 字符 / 无 4 位年份
+      const isLatinHeadline =
+        /^[A-Za-z][A-Za-z0-9\s,.&'/-]*$/.test(cand) && cand.split(/\s+/).length <= 8 && cand.length <= 48 && !/\d{4}/.test(cand)
+      if (cand.length > 0 && notContact && ((isPlainChineseWord && cand.length <= 20) || isLatinHeadline)) headlineRaw = cand
     }
     if (headlineRaw) b.headline = headlineRaw.replace(/^(求职意向|应聘职位|目标职位|期望职位|职位|职业)[:：]?\s*/i, '').slice(0, 60)
     if (phone) b.phone = phone
@@ -406,11 +474,19 @@ export function rulesToImportMap(sections: ParsedSection[], pairs?: Array<{ labe
     if (!b.age) b.age = labelValue('年龄')
     if (customs.length > 0) b.customFields = customs
     if (b.phone || b.email || b.website || b.birthDate || b.address || b.location || (b.customFields && b.customFields.length > 0)) {
-      const nameLine = lines.find((l) => !fixedHits.has(l) && l.trim().length > 0)
+      // 2026-09-08 修复：姓名提取不再依赖"非联系方式行"——联系方式与姓名常挤在同一行
+      //（"姓名 + 可实习6个月 + 手机号"式三段同行，fixedHits 全占时原逻辑直接漏姓名）。
+      // 取 basics 首行 → 剥离联系方式 token → 行首 2-4 汉字即姓名（中文名约定）；
+      // 非中文首行（英文名）整行采用，但含数字/@ 或过长（>24）视为非姓名行放弃（向导兜底）。
+      const nameLine = lines.find((l) => l.trim().length > 0)
       if (nameLine) {
-        // 2026-08-10："姓名 张三"/"姓名：张三"式行剥离前缀取真实姓名
-        const nameClean = nameLine.replace(/^姓名[:：\s]+/i, '').trim()
-        b.name = (nameClean || nameLine).slice(0, 50)
+        let n = nameLine.replace(/^姓名[:：\s]+/i, '').trim()
+        for (const v of [phone, email, website]) if (v) n = n.split(v).join('')
+        n = n.replace(/\s{2,}/g, ' ').trim()
+        const cjk = n.match(/^([\u4e00-\u9fa5]{2,4})(?:\s|$)/)
+        let name = cjk ? cjk[1] : n
+        if (!cjk && (/[\d@]/.test(name) || name.length > 24)) name = ''
+        if (name) b.name = name.slice(0, 50)
       }
       map.basics = b
     }
