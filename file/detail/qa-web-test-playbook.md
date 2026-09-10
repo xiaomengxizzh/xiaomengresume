@@ -4,6 +4,17 @@
 > **设计原则**：所有断言 = `粘贴一段脚本 → 输出的某项为 true/false`。你（执行模型）不需要理解被测应用，只需**逐字执行、逐字比对、记录结果**。
 > **站点地址**：`http://<本机局域网IP>:4173/web.html`（当前示例：10.17.158.22——**IP 随 DHCP 会变，用前先 `hostname -I` 确认**）（下文记作 `<站点>`，如端口/主机不同请全局替换）。
 
+## 第 -1 章 部署备忘（给维护者，测试模型可跳过）
+
+- **固定访问地址**：本机局域网 IP 由 DHCP 分配、会变（已实测变更过一次导致"服务活着但没人打得开"）。请在**路由器上为本机做 DHCP 静态地址绑定**（或本机配置静态 IP），绑定后把最终地址回填到本章与各协作者。
+- **服务常驻启动**（在 `project/` 目录执行；`setsid` 脱离终端，关终端不带走进程）：
+  ```bash
+  setsid nohup node web-server.mjs > /tmp/xm-web-server.log 2>&1 < /dev/null &
+  ```
+- **改动 web-server.mjs 后必做**：`node --check web-server.mjs` 语法校验（该文件是纯 JS，**禁止混入 TypeScript 类型标注**——已发生过 `let body: Buffer` 导致服务无法重启的事故，commit 4ba4553）。
+- **更新部署**：改了前端代码后需 `pnpm build:web` 重建 `dist-web/`（静态服务逐请求读盘，无需重启进程；访问者强刷一次即可拿到新版）。
+- **快速自检**：`curl -s -o /dev/null -w "%{http_code}\n" http://localhost:4173/web.html` 应返回 200；非 200 先 `ss -tlnp | grep 4173` 看进程是否存活。
+
 ---
 
 ## 第 0 章 执行规则（必须先读）
