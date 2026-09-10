@@ -26,7 +26,7 @@ createServer(async (req, res) => {
     const f = normalize(join(ROOT, p))
     if (!f.startsWith(ROOT)) { res.writeHead(403); return res.end() }
 
-    let body: Buffer
+    let body
     try {
       const s = await stat(f)
       if (s.isDirectory()) throw new Error('is directory')
