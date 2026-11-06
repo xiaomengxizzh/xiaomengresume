@@ -1,7 +1,7 @@
 name: Release
 
 # 发布流程（F15 打包分发 · M5 接入 electron-builder 产物）
-# 当前骨架：打 v* tag 触发 → CI 验证 → GitHub Release（自动生成 notes）
+# 当前骨架：tag 仅记录发布候选；涉及下载 Electron/Node 依赖时需 Owner 在 tag ref 上手动 workflow_dispatch 授权，再执行 CI 验证与 GitHub Release（自动 notes），不可自动重装大依赖。
 # TODO(M5)：接入 electron-builder 三端产物（.exe/.dmg/.AppImage + 便携 zip）上传，
 #          遵循《技术栈.md》M5 章节（Defender 锁 / safeStorage Linux 降级 / electron-updater 源）。
 
@@ -9,9 +9,16 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      approve_release_dependencies:
+        description: 'Owner explicitly authorizes release toolchain dependencies for this tagged ref'
+        type: boolean
+        required: true
+        default: false
 
 jobs:
   verify:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.actor == 'xiaomengxizzh' && github.ref_type == 'tag' && inputs.approve_release_dependencies == true }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -26,7 +33,15 @@ jobs:
           node-version: 22
           cache: pnpm
           cache-dependency-path: project/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
+      - name: Preflight installed dependencies and cached packages
+        run: |
+          pnpm store path
+          if [ -d node_modules ] && pnpm list --depth 0 >/dev/null 2>&1; then
+            echo 'Reusing installed dependency tree (no duplicate download)'
+          else
+            echo 'Reinstall only after explicit owner-approved release dispatch'
+            pnpm install --frozen-lockfile --prefer-offline
+          fi
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm build
