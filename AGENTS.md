@@ -1,5 +1,8 @@
 # xiaomengresume · 项目指令（AGENTS.md）
 
+> **2026-11-06 用户最高优先级资源安装约束**：执行前必须遵守 [file/项目规范.md](file/项目规范.md) §四 4.0；未经用户对具体资源明确许可，不得在开发计划、CI、启动脚本或子代理中引入大容量软件、模型权重、训练套件、镜像、浏览器新安装或下载。历史计划不构成授权。
+
+
 > 本文件为 ZCode 自动加载的项目级指令（与用户级 `~/.zcode/AGENTS.md` 合并生效），
 > 内容为**脱敏精简版记忆**（公开 GitHub 仓库安全）。完整记忆已迁移至
 > ZCode 持久化记忆 `~/.zcode/cli/memories/projects/xiaomengresume-*/memory/`（自动加载）。
